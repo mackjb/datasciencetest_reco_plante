@@ -1,0 +1,35 @@
+Projet Rakuten
+
+Ce rendu pose les bases de notre projet de classification des produits sur Rakuten. En nous concentrant sur une exploration approfondie des données et sur le traitement des valeurs manquantes, nous espérons construire un modèle performant pour la prédiction des codes types.
+
+Introduction 
+Le projet Rakuten vise à développer un modèle de classification multimodale pour catégoriser les produits sur la plateforme Rakuten France. L'objectif est de prédire le code type de chaque produit à partir de ses informations textuelles et d'image.
+
+Objectifs
+L'objectif principal de ce rendu est de poser les bases d'une approche de classification des produits, en explorant les données disponibles et en mettant en place les étapes nécessaires pour entraîner un modèle.
+Résultats attendus Nous espérons obtenir un modèle capable de prédire les codes types de produits avec un score F1 pondéré élevé. Le modèle sera évalué sur un ensemble de test pour garantir sa capacité à généraliser sur de nouvelles données.
+
+Méthodologie 
+-	Exploration des données :
+o	Verification des valeurs abbérrantes, nulles, 
+o	distribution des produits dans les codes types, 
+o	repartition des produits par langues, repartition des NA par langue 
+
+-	Gestion des valeurs manquantes : Nous avons décidé d'utiliser plusieurs techniques pour traiter les valeurs manquantes dans le champ de description.
+
+o	Voici certaines reflexion sur les données manquantes dans description (29,8K/84,9K):
+	 Utilisation de modèles de langage pour générer des descriptions 
+	Suppression des lignes avec des valeurs manquantes, si nécessaire. 
+
+-	Exploration des données : Nous allons analyser les données textuelles et visuelles.
+o	Vérification de la qualité des images 
+	Analyse des catégories de produits et des statistiques descriptives. 
+	Augmentation des données : Pour les classes sous-représentées, nous prévoyons d'utiliser des techniques d'augmentation d'images, telles que la rotation, le recadrage, et le changement de luminosité.
+o	Données textuelles : 
+	Après avoir chargé les données, nous avons observé les distributions de classes, la présence de valeurs manquantes
+	Etude des mots clés dans Designation : quels mots clés sont determinants dans la classification et le choix du code type ?
+•	quel mots se repètent le plus ?
+•	Quels est la correlation des mots clés et du choix du code type ?
+Des visualisations ont été créées pour mieux comprendre la structure des données.
+
+Prochaines étapes Finaliser le prétraitement des données. 

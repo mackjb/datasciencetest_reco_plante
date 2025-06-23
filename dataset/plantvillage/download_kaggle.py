@@ -1,33 +1,35 @@
-import os
 import shutil
+from pathlib import Path
 import kagglehub
 
-def move_dataset_if_exists(src_dir: str, dst_dir: str) -> None:
+def move_dataset_if_exists(src: Path, dst: Path) -> None:
     """
-    Si src_dir existe, le déplace vers dst_dir.
-    - Crée les dossiers parents de dst_dir si nécessaire.
-    - Supprime dst_dir existant pour éviter les conflits.
+    Si src existe, le déplace vers dst.
+    - Crée les dossiers parents de dst si nécessaire.
+    - Supprime dst existant pour éviter les conflits.
     """
-    if os.path.exists(src_dir):
-        # Crée l'arborescence parent de dst_dir
-        os.makedirs(os.path.dirname(dst_dir), exist_ok=True)
-        # Supprime dst_dir existant (optionnel)
-        if os.path.exists(dst_dir):
-            shutil.rmtree(dst_dir)
-        # Effectue le déplacement
-        shutil.move(src_dir, dst_dir)
-        print(f"✅ Déplacé :\n  {src_dir}\n→ {dst_dir}")
+    if src.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if dst.exists():
+            shutil.rmtree(dst)
+        shutil.move(str(src), str(dst))
+        print(f"✅ Déplacé :\n  {src}\n→ {dst}")
     else:
-        print(f"⚠️  Répertoire source introuvable : {src_dir}")
+        print(f"⚠️  Répertoire source introuvable : {src}")
 
 if __name__ == "__main__":
-    # 1. Télécharge la dernière version
-    path = kagglehub.dataset_download("abdallahalidev/plantvillage-dataset")
-    print("Path to dataset files:", path)
+    # 1. Télécharge la dernière version du dataset
+    download_path = Path(kagglehub.dataset_download("abdallahalidev/plantvillage-dataset"))
+    print("Path to dataset files:", download_path)
 
-    # 2. Définissez vos chemins
-    src = "/home/codespace/.cache/kagglehub/datasets/abdallahalidev/plantvillage-dataset/versions/3"
-    dst = "/workspaces/datasciencetest_reco_plante/dataset/plantvillage/plantvillage-dataset"
+    # 2. Définissez la racine du projet (dossier courant du script)
+    project_root = Path(__file__).resolve().parent.parent
 
-    # 3. Déplace si le dossier existe
+    # 3. Chemin relatif vers le cache KaggleHub et la version à déplacer
+    src = project_root / ".cache" / "kagglehub" / "datasets" / "abdallahalidev" / "plantvillage-dataset" / "versions" / "3"
+
+    # 4. Chemin relatif de destination dans votre projet
+    dst = project_root / "dataset" / "plantvillage" / "plantvillage-dataset"
+
+    # 5. Déplace si le dossier existe
     move_dataset_if_exists(src, dst)

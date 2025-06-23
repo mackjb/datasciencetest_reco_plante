@@ -7,4 +7,7 @@ dependencies:
   - pip
   - pip:
       - kagglehub
+      - jupyter 
+      - ipykernel
+  
  

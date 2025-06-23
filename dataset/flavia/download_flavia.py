@@ -45,8 +45,9 @@ def extract_and_cleanup(archive_path, extract_dir):
 if __name__ == "__main__":
     # URL de téléchargement (SourceForge mirror)
     url = "https://sourceforge.net/projects/flavia/files/Leaf%20Image%20Dataset/1.0/Leaves.tar.bz2/download"
-    archive_path = "/workspaces/datasciencetest_reco_plante/dataset/flavia/Leaves.tar.bz2"
-    extract_dir = "/workspaces/datasciencetest_reco_plante/dataset/flavia/flavia-dataset"
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    archive_path = os.path.join(base_dir, "Leaves.tar.bz2")
+    extract_dir = os.path.join(base_dir, "flavia-dataset")
     expected_md5 = "8d3ca661e201f4eac8d0975e7b6b5853"
 
     # 1. Télécharger l’archive

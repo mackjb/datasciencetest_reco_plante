@@ -25,11 +25,8 @@ if __name__ == "__main__":
     # 2. Définissez la racine du projet (dossier courant du script)
     project_root = Path(__file__).resolve().parent.parent
 
-    # 3. Chemin relatif vers le cache KaggleHub et la version à déplacer
-    src = project_root / ".cache" / "kagglehub" / "datasets" / "abdallahalidev" / "plantvillage-dataset" / "versions" / "3"
-
     # 4. Chemin relatif de destination dans votre projet
-    dst = project_root / "dataset" / "plantvillage" / "plantvillage-dataset"
+    dst = project_root / "dataset" / "plantvillage" 
 
     # 5. Déplace si le dossier existe
-    move_dataset_if_exists(src, dst)
+    move_dataset_if_exists(download_path, dst)

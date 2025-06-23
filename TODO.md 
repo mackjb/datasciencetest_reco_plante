@@ -8,6 +8,7 @@ BG : Bernadette
 
 dataframe à la granularité Classe
 - [X] Nombre de classification, images par classe pour plantvillage dans un df
+- [SL] Nettoyer le graphique histograme pour lister les effectis par classe plantvillage
 - [SL] Compléter le df plantvillage avec les résolution et les extension (.jpg .png ...)
 
 dataframe à la granularité Images

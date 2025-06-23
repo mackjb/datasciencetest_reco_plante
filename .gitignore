@@ -164,3 +164,7 @@ cython_debug/
 
 # Data folder
 data/
+
+
+dataset/plantvillage/plantvillage-dataset/**
+dataset/flavia/flavia-dataset/**

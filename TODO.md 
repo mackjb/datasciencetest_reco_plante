@@ -1,0 +1,20 @@
+# TODO
+
+JBM : JB
+SL : Lionel
+MP : Morgan
+BG : Bernadette
+
+
+dataframe à la granularité Classe
+- [X] Nombre de classification, images par classe pour plantvillage dans un df
+- [SL] Compléter le df plantvillage avec les résolution et les extension (.jpg .png ...)
+
+dataframe à la granularité Images
+- [MP] Parcourir toutes les images (segmentées) et compter les pixel différentes du background (noir plantvillage, blanc flavia)
+- [] Pourcentage des pixels non background sur la bordure 1 pixel de l'image 
+- [] Choisir une métrique de détection d'exposition de la photo, Ratio de pixels “clippés” sur une image, Moyenne et écart-type de la luminance, Entropie de l’histogramme, Métriques no-reference (NR-IQA)
+- [JBM] Extraire les segments avec SAM et confronter les métriques plus haut 
+
+
+

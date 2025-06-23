@@ -166,5 +166,5 @@ cython_debug/
 data/
 
 
-dataset/plantvillage/plantvillage-dataset/**
+dataset/dataset/plantvillage/plantvillage dataset/**
 dataset/flavia/flavia-dataset/**

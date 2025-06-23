@@ -9,5 +9,8 @@ dependencies:
       - kagglehub
       - jupyter 
       - ipykernel
+      - pandas
+      - numpy
+      - plotly
   
  

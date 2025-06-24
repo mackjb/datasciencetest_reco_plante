@@ -33,16 +33,19 @@ Utiliser le Machine Learning pour classifier efficacement des espèces végétal
 	[X]	Créer une structure claire des dossiers (par espèce et maladie).
 	[X]	Évaluer la qualité initiale des images (format, taille).
 	[]	1.2 Nettoyage et normalisation des images
-	[]	Redimensionnement uniforme à 224x224 pixels.
+	[]	Redimensionnement uniforme à 256x256 pixels.
 	[]	Filtrage Gaussien (sigma et noyau selon recommandations précédentes).
-	[]	Normalisation des pixels ([0,1]).
-	[]	1.3 Gestion des images problématiques
-	[]	Identifier et supprimer des images corrompues ou non représentatives visuellement.
-	[]	Vérifier visuellement les échantillons.
 	[]	1.4 Augmentation des données (Data Augmentation)
 	[]	Rotations, symétries horizontales et verticales.
 	[]	Légers zooms et translations.
 	[]	Validation visuelle rapide.
+
+
+	[]	Normalisation des pixels ([0,1]).
+	[]	1.3 Gestion des images problématiques
+	[]	Identifier et supprimer des images corrompues ou non représentatives visuellement.
+	[]	Vérifier visuellement les échantillons.
+
 
 ⸻
 

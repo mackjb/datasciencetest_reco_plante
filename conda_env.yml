@@ -15,3 +15,4 @@ dependencies:
       - Pillow
       - matplotlib
       - opencv-python
+      - scikit-learn

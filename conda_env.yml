@@ -16,3 +16,4 @@ dependencies:
       - matplotlib
       - opencv-python
       - scikit-learn
+      - albumentations

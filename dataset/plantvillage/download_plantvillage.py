@@ -68,8 +68,8 @@ if __name__ == "__main__":
         # Déplace le dataset
         move_dataset_if_exists(download_path, dst)
         
-        # Exemple d'utilisation
-        src_dataset = dst
+        # dataset/plantvillage/data/plantvillage dataset
+        src_dataset = dst / "plantvillage dataset"
         dst_dataset = dst / "plantvillage_5images"
         duplicate_dataset_limited(src_dataset, dst_dataset, max_files_per_class=5)
 

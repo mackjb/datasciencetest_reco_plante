@@ -1,4 +1,4 @@
-.PHONY: install flavia plantvillage
+.PHONY: install flavia plantvillage new_plant_diseases_dataset plant_disease
 
 SHELL := /bin/bash
 .ONESHELL:
@@ -74,3 +74,17 @@ plantvillage:
 	conda activate $(ENV_NAME)
 	# Télécharger le dataset PlantVillage
 	python dataset/plantvillage/download_plantvillage.py
+
+new_plant_diseases_dataset:
+	# Charger et activer l'environnement Conda
+	source $(CONDA_PREFIX)/etc/profile.d/conda.sh
+	conda activate $(ENV_NAME)
+	# Télécharger le dataset New Plant Diseases
+	python dataset/new_plant_diseases_dataset/download_new_plant_diseases_dataset.py
+
+plant_disease:
+	# Charger et activer l'environnement Conda
+	source $(CONDA_PREFIX)/etc/profile.d/conda.sh
+	conda activate $(ENV_NAME)
+	# Télécharger le dataset Plant Disease
+	python dataset/plant_disease/download_plant_disease.py

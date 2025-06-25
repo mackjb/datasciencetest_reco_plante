@@ -14,7 +14,7 @@ dependencies:
       - plotly
       - Pillow
       - matplotlib
-      - opencv-python
+      - opencv-python-headless
       - scikit-learn
       - albumentations
       - scikit-image

@@ -166,3 +166,4 @@ cython_debug/
 data/
 dataset/plantvillage/data/**
 dataset/flavia/data/**
+dataset/flavia/Leaves.tar.bz2

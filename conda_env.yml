@@ -12,5 +12,9 @@ dependencies:
       - pandas
       - numpy
       - plotly
-  
- 
+      - Pillow
+      - matplotlib
+      - opencv-python
+      - scikit-learn
+      - albumentations
+      - scikit-image

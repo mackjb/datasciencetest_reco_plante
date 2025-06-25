@@ -47,6 +47,10 @@ install:
 	code --install-extension ms-toolsai.jupyter || true
 	echo "✅ Extensions VSCode installées."
 
+
+# (base) ubuntu@ip-172-31-24-93:~/datasciencetest_reco_plante$ git config --global user.email "you@example.com"
+# (base) ubuntu@ip-172-31-24-93:~/datasciencetest_reco_plante$ git config --global user.name "Your Name"
+
 # .PHONY: install
 
 # install:

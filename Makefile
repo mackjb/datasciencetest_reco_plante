@@ -8,7 +8,12 @@ CONDA_PREFIX := $(HOME)/miniconda
 ENV_NAME := conda_env
 
 
+
 install:
+	# Configurer Git globalement
+	git config --global user.email "you@example.com"
+	git config --global user.name "Your Name"
+
 	sudo apt-get update
 	# 1) Installation de Miniconda si nécessaire
 	if [ -d "$(CONDA_PREFIX)" ]; then
@@ -28,14 +33,14 @@ install:
 	# 3) Sourcing pour appliquer immédiatement
 	source ~/.bashrc
 
-	# 4) Gérer l'environnement Conda sans 'activate' direct
+	# 4) Gérer l'environnement Conda en spécifiant le binaire complet
 	echo "Vérification de l'environnement Conda '$(ENV_NAME)'…"
-	if conda env list | grep -qE "^$(ENV_NAME)[[:space:]]"; then
+	if $(CONDA_PREFIX)/bin/conda env list | grep -qE "^$(ENV_NAME)[[:space:]]"; then
 		echo "Mise à jour de l'environnement '$(ENV_NAME)'"
-		conda env update -f conda_env.yml
+		$(CONDA_PREFIX)/bin/conda env update -f conda_env.yml
 	else
 		echo "Création de l'environnement '$(ENV_NAME)'"
-		conda env create -f conda_env.yml
+		$(CONDA_PREFIX)/bin/conda env create -f conda_env.yml
 	fi
 
 	# 5) Installer les extensions VSCode

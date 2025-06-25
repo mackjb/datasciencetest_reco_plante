@@ -1,4 +1,4 @@
-.PHONY: install
+.PHONY: install flavia plantvillage
 
 SHELL := /bin/bash
 .ONESHELL:
@@ -59,3 +59,18 @@ install:
 	# 8) Remplacer ce shell par un Bash interactif
 	echo "🚀  Nouvelle session Bash avec '$(ENV_NAME)' activé…"
 	exec bash -i
+
+# Cibles pour téléchargement des datasets
+flavia:
+	# Charger et activer l'environnement Conda
+	source $(CONDA_PREFIX)/etc/profile.d/conda.sh
+	conda activate $(ENV_NAME)
+	# Télécharger le dataset Flavia
+	python dataset/flavia/download_flavia.py
+
+plantvillage:
+	# Charger et activer l'environnement Conda
+	source $(CONDA_PREFIX)/etc/profile.d/conda.sh
+	conda activate $(ENV_NAME)
+	# Télécharger le dataset PlantVillage
+	python dataset/plantvillage/download_plantvillage.py

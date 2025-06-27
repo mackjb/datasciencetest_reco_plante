@@ -88,7 +88,7 @@ plant_disease:
 	conda activate $(ENV_NAME)
 	# Télécharger le dataset Plant Disease
 	python dataset/plant_disease/download_plant_disease.py           
-	echo "🚀 "
+	
 
 
 

@@ -1,6 +1,6 @@
-from .data_loader import load_plantvillage_all, load_plantvillage_five_images
+from .helpers import get_project_root, PROJECT_ROOT
 
 __all__ = [
-    "load_plantvillage_all",
-    "load_plantvillage_five_images",
+    "get_project_root",
+    "PROJECT_ROOT",
 ]

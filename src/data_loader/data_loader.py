@@ -44,7 +44,7 @@ def load_plantvillage_all() -> pd.DataFrame:
 
     :return: pandas.DataFrame avec colonnes 'filepath' et 'label'.
     """
-    return _load_dataset('plantvillage dataset')
+    return _load_dataset('plantvillage dataset/segmented')
 
 
 def load_plantvillage_five_images() -> pd.DataFrame:
@@ -53,7 +53,7 @@ def load_plantvillage_five_images() -> pd.DataFrame:
 
     :return: pandas.DataFrame avec colonnes 'filepath' et 'label'.
     """
-    return _load_dataset('plantvillage_5images')
+    return _load_dataset('plantvillage_5images/segmented')
 
 
 if __name__ == "__main__":

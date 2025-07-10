@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 
 from src.helpers.helpers import PROJECT_ROOT
+from PIL import Image
 
 # Base path for the PlantVillage dataset directories
 # Utilise la constante PROJECT_ROOT pour localiser le dossier data
@@ -29,9 +30,28 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
         # Recherche des images dans la classe
         for pattern in ('*.jpg', '*.jpeg', '*.png'):
             for img_path in class_dir.glob(pattern):
+                file_size = img_path.stat().st_size
+                filename = img_path.name
+                extension = img_path.suffix.lower().lstrip('.')
+                try:
+                    with Image.open(img_path) as img:
+                        width, height = img.size
+                        mode = img.mode
+                        num_channels = len(img.getbands())
+                        aspect_ratio = width / height if height else None
+                except Exception:
+                    width, height, mode, num_channels, aspect_ratio = None, None, None, None, None
                 records.append({
                     'filepath': str(img_path),
-                    'label': class_name
+                    'filename': filename,
+                    'extension': extension,
+                    'file_size': file_size,
+                    'label': class_name,
+                    'width': width,
+                    'height': height,
+                    'mode': mode,
+                    'num_channels': num_channels,
+                    'aspect_ratio': aspect_ratio
                 })
     # Création du DataFrame
     df = pd.DataFrame(records)

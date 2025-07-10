@@ -1,15 +1,15 @@
 """
-Module global pour obtenir la racine du projet Git via pathlib et un marker (.gitignore).
+Module global pour obtenir la racine du projet via pathlib et un marker (setup.py).
 """
 from pathlib import Path
 
 
-def get_project_root(marker: str = ".gitignore") -> Path:
+def get_project_root(marker: str = "setup.py") -> Path:
     """
     Retourne le Path du répertoire racine du projet (contenant le fichier `marker`).
 
     Args:
-        marker: nom du fichier ou dossier marqueur (par défaut ".gitignore").
+        marker: nom du fichier ou dossier marqueur (par défaut "setup.py").
 
     Returns:
         Path vers la racine du projet.

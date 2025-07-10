@@ -7,7 +7,7 @@ with open("requirements.txt", "r") as f:
 setup(
     name="datasciencetest-reco-plante",
     version="0.1.0",
-    package_dir={"": "src"},
-    packages=find_packages(where="src"),
+
+    packages=find_packages(include=["src", "src.*"]),
     install_requires=requirements,
 )

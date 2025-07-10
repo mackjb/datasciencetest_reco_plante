@@ -8,13 +8,13 @@
     "ghcr.io/devcontainers/features/conda:1": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "extensions": [
-    "ms-python.python",
-    "ms-python.debugpy",
-    "ms-toolsai.jupyter-keymap",
-    "ms-toolsai.vscode-jupyter-slideshow",
-    "ms-toolsai.jupyter"
-  ],
+  // "extensions": [
+  //   "ms-python.python",
+  //   "ms-python.debugpy",
+  //   "ms-toolsai.jupyter-keymap",
+  //   "ms-toolsai.vscode-jupyter-slideshow",
+  //   "ms-toolsai.jupyter"
+  // ],
   "postCreateCommand": "if [ ! -d \"/workspaces/datasciencetest_reco_plante/.git\" ]; then git clone https://github.com/mackjb/datasciencetest_reco_plante.git /workspaces/datasciencetest_reco_plante; fi",
   "postStartCommand": "sudo service ssh start",
   "mounts": [

@@ -19,3 +19,4 @@ dependencies:
       - albumentations
       - scikit-image
       - seaborn
+      - "-e ."

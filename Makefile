@@ -1,4 +1,4 @@
-.PHONY: install flavia plantvillage new_plant_diseases_dataset plant_disease
+.PHONY: install flavia plantvillage new_plant_diseases_dataset plant_disease windsurf-extensions
 
 SHELL := /bin/bash
 .ONESHELL:
@@ -87,10 +87,18 @@ plant_disease:
 	source $(CONDA_PREFIX)/etc/profile.d/conda.sh
 	conda activate $(ENV_NAME)
 	# Télécharger le dataset Plant Disease
-	python dataset/plant_disease/download_plant_disease.py           
-	
 
+	python dataset/plant_disease/download_plant_disease.py
 
-
-
-
+.PHONY: windsurf-extensions
+windsurf-extensions:
+	# Cloner vsix-tool si nécessaire
+	if [ ! -d ".devcontainer/windsurf-vsix-tool" ]; then \
+		git clone https://github.com/twotreeszf/windsurf-vsix-tool.git .devcontainer/windsurf-vsix-tool; \
+	else \
+		echo "vsix-tool déjà cloné"; \
+	fi
+	# Installer les dépendances Python
+	python3 -m pip install --no-cache-dir -r .devcontainer/windsurf-vsix-tool/requirements.txt
+	echo "🛠️  Installation des extensions WindSuf VSCode…"
+	python3 .devcontainer/install_windsurf_extensions.py

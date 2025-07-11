@@ -87,6 +87,7 @@ plant_disease:
 	source $(CONDA_PREFIX)/etc/profile.d/conda.sh
 	conda activate $(ENV_NAME)
 	# Télécharger le dataset Plant Disease
+
 	python dataset/plant_disease/download_plant_disease.py
 
 .PHONY: windsurf-extensions

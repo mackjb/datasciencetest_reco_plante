@@ -1,8 +1,9 @@
 from IPython.display import display
 from src.helpers.helpers import PROJECT_ROOT
-from src.data_loader.data_loader import load_plantvillage_all, load_plantvillage_five_images
+from src.data_loader.data_loader import load_plantvillage_all, load_plantvillage_five_images, generate_clean_data_plantvillage_segmented_all
 import time
 import hashlib
+import pandas as pd
 
 
 
@@ -17,26 +18,26 @@ if __name__ == "__main__":
     # dt0 = time.time() - t0
     # print(f"load_all: {len(df_all)} images en {dt0:.2f}s, classes: {df_all['label'].nunique()}")
 
-    print("\nTest de load_plantvillage_five_images()...")
-    t1 = time.time()
-    df5 = load_plantvillage_five_images()
-    dt1 = time.time() - t1
-    print(f"load_5_images: {len(df5)} images en {dt1:.2f}s, classes: {df5['label'].nunique()}")
-    print("Aperçu (head) du DataFrame 5 images :")
-    print(df5.head())
+    # print("\nTest de load_plantvillage_five_images()...")
+    # t1 = time.time()
+    # df5 = load_plantvillage_five_images()
+    # dt1 = time.time() - t1
+    # print(f"load_5_images: {len(df5)} images en {dt1:.2f}s, classes: {df5['label'].nunique()}")
+    # print("Aperçu (head) du DataFrame 5 images :")
+    # print(df5.head())
 
-    # # Génération du CSV complet plantvillage_segmented_all.csv
-    # print("\nGénération du CSV complet plantvillage_segmented_all.csv...")
-    # df_all = load_plantvillage_all()
-    # # Calcul des hash pour détecter les doublons
-    # df_all['hash'] = df_all['filepath'].apply(lambda p: hashlib.md5(open(p,'rb').read()).hexdigest())
-    # # Flags
-    # df_all['is_duplicate'] = df_all['hash'].duplicated(keep=False)
-    # df_all['is_fail_segmented'] = df_all['leaf_segments'].isna() | (df_all['leaf_segments'] == 0)
-    # df_all.drop(columns=['hash'], inplace=True)
-    # out_csv = PROJECT_ROOT / 'plantvillage_segmented_all.csv'
-    # df_all.to_csv(out_csv, index=False)
-    # print(f"CSV enregistré: {out_csv}")
+    # Génération du CSV complet raw_data_plantvillage_segmented_all.csv
+    print("\nGénération du CSV complet raw_data_plantvillage_segmented_all.csv...")
+    df_raw = load_plantvillage_all()
+    out_csv = PROJECT_ROOT / 'raw_data_plantvillage_segmented_all.csv'
+    df_raw.to_csv(out_csv, index=False)
+    print(f"Raw data CSV enregistré: {out_csv}")
+    print(df_raw.head())
+
+    # Délégation à data_loader pour génération du CSV clean
+    print("\nGénération du CSV clean via data_loader...")
+    df_clean = generate_clean_data_plantvillage_segmented_all()
+    print(df_clean.head())
 
     # # Séparation en clean vs outliers
     # flags = df_all['is_na'] | df_all['is_duplicate'] | df_all['is_fail_segmented']

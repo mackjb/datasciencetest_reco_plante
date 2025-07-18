@@ -16,7 +16,7 @@ install:
 	sudo apt-get update
 
 	# 3) Installer Miniconda si nécessaire
-	@if [ ! -f $(CONDA_PREFIX)/bin/conda ]; then \
+	@if ! command -v conda &> /dev/null; then \
 	  echo "⬇️  Téléchargement de Miniconda…"; \
 	  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh; \
 	  echo "⚙️  Installation silencieuse dans $(CONDA_PREFIX)…"; \
@@ -28,16 +28,16 @@ install:
 
 	# 4) Initialiser Conda dans ~/.bashrc (pour bash)
 	echo "🔧  Initialisation de Conda…"
-	$(CONDA_PREFIX)/bin/conda init bash --no-user
+	conda init bash --no-user
 
 	# 5) Créer ou mettre à jour l'environnement
 	echo "🔍  Gestion de l'environnement '$(ENV_NAME)'…"
-	if $(CONDA_PREFIX)/bin/conda env list | grep -qE "^$(ENV_NAME)[[:space:]]"; then \
+	if conda env list | grep -qE "^$(ENV_NAME)[[:space:]]"; then \
 	  echo "🔄  Mise à jour de '$(ENV_NAME)'…"; \
-	  $(CONDA_PREFIX)/bin/conda env update -f conda_env.yml; \
+	  conda env update -f conda_env.yml; \
 	else \
 	  echo "✨  Création de '$(ENV_NAME)'…"; \
-	  $(CONDA_PREFIX)/bin/conda env create -f conda_env.yml; \
+	  conda env create -f conda_env.yml; \
 	fi
 
 # # 6) Installer les extensions VSCode
@@ -51,8 +51,8 @@ install:
 
 	# 7) Auto-activation à chaque nouveau shell
 	#    Source le script conda.sh puis active l'env
-	grep -qxF "source $(CONDA_PREFIX)/etc/profile.d/conda.sh" ~/.bashrc \
-	  || echo "source $(CONDA_PREFIX)/etc/profile.d/conda.sh" >> ~/.bashrc
+	grep -qxF "conda init bash --no-user" ~/.bashrc \
+	  || echo "conda init bash --no-user" >> ~/.bashrc
 	grep -qxF "conda activate $(ENV_NAME)" ~/.bashrc \
 	  || echo "conda activate $(ENV_NAME)" >> ~/.bashrc
 

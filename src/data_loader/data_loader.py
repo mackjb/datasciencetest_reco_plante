@@ -2,7 +2,7 @@ import glob
 import pandas as pd
 from pathlib import Path
 
-from src.helpers.helpers import PROJECT_ROOT, compute_hu_features, compute_fourier_energy
+from src.helpers.helpers import PROJECT_ROOT, compute_hu_features, compute_fourier_energy, compute_hog_features
 from PIL import Image
 
 # Base path for the PlantVillage dataset directories
@@ -41,6 +41,9 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                         aspect_ratio = width / height if height else None
                 except Exception:
                     width, height, mode, num_channels, aspect_ratio = None, None, None, None, None
+                # Initialisation par défaut des features spectrales et HOG
+                energie_basse = energie_moyenne = energie_haute = None
+                hog_mean = hog_std = None
                 try:
                     hu_feats = compute_hu_features(img_path)
                     try:
@@ -50,6 +53,13 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                         energie_haute = fourier_feats['energie_haute_details_maladie']
                     except Exception:
                         energie_basse = energie_moyenne = energie_haute = None
+                    try:
+                        hog_feats = compute_hog_features(img_path)
+                        hog_mean = hog_feats['hog_moyenne_contours_forme']
+                        hog_std = hog_feats['hog_ecarttype_texture']
+                    except Exception:
+                        hog_mean = hog_std = None
+
                     hu_phi1 = hu_feats['phi1_distingue_large_vs_etroit']
                     hu_phi2 = hu_feats['phi2_distinction_elongation_forme']
                     hu_phi3 = hu_feats['phi3_asymetrie_maladie']
@@ -80,6 +90,8 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                     'energie_basse_forme_feuille': energie_basse,
                     'energie_moyenne_texture_veines': energie_moyenne,
                     'energie_haute_details_maladie': energie_haute,
+                    'hog_moyenne_contours_forme': hog_mean,
+                    'hog_ecarttype_texture': hog_std,
 
                 })
     # Création du DataFrame

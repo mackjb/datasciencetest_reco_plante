@@ -2,7 +2,7 @@ import glob
 import pandas as pd
 from pathlib import Path
 
-from src.helpers.helpers import PROJECT_ROOT, compute_hu_features
+from src.helpers.helpers import PROJECT_ROOT, compute_hu_features, compute_fourier_energy
 from PIL import Image
 
 # Base path for the PlantVillage dataset directories
@@ -43,6 +43,13 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                     width, height, mode, num_channels, aspect_ratio = None, None, None, None, None
                 try:
                     hu_feats = compute_hu_features(img_path)
+                    try:
+                        fourier_feats = compute_fourier_energy(img_path)
+                        energie_basse = fourier_feats['energie_basse_forme_feuille']
+                        energie_moyenne = fourier_feats['energie_moyenne_texture_veines']
+                        energie_haute = fourier_feats['energie_haute_details_maladie']
+                    except Exception:
+                        energie_basse = energie_moyenne = energie_haute = None
                     hu_phi1 = hu_feats['phi1_distingue_large_vs_etroit']
                     hu_phi2 = hu_feats['phi2_distinction_elongation_forme']
                     hu_phi3 = hu_feats['phi3_asymetrie_maladie']
@@ -70,7 +77,9 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                     'phi5_concavite_extremites': hu_phi5,
                     'phi6_decalage_torsion_maladie': hu_phi6,
                     'phi7_asymetrie_complexe': hu_phi7,
-                    'phi3_asymetrie_maladie': hu_phi3,
+                    'energie_basse_forme_feuille': energie_basse,
+                    'energie_moyenne_texture_veines': energie_moyenne,
+                    'energie_haute_details_maladie': energie_haute,
 
                 })
     # Création du DataFrame

@@ -2,7 +2,7 @@ import glob
 import pandas as pd
 from pathlib import Path
 
-from src.helpers.helpers import PROJECT_ROOT
+from src.helpers.helpers import PROJECT_ROOT, compute_hu_features
 from PIL import Image
 
 # Base path for the PlantVillage dataset directories
@@ -41,6 +41,17 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                         aspect_ratio = width / height if height else None
                 except Exception:
                     width, height, mode, num_channels, aspect_ratio = None, None, None, None, None
+                try:
+                    hu_feats = compute_hu_features(img_path)
+                    hu_phi1 = hu_feats['phi1_distingue_large_vs_etroit']
+                    hu_phi2 = hu_feats['phi2_distinction_elongation_forme']
+                    hu_phi3 = hu_feats['phi3_asymetrie_maladie']
+                    hu_phi4 = hu_feats['phi4_symetrie_diagonale_forme']
+                    hu_phi5 = hu_feats['phi5_concavite_extremites']
+                    hu_phi6 = hu_feats['phi6_decalage_torsion_maladie']
+                    hu_phi7 = hu_feats['phi7_asymetrie_complexe']
+                except Exception:
+                    hu_phi1 = hu_phi2 = hu_phi3 = hu_phi4 = hu_phi5 = hu_phi6 = hu_phi7 = None
                 records.append({
                     'filepath': str(img_path),
                     'filename': filename,
@@ -51,7 +62,16 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                     'height': height,
                     'mode': mode,
                     'num_channels': num_channels,
-                    'aspect_ratio': aspect_ratio
+                    'aspect_ratio': aspect_ratio,
+                    'phi1_distingue_large_vs_etroit': hu_phi1,
+                    'phi2_distinction_elongation_forme': hu_phi2,
+                    'phi3_asymetrie_maladie': hu_phi3,
+                    'phi4_symetrie_diagonale_forme': hu_phi4,
+                    'phi5_concavite_extremites': hu_phi5,
+                    'phi6_decalage_torsion_maladie': hu_phi6,
+                    'phi7_asymetrie_complexe': hu_phi7,
+                    'phi3_asymetrie_maladie': hu_phi3,
+
                 })
     # Création du DataFrame
     df = pd.DataFrame(records)

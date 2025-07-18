@@ -20,7 +20,13 @@ raw_data_plantvillage_segmented_all.csv => repertoire historique
 
 
 
+
+
 un nouveau repertoire image avec toutes les images des 3 csv segmented_clean_augmented
+
+quelle résolution image 256*256
+quelle format 
+
 On met sous controle de source avec LFS
 
 clean_data_plantvillage_segmented_all.csv

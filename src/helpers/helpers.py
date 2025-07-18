@@ -4,6 +4,7 @@ Module global pour obtenir la racine du projet via pathlib et un marker (setup.p
 from pathlib import Path
 import cv2
 import numpy as np
+from skimage.feature import hog
 
 
 def get_project_root(marker: str = "setup.py") -> Path:
@@ -27,6 +28,21 @@ def get_project_root(marker: str = "setup.py") -> Path:
 
 # Instance globale accessible partout
 PROJECT_ROOT: Path = get_project_root()
+
+def compute_hog_features(image_path: str) -> dict:
+    """
+    Calcule les caractéristiques HOG agrégées (moyenne et écart-type).
+    :param image_path: Chemin vers l'image.
+    :return: dict avec clés 'hog_moyenne_contours_forme', 'hog_ecarttype_texture'.
+    """
+    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        raise FileNotFoundError(f"Impossible de charger l'image: {image_path}")
+    hog_vec = hog(image, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), block_norm='L2-Hys', feature_vector=True)
+    return {
+        'hog_moyenne_contours_forme': float(np.mean(hog_vec)),
+        'hog_ecarttype_texture': float(np.std(hog_vec))
+    }
 
 def compute_hu_features(image_path: str) -> dict:
     """

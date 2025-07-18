@@ -5,6 +5,7 @@ from pathlib import Path
 
 from src.helpers.helpers import PROJECT_ROOT, compute_hu_features, compute_fourier_energy, compute_hog_features, compute_pixel_ratio_and_segments
 from PIL import Image, ImageStat
+import hashlib
 
 def is_black_image(image_path, threshold=10):
     """
@@ -14,6 +15,15 @@ def is_black_image(image_path, threshold=10):
         stat = ImageStat.Stat(img_gray)
         mean_val = stat.mean[0]
     return mean_val < threshold
+
+def is_image_valid(image_path: str) -> bool:
+    """Vérifie que l’image n’est pas corrompue."""
+    try:
+        with Image.open(image_path) as img:
+            img.verify()
+        return True
+    except:
+        return False
 
 # Base path for the PlantVillage dataset directories
 # Utilise la constante PROJECT_ROOT pour localiser le dossier data
@@ -120,6 +130,14 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                 })
     # Création du DataFrame
     df = pd.DataFrame(records)
+    # validité et duplicatas
+    df['is_image_valid'] = df['filepath'].apply(is_image_valid)
+    df['is_black'] = df['filepath'].apply(is_black_image)
+    df['is_na'] = (~df['is_image_valid']) | df['is_black']
+    # duplication via hash
+    df['hash'] = df['filepath'].apply(lambda p: hashlib.md5(open(p,'rb').read()).hexdigest())
+    df['is_duplicate'] = df['hash'].duplicated(keep=False)
+    df = df.drop(columns=['hash'])
     return df
 
 

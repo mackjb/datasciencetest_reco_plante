@@ -5,6 +5,21 @@ from pathlib import Path
 import cv2
 import numpy as np
 from skimage.feature import hog
+from PIL import Image
+
+
+def _to_grayscale_array(image_input):
+    """Convertit chemin/ndarray/PIL.Image en ndarray grayscale"""
+    if isinstance(image_input, (str, Path)):
+        img = cv2.imread(str(image_input), cv2.IMREAD_GRAYSCALE)
+    elif isinstance(image_input, np.ndarray):
+        img = cv2.cvtColor(image_input, cv2.COLOR_BGR2GRAY) if image_input.ndim==3 else image_input
+    elif isinstance(image_input, Image.Image):
+        img = np.array(image_input.convert("L"))
+    else:
+        raise TypeError(f"Type non supporté: {type(image_input)}")
+    if img is None: raise FileNotFoundError(f"Impossible de charger: {image_input}")
+    return img
 
 
 def get_project_root(marker: str = "setup.py") -> Path:
@@ -29,22 +44,22 @@ def get_project_root(marker: str = "setup.py") -> Path:
 # Instance globale accessible partout
 PROJECT_ROOT: Path = get_project_root()
 
-def compute_hog_features(image_path: str) -> dict:
+def compute_hog_features(image_input) -> dict:
     """
     Calcule les caractéristiques HOG agrégées (moyenne et écart-type).
     :param image_path: Chemin vers l'image.
     :return: dict avec clés 'hog_moyenne_contours_forme', 'hog_ecarttype_texture'.
     """
-    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    image = _to_grayscale_array(image_input)
     if image is None:
-        raise FileNotFoundError(f"Impossible de charger l'image: {image_path}")
+        raise FileNotFoundError(f"Impossible de charger l'image: {image_input}")
     hog_vec = hog(image, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), block_norm='L2-Hys', feature_vector=True)
     return {
         'hog_moyenne_contours_forme': float(np.mean(hog_vec)),
         'hog_ecarttype_texture': float(np.std(hog_vec))
     }
 
-def compute_hu_features(image_path: str) -> dict:
+def compute_hu_features(image_input) -> dict:
     """
     Calcule les 7 moments invariants de Hu en une seule passe.
     :param image_path: Chemin vers le fichier image.
@@ -52,9 +67,9 @@ def compute_hu_features(image_path: str) -> dict:
              'phi3_asymetrie_maladie', 'phi4_symetrie_diagonale_forme', 'phi5_concavite_extremites', 
              'phi6_decalage_torsion_maladie', 'phi7_asymetrie_complexe'.
     """
-    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    image = _to_grayscale_array(image_input)
     if image is None:
-        raise FileNotFoundError(f"Impossible de charger l'image: {image_path}")
+        raise FileNotFoundError(f"Impossible de charger l'image: {image_input}")
     moments = cv2.moments(image)
     hu = cv2.HuMoments(moments).flatten()
     return {
@@ -68,15 +83,15 @@ def compute_hu_features(image_path: str) -> dict:
     }
 
 
-def compute_fourier_energy(image_path: str) -> dict:
+def compute_fourier_energy(image_input) -> dict:
     """
     Calcule l'énergie spectrale basse, moyenne et haute fréquences via FFT.
     :param image_path: Chemin vers le fichier image.
     :return: dict avec clés 'energie_basse_forme_feuille', 'energie_moyenne_texture_veines', 'energie_haute_details_maladie'.
     """
-    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    image = _to_grayscale_array(image_input)
     if image is None:
-        raise FileNotFoundError(f"Impossible de charger l'image: {image_path}")
+        raise FileNotFoundError(f"Impossible de charger l'image: {image_input}")
     # Transformée de Fourier
     f = np.fft.fft2(image)
     fshift = np.fft.fftshift(f)
@@ -108,15 +123,15 @@ def compute_fourier_energy(image_path: str) -> dict:
         'energie_haute_details_maladie': float(hb)
     }
 
-def compute_pixel_ratio_and_segments(image_path: str) -> dict:
+def compute_pixel_ratio_and_segments(image_input) -> dict:
     """
     Calcule le ratio de pixels de feuille (foreground) et le nombre de segments.
     :param image_path: Chemin vers l'image.
     :return: dict avec clés 'pixel_ratio', 'leaf_segments'.
     """
-    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    image = _to_grayscale_array(image_input)
     if image is None:
-        raise FileNotFoundError(f"Impossible de charger l'image: {image_path}")
+        raise FileNotFoundError(f"Impossible de charger l'image: {image_input}")
     # Foreground mask: pixels > 0 (non-noir)
     mask = image > 0
     total = mask.size
@@ -138,9 +153,9 @@ def compute_pixel_ratio_and_segments(image_path: str) -> dict:
              'phi6_decalage_torsion_maladie', 'phi7_asymetrie_complexe'.
     """
     # Chargement de l'image en niveaux de gris
-    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    image = _to_grayscale_array(image_input)
     if image is None:
-        raise FileNotFoundError(f"Impossible de charger l'image: {image_path}")
+        raise FileNotFoundError(f"Impossible de charger l'image: {image_input}")
     # Calcul des moments normalisés centraux
     moments = cv2.moments(image)
     # Calcul des 7 moments de Hu

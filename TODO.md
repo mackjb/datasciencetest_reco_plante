@@ -6,7 +6,54 @@ MP : Morgan
 BG : Bernadette
 
 
+
+rajouter la possibilité un générer csv nommé plantvillage_segmented_all.csv
+avec une colonne is_na 
+is_image_valid 
+is_black 
+is_duplicate 
+is_fail_segmented 
+
+
+
+raw_data_plantvillage_segmented_all.csv => repertoire historique 
+
+
+
+un nouveau repertoire image avec toutes les images des 3 csv segmented_clean_augmented
+On met sous controle de source avec LFS
+
+clean_data_plantvillage_segmented_all.csv
+pas de NA et corrige les images en extensions et la même résolution 
+
+augmented_data_plantvillage_segmented_all.csv
+flip, scale, rotation, 
+=> Bernadette propose de faire des images avec des transformations plus dans les classes minoritaires
+
+
+
+
+
+Slide pour expliquer l’industrialisation du code 
+
+Integer le standard image corrompue et l’image doublon
+
+
+Intégrer les features Bernadettes 
+
+
+Faire 2 CSV clean et outliers
+
+Puis feature importance
+Radom forest 
+PCA
+
+
+
 1bis. Utiliser isblack pour éliminer les 5 images complétement KO, seuil à <5
+
+Intégrer la détection des doublons (images comparées, puis avec feature)
+
 
 1. Calculer le pixel ratio et mettre en visu les vignettes comme l'a fait morgane pour afficher les images jugées mal semgentée
  
@@ -26,15 +73,5 @@ BG : Bernadette
 
 
 
-Slide pour expliquer l’industrialisation du code 
-Integer le standard image corrompue et l’image doublon
-Intégrer les features Bernadettes 
-
-
-Faire 2 CSV clean et outliers
-
-Puis feature importance
-Radom forest 
-PCA
 
 Laplacien

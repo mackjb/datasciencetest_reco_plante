@@ -1,9 +1,19 @@
 import glob
 import pandas as pd
+import numpy as np
 from pathlib import Path
 
 from src.helpers.helpers import PROJECT_ROOT, compute_hu_features, compute_fourier_energy, compute_hog_features, compute_pixel_ratio_and_segments
-from PIL import Image
+from PIL import Image, ImageStat
+
+def is_black_image(image_path, threshold=10):
+    """
+    Returns True if the image is mostly black based on the mean grayscale value.
+    """
+    with Image.open(image_path).convert("L") as img_gray:
+        stat = ImageStat.Stat(img_gray)
+        mean_val = stat.mean[0]
+    return mean_val < threshold
 
 # Base path for the PlantVillage dataset directories
 # Utilise la constante PROJECT_ROOT pour localiser le dossier data
@@ -39,30 +49,32 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                         mode = img.mode
                         num_channels = len(img.getbands())
                         aspect_ratio = width / height if height else None
+                        gray_array = np.array(img.convert("L"))
                 except Exception:
                     width, height, mode, num_channels, aspect_ratio = None, None, None, None, None
+                    gray_array = None
                 # Initialisation par défaut des features spectrales, HOG et pixel ratio/segments
                 # Initialisation par défaut des features spectrales et HOG
                 energie_basse = energie_moyenne = energie_haute = None
                 hog_mean = hog_std = None
                 try:
-                    hu_feats = compute_hu_features(img_path)
+                    hu_feats = compute_hu_features(gray_array)
                     try:
-                        fourier_feats = compute_fourier_energy(img_path)
+                        fourier_feats = compute_fourier_energy(gray_array)
                         energie_basse = fourier_feats['energie_basse_forme_feuille']
                         energie_moyenne = fourier_feats['energie_moyenne_texture_veines']
                         energie_haute = fourier_feats['energie_haute_details_maladie']
                     except Exception:
                         energie_basse = energie_moyenne = energie_haute = None
                     try:
-                        hog_feats = compute_hog_features(img_path)
+                        hog_feats = compute_hog_features(gray_array)
                         hog_mean = hog_feats['hog_moyenne_contours_forme']
                         hog_std = hog_feats['hog_ecarttype_texture']
                     except Exception:
                         hog_mean = hog_std = None
 
                     try:
-                        pix_feats = compute_pixel_ratio_and_segments(img_path)
+                        pix_feats = compute_pixel_ratio_and_segments(gray_array)
                         pixel_ratio = pix_feats['pixel_ratio']
                         leaf_segments = pix_feats['leaf_segments']
                     except Exception:
@@ -103,6 +115,7 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                     'hog_ecarttype_texture': hog_std,
                     'pixel_ratio': pixel_ratio,
                     'leaf_segments': leaf_segments,
+                    'is_na': (gray_array is not None and gray_array.mean() < 10),
 
                 })
     # Création du DataFrame

@@ -2,7 +2,7 @@ import glob
 import pandas as pd
 from pathlib import Path
 
-from src.helpers.helpers import PROJECT_ROOT, compute_hu_features, compute_fourier_energy, compute_hog_features
+from src.helpers.helpers import PROJECT_ROOT, compute_hu_features, compute_fourier_energy, compute_hog_features, compute_pixel_ratio_and_segments
 from PIL import Image
 
 # Base path for the PlantVillage dataset directories
@@ -41,6 +41,7 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                         aspect_ratio = width / height if height else None
                 except Exception:
                     width, height, mode, num_channels, aspect_ratio = None, None, None, None, None
+                # Initialisation par défaut des features spectrales, HOG et pixel ratio/segments
                 # Initialisation par défaut des features spectrales et HOG
                 energie_basse = energie_moyenne = energie_haute = None
                 hog_mean = hog_std = None
@@ -59,6 +60,14 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                         hog_std = hog_feats['hog_ecarttype_texture']
                     except Exception:
                         hog_mean = hog_std = None
+
+                    try:
+                        pix_feats = compute_pixel_ratio_and_segments(img_path)
+                        pixel_ratio = pix_feats['pixel_ratio']
+                        leaf_segments = pix_feats['leaf_segments']
+                    except Exception:
+                        pixel_ratio = None
+                        leaf_segments = None
 
                     hu_phi1 = hu_feats['phi1_distingue_large_vs_etroit']
                     hu_phi2 = hu_feats['phi2_distinction_elongation_forme']
@@ -92,6 +101,8 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                     'energie_haute_details_maladie': energie_haute,
                     'hog_moyenne_contours_forme': hog_mean,
                     'hog_ecarttype_texture': hog_std,
+                    'pixel_ratio': pixel_ratio,
+                    'leaf_segments': leaf_segments,
 
                 })
     # Création du DataFrame

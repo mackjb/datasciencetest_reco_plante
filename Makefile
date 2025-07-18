@@ -16,7 +16,7 @@ install:
 	sudo apt-get update
 
 	# 3) Installer Miniconda si nécessaire
-	if [ ! -f "$(CONDA_PREFIX)/bin/conda" ]; then \
+	@if [ ! -f $(CONDA_PREFIX)/bin/conda ]; then \
 	  echo "⬇️  Téléchargement de Miniconda…"; \
 	  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh; \
 	  echo "⚙️  Installation silencieuse dans $(CONDA_PREFIX)…"; \
@@ -40,14 +40,14 @@ install:
 	  $(CONDA_PREFIX)/bin/conda env create -f conda_env.yml; \
 	fi
 
-	# 6) Installer les extensions VSCode
-	echo "🛠️  Installation des extensions VSCode…"; \
-	code --install-extension ms-python.debugpy                            || true; \
-	code --install-extension ms-python.python                             || true; \
-	code --install-extension ms-toolsai.jupyter-keymap                    || true; \
-	code --install-extension ms-toolsai.vscode-jupyter-slideshow         || true; \
-	code --install-extension ms-toolsai.jupyter                           || true; \
-	echo "✅  Extensions OK."
+# # 6) Installer les extensions VSCode
+# echo "🛠️  Installation des extensions VSCode…"; \
+# code --install-extension ms-python.debugpy                            || true; \
+# code --install-extension ms-python.python                             || true; \
+# code --install-extension ms-toolsai.jupyter-keymap                    || true; \
+# code --install-extension ms-toolsai.vscode-jupyter-slideshow         || true; \
+# code --install-extension ms-toolsai.jupyter                           || true; \
+# echo "✅  Extensions OK."
 
 	# 7) Auto-activation à chaque nouveau shell
 	#    Source le script conda.sh puis active l'env
@@ -102,3 +102,35 @@ windsurf-extensions:
 	python3 -m pip install --no-cache-dir -r .devcontainer/windsurf-vsix-tool/requirements.txt
 	echo "🛠️  Installation des extensions WindSuf VSCode…"
 	python3 .devcontainer/install_windsurf_extensions.py
+
+
+# Générer et inclure la config SSH pour un Codespace spécifié
+ssh-remote:
+	@# Usage: make ssh-remote CODESPACE=<name>
+	@if [ -z "$(CODESPACE)" ]; then \
+	  echo "❌ Veuillez spécifier le nom du Codespace: make ssh-remote CODESPACE=<nom>"; exit 1; \
+	fi
+	mkdir -p ~/.ssh
+	touch ~/.ssh/config
+	# Installer GitHub CLI si manquant
+	if ! command -v gh >/dev/null 2>&1; then \
+	  echo "⬇️  Installation de GitHub CLI…"; \
+	  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+	    | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg >/dev/null; \
+	  sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg; \
+	  echo "deb [arch=$$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+	    | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null; \
+	  sudo apt-get update; sudo apt-get install -y gh; \
+	fi
+	# Authentification
+	gh auth login || true
+	# Exporter config pour le Codespace nommé
+	gh codespace ssh --config -c $(CODESPACE) > ~/.ssh/codespaces-$(CODESPACE)
+	# Ajouter une entrée Host pour ce Codespace
+	grep -qxF "Host $(CODESPACE)" ~/.ssh/config || printf "
+	Host %s
+	HostName %s-$(shell gh api /user/codespaces/$(CODESPACE) --jq .machine)\.preview.app.github.dev
+	User git
+	IdentityFile ~/.ssh/codespaces-$(CODESPACE)
+	" $(CODESPACE) >> ~/.ssh/config
+	@echo "✅  SSH config pour '$(CODESPACE)' ajouté dans ~/.ssh/config"

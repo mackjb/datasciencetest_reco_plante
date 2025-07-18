@@ -107,6 +107,29 @@ def compute_fourier_energy(image_path: str) -> dict:
         'energie_moyenne_texture_veines': float(mb),
         'energie_haute_details_maladie': float(hb)
     }
+
+def compute_pixel_ratio_and_segments(image_path: str) -> dict:
+    """
+    Calcule le ratio de pixels de feuille (foreground) et le nombre de segments.
+    :param image_path: Chemin vers l'image.
+    :return: dict avec clés 'pixel_ratio', 'leaf_segments'.
+    """
+    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        raise FileNotFoundError(f"Impossible de charger l'image: {image_path}")
+    # Foreground mask: pixels > 0 (non-noir)
+    mask = image > 0
+    total = mask.size
+    leaf_pixels = int(mask.sum())
+    pixel_ratio = leaf_pixels / total if total else 0.0
+    # Compter les composants connectés (0: background)
+    mask_uint8 = mask.astype(np.uint8)
+    num_labels, _ = cv2.connectedComponents(mask_uint8)
+    leaf_segments = num_labels - 1
+    return {
+        'pixel_ratio': float(pixel_ratio),
+        'leaf_segments': int(leaf_segments)
+    }
     """
     Calcule les 7 moments invariants de Hu en une seule passe.
     :param image_path: Chemin vers le fichier image.

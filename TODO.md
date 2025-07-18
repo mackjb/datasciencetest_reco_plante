@@ -23,3 +23,18 @@ BG : Bernadette
 6bis. isoler la feature maladie de plant village 
 
 7. retenter une segmentation du dataset plantvillage avec SAM (GPU)
+
+
+
+Slide pour expliquer l’industrialisation du code 
+Integer le standard image corrompue et l’image doublon
+Intégrer les features Bernadettes 
+
+
+Faire 2 CSV clean et outliers
+
+Puis feature importance
+Radom forest 
+PCA
+
+Laplacien

@@ -1,6 +1,7 @@
 from IPython.display import display
 from src.helpers.helpers import PROJECT_ROOT
 from src.data_loader.data_loader import load_plantvillage_all, load_plantvillage_five_images
+import time
 
 
 
@@ -9,15 +10,16 @@ from src.data_loader.data_loader import load_plantvillage_all, load_plantvillage
 
 
 if __name__ == "__main__":
-    # # Test simple des fonctions de chargement
-    # print("Test de load_plantvillage_all()...")
+    # print("\nTest de load_plantvillage_all()...")
+    # t0 = time.time()
     # df_all = load_plantvillage_all()
-    # print(f"Images totales chargées : {len(df_all)}")
-    # print(f"Nombre de classes : {df_all['label'].nunique()}")
+    # dt0 = time.time() - t0
+    # print(f"load_all: {len(df_all)} images en {dt0:.2f}s, classes: {df_all['label'].nunique()}")
 
     print("\nTest de load_plantvillage_five_images()...")
+    t1 = time.time()
     df5 = load_plantvillage_five_images()
-    print(f"Images totales chargées : {len(df5)}")
-    print(f"Nombre de classes : {df5['label'].nunique()}")
+    dt1 = time.time() - t1
+    print(f"load_5_images: {len(df5)} images en {dt1:.2f}s, classes: {df5['label'].nunique()}")
     print("Aperçu (head) du DataFrame 5 images :")
     print(df5.head())

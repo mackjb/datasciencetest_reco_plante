@@ -14,13 +14,7 @@ is_black
 is_duplicate 
 is_fail_segmented 
 
-
-
 raw_data_plantvillage_segmented_all.csv => repertoire historique 
-
-
-
-
 
 un nouveau repertoire image avec toutes les images des 3 csv segmented_clean_augmented
 

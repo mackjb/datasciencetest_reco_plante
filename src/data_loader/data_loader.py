@@ -32,7 +32,7 @@ data_root: Path = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'data'
 def _load_dataset(subfolder: str) -> pd.DataFrame:
     """
     Charge un sous-dossier du dataset PlantVillage et retourne un DataFrame
-    avec deux colonnes : 'filepath' et 'label'.
+    avec les colonnes de base et indicateurs de validité.
 
     :param subfolder: Nom du dossier à charger (par ex. 'plantvillage dataset')
     :return: pandas.DataFrame
@@ -59,47 +59,9 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                         mode = img.mode
                         num_channels = len(img.getbands())
                         aspect_ratio = width / height if height else None
-                        gray_array = np.array(img.convert("L"))
                 except Exception:
-                    width, height, mode, num_channels, aspect_ratio = None, None, None, None, None
-                    gray_array = None
-                # Initialisation par défaut des features spectrales, HOG et pixel ratio/segments
-                # Initialisation par défaut des features spectrales et HOG
-                energie_basse = energie_moyenne = energie_haute = None
-                hog_mean = hog_std = None
-                try:
-                    hu_feats = compute_hu_features(gray_array)
-                    try:
-                        fourier_feats = compute_fourier_energy(gray_array)
-                        energie_basse = fourier_feats['energie_basse_forme_feuille']
-                        energie_moyenne = fourier_feats['energie_moyenne_texture_veines']
-                        energie_haute = fourier_feats['energie_haute_details_maladie']
-                    except Exception:
-                        energie_basse = energie_moyenne = energie_haute = None
-                    try:
-                        hog_feats = compute_hog_features(gray_array)
-                        hog_mean = hog_feats['hog_moyenne_contours_forme']
-                        hog_std = hog_feats['hog_ecarttype_texture']
-                    except Exception:
-                        hog_mean = hog_std = None
+                    width = height = mode = num_channels = aspect_ratio = None
 
-                    try:
-                        pix_feats = compute_pixel_ratio_and_segments(gray_array)
-                        pixel_ratio = pix_feats['pixel_ratio']
-                        leaf_segments = pix_feats['leaf_segments']
-                    except Exception:
-                        pixel_ratio = None
-                        leaf_segments = None
-
-                    hu_phi1 = hu_feats['phi1_distingue_large_vs_etroit']
-                    hu_phi2 = hu_feats['phi2_distinction_elongation_forme']
-                    hu_phi3 = hu_feats['phi3_asymetrie_maladie']
-                    hu_phi4 = hu_feats['phi4_symetrie_diagonale_forme']
-                    hu_phi5 = hu_feats['phi5_concavite_extremites']
-                    hu_phi6 = hu_feats['phi6_decalage_torsion_maladie']
-                    hu_phi7 = hu_feats['phi7_asymetrie_complexe']
-                except Exception:
-                    hu_phi1 = hu_phi2 = hu_phi3 = hu_phi4 = hu_phi5 = hu_phi6 = hu_phi7 = None
                 records.append({
                     'filepath': str(img_path),
                     'filename': filename,
@@ -111,31 +73,14 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
                     'mode': mode,
                     'num_channels': num_channels,
                     'aspect_ratio': aspect_ratio,
-                    'phi1_distingue_large_vs_etroit': hu_phi1,
-                    'phi2_distinction_elongation_forme': hu_phi2,
-                    'phi3_asymetrie_maladie': hu_phi3,
-                    'phi4_symetrie_diagonale_forme': hu_phi4,
-                    'phi5_concavite_extremites': hu_phi5,
-                    'phi6_decalage_torsion_maladie': hu_phi6,
-                    'phi7_asymetrie_complexe': hu_phi7,
-                    'energie_basse_forme_feuille': energie_basse,
-                    'energie_moyenne_texture_veines': energie_moyenne,
-                    'energie_haute_details_maladie': energie_haute,
-                    'hog_moyenne_contours_forme': hog_mean,
-                    'hog_ecarttype_texture': hog_std,
-                    'pixel_ratio': pixel_ratio,
-                    'leaf_segments': leaf_segments,
-                    'is_na': (gray_array is not None and gray_array.mean() < 10),
-
                 })
-    # Création du DataFrame
+
     df = pd.DataFrame(records)
     # validité et duplicatas
     df['is_image_valid'] = df['filepath'].apply(is_image_valid)
     df['is_black'] = df['filepath'].apply(is_black_image)
     df['is_na'] = (~df['is_image_valid']) | df['is_black']
-    # duplication via hash
-    df['hash'] = df['filepath'].apply(lambda p: hashlib.md5(open(p,'rb').read()).hexdigest())
+    df['hash'] = df['filepath'].apply(lambda p: hashlib.md5(open(p, 'rb').read()).hexdigest())
     df['is_duplicate'] = df['hash'].duplicated(keep=False)
     df = df.drop(columns=['hash'])
     return df
@@ -157,6 +102,66 @@ def load_plantvillage_five_images() -> pd.DataFrame:
     :return: pandas.DataFrame avec colonnes 'filepath' et 'label'.
     """
     return _load_dataset('plantvillage_5images/segmented')
+
+
+def generate_clean_data_plantvillage_segmented_all() -> pd.DataFrame:
+    """
+    Charge, nettoie, enrichit et sauvegarde le dataset PlantVillage segmented.
+    Retourne le DataFrame clean.
+    """
+    df_raw = load_plantvillage_all()
+    # Filtrage des NA et duplicates
+    df_clean = df_raw[~(df_raw['is_na'] | df_raw['is_duplicate'])].drop_duplicates(subset='filepath').copy()
+
+    def extract_features(row):
+        path = row['filepath']
+        try:
+            with Image.open(path) as img:
+                gray = np.array(img.convert('L'))
+            hu = compute_hu_features(gray)
+            fourier = compute_fourier_energy(gray)
+            hog = compute_hog_features(gray)
+            pix = compute_pixel_ratio_and_segments(gray)
+            return pd.Series({
+                'phi1_distingue_large_vs_etroit': hu['phi1_distingue_large_vs_etroit'],
+                'phi2_distinction_elongation_forme': hu['phi2_distinction_elongation_forme'],
+                'phi3_asymetrie_maladie': hu['phi3_asymetrie_maladie'],
+                'phi4_symetrie_diagonale_forme': hu['phi4_symetrie_diagonale_forme'],
+                'phi5_concavite_extremites': hu['phi5_concavite_extremites'],
+                'phi6_decalage_torsion_maladie': hu['phi6_decalage_torsion_maladie'],
+                'phi7_asymetrie_complexe': hu['phi7_asymetrie_complexe'],
+                'energie_basse_forme_feuille': fourier['energie_basse_forme_feuille'],
+                'energie_moyenne_texture_veines': fourier['energie_moyenne_texture_veines'],
+                'energie_haute_details_maladie': fourier['energie_haute_details_maladie'],
+                'hog_moyenne_contours_forme': hog['hog_moyenne_contours_forme'],
+                'hog_ecarttype_texture': hog['hog_ecarttype_texture'],
+                'pixel_ratio': pix['pixel_ratio'],
+                'leaf_segments': pix['leaf_segments'],
+            })
+        except Exception:
+            return pd.Series({col: None for col in [
+                'phi1_distingue_large_vs_etroit',
+                'phi2_distinction_elongation_forme',
+                'phi3_asymetrie_maladie',
+                'phi4_symetrie_diagonale_forme',
+                'phi5_concavite_extremites',
+                'phi6_decalage_torsion_maladie',
+                'phi7_asymetrie_complexe',
+                'energie_basse_forme_feuille',
+                'energie_moyenne_texture_veines',
+                'energie_haute_details_maladie',
+                'hog_moyenne_contours_forme',
+                'hog_ecarttype_texture',
+                'pixel_ratio',
+                'leaf_segments'
+            ]})
+
+    feats_df = df_clean.apply(extract_features, axis=1)
+    df_clean = pd.concat([df_clean, feats_df], axis=1)
+
+    clean_csv = PROJECT_ROOT / 'clean_data_plantvillage_segmented_all.csv'
+    df_clean.to_csv(clean_csv, index=False)
+    return df_clean
 
 
 if __name__ == "__main__":

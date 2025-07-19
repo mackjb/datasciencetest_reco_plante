@@ -17,7 +17,7 @@ def is_black_image(image_path, threshold=10):
     return mean_val < threshold
 
 def is_image_valid(image_path: str) -> bool:
-    """Vérifie que l’image n’est pas corrompue."""
+    """Vérifie que l'image n'est pas corrompue."""
     try:
         with Image.open(image_path) as img:
             img.verify()
@@ -104,6 +104,26 @@ def load_plantvillage_five_images() -> pd.DataFrame:
     return _load_dataset('plantvillage_5images/segmented')
 
 
+def generate_raw_data_plantvillage_segmented_all() -> pd.DataFrame:
+    """
+    Génère le fichier raw_data_plantvillage_segmented_all.csv dans dataset/plantvillage/csv/
+    avec toutes les colonnes de métadonnées (is_na, is_image_valid, is_black, is_duplicate).
+    """
+    # Charger toutes les données
+    df_raw = load_plantvillage_all()
+    
+    # Créer le répertoire CSV s'il n'existe pas
+    csv_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv'
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Sauvegarder le CSV raw
+    raw_csv = csv_dir / 'raw_data_plantvillage_segmented_all.csv'
+    df_raw.to_csv(raw_csv, index=False)
+    print(f"Raw data CSV enregistré: {raw_csv}")
+    
+    return df_raw
+
+
 def generate_clean_data_plantvillage_segmented_all() -> pd.DataFrame:
     """
     Charge, nettoie, enrichit et sauvegarde le dataset PlantVillage segmented.
@@ -159,9 +179,88 @@ def generate_clean_data_plantvillage_segmented_all() -> pd.DataFrame:
     feats_df = df_clean.apply(extract_features, axis=1)
     df_clean = pd.concat([df_clean, feats_df], axis=1)
 
-    clean_csv = PROJECT_ROOT / 'clean_data_plantvillage_segmented_all.csv'
+    # Create the CSV output directory if it doesn't exist
+    csv_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv'
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    
+    clean_csv = csv_dir / 'clean_data_plantvillage_segmented_all.csv'
     df_clean.to_csv(clean_csv, index=False)
     return df_clean
+
+
+def generate_segmented_clean_augmented_images():
+    """
+    Lit le fichier clean_data_plantvillage_segmented_all.csv et génère des images
+    standardisées 256x256 en format PNG dans le répertoire segmented_clean_augmented_images.
+    """
+    # Chemins des fichiers et répertoires
+    csv_path = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv' / 'clean_data_plantvillage_segmented_all.csv'
+    output_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'segmented_clean_augmented_images'
+    
+    # Vérifier que le CSV existe
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Le fichier CSV {csv_path} n'existe pas. Exécutez d'abord generate_clean_data_plantvillage_segmented_all().")
+    
+    # Charger le CSV
+    print(f"Chargement du CSV depuis {csv_path}...")
+    df = pd.read_csv(csv_path)
+    print(f"Nombre d'images à traiter : {len(df)}")
+    
+    # Créer le répertoire de sortie
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Créer les sous-répertoires par classe
+    for label in df['label'].unique():
+        class_dir = output_dir / label
+        class_dir.mkdir(exist_ok=True)
+    
+    processed_count = 0
+    error_count = 0
+    
+    print("Traitement des images...")
+    for idx, row in df.iterrows():
+        try:
+            # Chemin de l'image source
+            source_path = Path(row['filepath'])
+            
+            # Nom du fichier de sortie (changement d'extension vers PNG)
+            output_filename = Path(row['filename']).stem + '.png'
+            output_path = output_dir / row['label'] / output_filename
+            
+            # Éviter de retraiter si l'image existe déjà
+            if output_path.exists():
+                processed_count += 1
+                continue
+            
+            # Charger et redimensionner l'image
+            with Image.open(source_path) as img:
+                # Convertir en RGB si nécessaire (pour assurer la compatibilité PNG)
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Redimensionner à 256x256 avec un bon algorithme de rééchantillonnage
+                img_resized = img.resize((256, 256), Image.Resampling.LANCZOS)
+                
+                # Sauvegarder en PNG (format lossless)
+                img_resized.save(output_path, 'PNG', optimize=True)
+            
+            processed_count += 1
+            
+            # Affichage du progrès
+            if processed_count % 100 == 0:
+                print(f"Traité {processed_count}/{len(df)} images...")
+                
+        except Exception as e:
+            error_count += 1
+            print(f"Erreur lors du traitement de {row['filepath']}: {e}")
+            continue
+    
+    print(f"\nTraitement terminé !")
+    print(f"Images traitées avec succès : {processed_count}")
+    print(f"Erreurs : {error_count}")
+    print(f"Répertoire de sortie : {output_dir}")
+    
+    return output_dir
 
 
 if __name__ == "__main__":

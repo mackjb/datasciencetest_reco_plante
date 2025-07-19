@@ -1,6 +1,6 @@
 from IPython.display import display
 from src.helpers.helpers import PROJECT_ROOT
-from src.data_loader.data_loader import load_plantvillage_all, load_plantvillage_five_images, generate_clean_data_plantvillage_segmented_all
+from src.data_loader.data_loader import load_plantvillage_all, load_plantvillage_five_images, generate_raw_data_plantvillage_segmented_all, generate_clean_data_plantvillage_segmented_all, generate_segmented_clean_augmented_images
 import time
 import hashlib
 import pandas as pd
@@ -28,16 +28,18 @@ if __name__ == "__main__":
 
     # Génération du CSV complet raw_data_plantvillage_segmented_all.csv
     print("\nGénération du CSV complet raw_data_plantvillage_segmented_all.csv...")
-    df_raw = load_plantvillage_all()
-    out_csv = PROJECT_ROOT / 'raw_data_plantvillage_segmented_all.csv'
-    df_raw.to_csv(out_csv, index=False)
-    print(f"Raw data CSV enregistré: {out_csv}")
+    df_raw = generate_raw_data_plantvillage_segmented_all()
     print(df_raw.head())
 
     # Délégation à data_loader pour génération du CSV clean
     print("\nGénération du CSV clean via data_loader...")
     df_clean = generate_clean_data_plantvillage_segmented_all()
     print(df_clean.head())
+    
+    # Génération des images standardisées 256x256 PNG
+    print("\nGénération des images standardisées 256x256 PNG...")
+    output_dir = generate_segmented_clean_augmented_images()
+    print(f"Images standardisées générées dans : {output_dir}")
 
     # # Séparation en clean vs outliers
     # flags = df_all['is_na'] | df_all['is_duplicate'] | df_all['is_fail_segmented']

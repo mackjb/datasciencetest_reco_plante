@@ -1,0 +1,1 @@
+dataset/plantvillage/segmented_clean_augmented_images/**/*.png filter=lfs diff=lfs merge=lfs -text

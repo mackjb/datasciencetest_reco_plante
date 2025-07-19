@@ -12,8 +12,9 @@ install:
 	git config --global user.email "you@example.com"
 	git config --global user.name  "Your Name"
 
-	# 2) Mise à jour des paquets
+	# 2) Mise à jour des paquets et installation de Git LFS
 	sudo apt-get update
+	sudo apt-get install -y git-lfs
 
 	# 3) Installer Miniconda si nécessaire
 	@if ! command -v conda &> /dev/null; then \
@@ -39,6 +40,12 @@ install:
 	  echo "✨  Création de '$(ENV_NAME)'…"; \
 	  conda env create -f conda_env.yml; \
 	fi
+
+	# 6) Configuration de Git LFS
+	echo "🔧  Configuration de Git LFS…"
+	git lfs install
+	git lfs track "dataset/plantvillage/segmented_clean_augmented_images/**/*.png"
+	echo "✅  Git LFS configuré pour les images PNG"
 
 # # 6) Installer les extensions VSCode
 # echo "🛠️  Installation des extensions VSCode…"; \

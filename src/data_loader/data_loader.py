@@ -81,7 +81,7 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
     df['is_black'] = df['filepath'].apply(is_black_image)
     df['is_na'] = (~df['is_image_valid']) | df['is_black']
     df['hash'] = df['filepath'].apply(lambda p: hashlib.md5(open(p, 'rb').read()).hexdigest())
-    df['is_duplicate'] = df['hash'].duplicated(keep=False)
+    df['is_duplicate'] = df['hash'].duplicated(keep='first')
     df = df.drop(columns=['hash'])
     return df
 

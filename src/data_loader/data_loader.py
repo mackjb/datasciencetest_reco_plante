@@ -81,7 +81,7 @@ def _load_dataset(subfolder: str) -> pd.DataFrame:
     df['is_black'] = df['filepath'].apply(is_black_image)
     df['is_na'] = (~df['is_image_valid']) | df['is_black']
     df['hash'] = df['filepath'].apply(lambda p: hashlib.md5(open(p, 'rb').read()).hexdigest())
-    df['is_duplicate'] = df['hash'].duplicated(keep='first')
+    df['is_duplicate_after_first'] = df['hash'].duplicated(keep='first')
     df = df.drop(columns=['hash'])
     return df
 
@@ -107,7 +107,7 @@ def load_plantvillage_five_images() -> pd.DataFrame:
 def generate_raw_data_plantvillage_segmented_all() -> pd.DataFrame:
     """
     Génère le fichier raw_data_plantvillage_segmented_all.csv dans dataset/plantvillage/csv/
-    avec toutes les colonnes de métadonnées (is_na, is_image_valid, is_black, is_duplicate).
+    avec toutes les colonnes de métadonnées (is_na, is_image_valid, is_black, is_duplicate_after_first).
     """
     # Charger toutes les données
     df_raw = load_plantvillage_all()
@@ -126,12 +126,16 @@ def generate_raw_data_plantvillage_segmented_all() -> pd.DataFrame:
 
 def generate_clean_data_plantvillage_segmented_all() -> pd.DataFrame:
     """
+    Charge, nettoie, enrichit le dataset PlantVillage segmented et renvoie le DataFrame.
+    (Ne sauvegarde plus le CSV.)
+    """
+    """
     Charge, nettoie, enrichit et sauvegarde le dataset PlantVillage segmented.
     Retourne le DataFrame clean.
     """
     df_raw = load_plantvillage_all()
     # Filtrage des NA et duplicates
-    df_clean = df_raw[~(df_raw['is_na'] | df_raw['is_duplicate'])].drop_duplicates(subset='filepath').copy()
+    df_clean = df_raw[~(df_raw['is_na'] | df_raw['is_duplicate_after_first'])].drop_duplicates(subset='filepath').copy()
 
     def extract_features(row):
         path = row['filepath']
@@ -179,16 +183,44 @@ def generate_clean_data_plantvillage_segmented_all() -> pd.DataFrame:
     feats_df = df_clean.apply(extract_features, axis=1)
     df_clean = pd.concat([df_clean, feats_df], axis=1)
 
-    # Create the CSV output directory if it doesn't exist
-    csv_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv'
-    csv_dir.mkdir(parents=True, exist_ok=True)
-    
-    clean_csv = csv_dir / 'clean_data_plantvillage_segmented_all.csv'
-    df_clean.to_csv(clean_csv, index=False)
     return df_clean
 
 
+def generate_clean_and_resized() -> (pd.DataFrame, Path):
+    """
+    Combine generation of clean CSV and resized images.
+    Updates the CSV clean_data_plantvillage_segmented_all.csv so that filepath points to the generated PNGs.
+    """
+    print("\nGénération du CSV clean et des images 256x256 PNG en une seule passe...")
+    df_clean = generate_clean_data_plantvillage_segmented_all()
+    output_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'segmented_clean_augmented_images'
+    # Ensure output directories
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for label in df_clean['label'].unique():
+        class_dir = output_dir / label
+        class_dir.mkdir(exist_ok=True)
+    # Resize and save images
+    for idx, row in df_clean.iterrows():
+        src = Path(row['filepath'])
+        dst = output_dir / row['label'] / (src.stem + '.png')
+        if not dst.exists():
+            with Image.open(src) as img:
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                img_resized = img.resize((256, 256), Image.Resampling.LANCZOS)
+                img_resized.save(dst, 'PNG', optimize=True)
+    # Update filepaths in DataFrame
+    df_clean['filepath'] = df_clean.apply(
+        lambda r: str(output_dir / r['label'] / (Path(r['filepath']).stem + '.png')), axis=1)
+    # Save updated CSV
+    clean_csv = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv' / 'clean_data_plantvillage_segmented_all.csv'
+    df_clean.to_csv(clean_csv, index=False)
+    return df_clean, output_dir
+
+
 def generate_segmented_clean_augmented_images():
+    """Deprecated: use generate_clean_and_resized()."""
+    raise NotImplementedError('generate_segmented_clean_augmented_images is deprecated; use generate_clean_and_resized')
     """
     Lit le fichier clean_data_plantvillage_segmented_all.csv et génère des images
     standardisées 256x256 en format PNG dans le répertoire segmented_clean_augmented_images.

@@ -18,5 +18,6 @@ dependencies:
       - scikit-learn
       - albumentations
       - scikit-image
+      - imbalanced-learn
       - seaborn
       - "-e ."

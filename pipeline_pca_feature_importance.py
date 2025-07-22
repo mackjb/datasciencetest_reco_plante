@@ -14,6 +14,8 @@ from imblearn.over_sampling import RandomOverSampler
 from albumentations import Compose, HorizontalFlip, RandomRotate90, ShiftScaleRotate
 from PIL import Image
 import pandas as pd
+from pathlib import Path
+from src.helpers.helpers import PROJECT_ROOT
 
 from src.data_loader.data_loader import generate_clean_and_resized
 from src.helpers.helpers import (
@@ -76,9 +78,9 @@ class HandCraftedFeatures(BaseEstimator, TransformerMixin):
         return np.array(feats)
 
 
-def run_pipeline_pca(n_components=0.95, test_size=0.2, random_state=42):
+def run_pipeline_pca(n_components=0.95, test_size=0.2, random_state=42, force_refresh=False):
     # 1. Chargement et nettoyage
-    df, _ = generate_clean_and_resized()
+    df, _ = generate_clean_and_resized(force_refresh)
     df = df.dropna().reset_index(drop=True)
     X_paths = df['filepath'].tolist()
     y = df['label'].values
@@ -95,25 +97,36 @@ def run_pipeline_pca(n_components=0.95, test_size=0.2, random_state=42):
         ShiftScaleRotate(p=0.5, shift_limit=0.1, scale_limit=0.1, rotate_limit=15),
     ])
 
-    # 4. Assemblage des features
-    combined = FeatureUnion([
-        ('pixels', SkPipeline([
-            ('loader', ImageLoader(target_size=(256, 256), transforms=transforms)),
-            ('scale_px', StandardScaler()),
-        ])),
-        ('handmade', SkPipeline([
-            ('hc_feat', HandCraftedFeatures()),
-            ('scale_hc', StandardScaler()),
-        ])),
-    ])
+    # Définition des étapes communes pour les features manuelles
+    hc_steps = [
+        ('hc_feat', HandCraftedFeatures()),
+        ('scale_hc', StandardScaler()),
+    ]
+
+
+    # Ancienne version : extraction pixels + features manuelles
+    # combined = FeatureUnion([
+    #     ('pixels', SkPipeline([
+    #         ('loader', ImageLoader(target_size=(256, 256), transforms=transforms)),
+    #         ('scale_px', StandardScaler()),
+    #     ])),
+    #     ('handmade', SkPipeline([
+    #         ('hc_feat', HandCraftedFeatures()),
+    #         ('scale_hc', StandardScaler()),
+    #     ])),
+    # ])
+    
+    # 4. Assemblage des features manuelles uniquement
+    combined = SkPipeline(hc_steps)
 
     # 5. Pipeline Imblearn : oversampling + features + PCA + clf
-    pipe = Pipeline([
-        ('sampler', RandomOverSampler(random_state=random_state)),
-        ('feats', combined),
-        ('pca', PCA(n_components=n_components, random_state=random_state)),
-        ('clf', RandomForestClassifier(n_estimators=100, random_state=random_state)),
-    ])
+    pipe = Pipeline(
+        hc_steps + [
+            ('pca', PCA(n_components=n_components, random_state=random_state)),
+            ('sampler', RandomOverSampler(random_state=random_state)),
+            ('clf', RandomForestClassifier(n_estimators=100, random_state=random_state)),
+        ]
+    )
 
     # 6. Entraînement
     pipe.fit(X_train, y_train)
@@ -123,8 +136,10 @@ def run_pipeline_pca(n_components=0.95, test_size=0.2, random_state=42):
     print(classification_report(y_test, y_pred))
 
     # Importance via permutation
-    X_test_feats = pipe.named_steps['feats'].transform(X_test)
-    X_test_pca = pipe.named_steps['pca'].transform(X_test_feats)
+    # Appliquer manuellement les étapes hc_feat puis scale_hc avant la PCA
+    X_manual = pipe.named_steps['hc_feat'].transform(X_test)
+    X_scaled = pipe.named_steps['scale_hc'].transform(X_manual)
+    X_test_pca = pipe.named_steps['pca'].transform(X_scaled)
     perm = permutation_importance(
         pipe.named_steps['clf'],
         X_test_pca,
@@ -141,4 +156,4 @@ def run_pipeline_pca(n_components=0.95, test_size=0.2, random_state=42):
 
 
 if __name__ == '__main__':
-    run_pipeline_pca()
+    run_pipeline_pca(force_refresh=False)

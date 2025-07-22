@@ -5,7 +5,153 @@ from pathlib import Path
 
 from src.helpers.helpers import PROJECT_ROOT, compute_hu_features, compute_fourier_energy, compute_hog_features, compute_pixel_ratio_and_segments
 from PIL import Image, ImageStat
+import cv2
+import os
 import hashlib
+
+# Feature column lists for PlantVillage segmented
+HANDCRAFTED_FEATURE_COLS = [
+    'phi1_distingue_large_vs_etroit',
+    'phi2_distinction_elongation_forme',
+    'phi3_asymetrie_maladie',
+    'phi4_symetrie_diagonale_forme',
+    'phi5_concavite_extremites',
+    'phi6_decalage_torsion_maladie',
+    'phi7_asymetrie_complexe',
+    'energie_basse_forme_feuille',
+    'energie_moyenne_texture_veines',
+    'energie_haute_details_maladie',
+    'hog_moyenne_contours_forme',
+    'hog_ecarttype_texture',
+    'pixel_ratio',
+    'leaf_segments',
+]
+
+SHAPE_DESCRIPTOR_FEATURE_COLS = [
+    'area',
+    'perimeter',
+    'circularity',
+    'solidity',
+    'extent',
+    'eccentricity',
+    'major_axis_length',
+    'minor_axis_length',
+    'compactness',
+    'fractal_dimension',
+]
+
+FEATURE_COLS = HANDCRAFTED_FEATURE_COLS + SHAPE_DESCRIPTOR_FEATURE_COLS
+
+
+def extract_features_for_df(df, image_col='filepath'):
+    """Compute handcrafted and shape descriptor features for each image in df."""
+    def _extract(row):
+        path = row[image_col]
+        try:
+            with Image.open(path) as img:
+                gray = np.array(img.convert('L'))
+        except Exception:
+            return pd.Series({col: None for col in FEATURE_COLS})
+        hu = compute_hu_features(gray)
+        fourier = compute_fourier_energy(gray)
+        hog = compute_hog_features(gray)
+        pix = compute_pixel_ratio_and_segments(gray)
+        shape = compute_shape_descriptors(gray)
+        feature_dict = {}
+        for col in HANDCRAFTED_FEATURE_COLS:
+            if col in hu:
+                feature_dict[col] = hu[col]
+            elif col in fourier:
+                feature_dict[col] = fourier[col]
+            elif col in hog:
+                feature_dict[col] = hog[col]
+            elif col in pix:
+                feature_dict[col] = pix[col]
+            else:
+                feature_dict[col] = None
+        for col in SHAPE_DESCRIPTOR_FEATURE_COLS:
+            feature_dict[col] = shape.get(col)
+        return pd.Series(feature_dict)
+    feats_df = df.apply(_extract, axis=1)
+    return feats_df
+
+def fractal_dimension(Z):
+    """Estimate fractal dimension of a binary contour image Z using box counting."""
+    assert Z.ndim == 2
+    def boxcount(Z, k):
+        S = np.add.reduceat(
+            np.add.reduceat(Z, np.arange(0, Z.shape[0], k), axis=0),
+            np.arange(0, Z.shape[1], k), axis=1)
+        return np.count_nonzero(S)
+    h, w = Z.shape
+    min_dim = min(h, w)
+    max_exp = int(np.floor(np.log2(min_dim)))
+    sizes = 2**np.arange(max_exp, 1, -1)
+    counts = []
+    for size in sizes:
+        counts.append(boxcount(Z, size))
+    sizes = np.array([s for s, c in zip(sizes, counts) if c > 0])
+    counts = np.array([c for c in counts if c > 0])
+    if len(sizes) < 2:
+        return 0.0
+    coeffs = np.polyfit(np.log(sizes), np.log(counts), 1)
+    return -coeffs[0]
+
+
+def compute_shape_descriptors(gray):
+    """Compute leaf shape descriptor metrics from a grayscale image array."""
+    mask = gray > 0
+    mask_uint8 = mask.astype(np.uint8)
+    contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    if not contours:
+        return dict(
+            area=np.nan,
+            perimeter=np.nan,
+            circularity=np.nan,
+            solidity=np.nan,
+            extent=np.nan,
+            eccentricity=np.nan,
+            major_axis_length=np.nan,
+            minor_axis_length=np.nan,
+            compactness=np.nan,
+            fractal_dimension=np.nan
+        )
+    cnt = max(contours, key=cv2.contourArea)
+    area = float(mask.sum())
+    perimeter = float(cv2.arcLength(cnt, True))
+    circularity = 4 * np.pi * area / (perimeter**2) if perimeter > 0 else 0.0
+    hull = cv2.convexHull(cnt)
+    hull_area = float(cv2.contourArea(hull))
+    solidity = area / hull_area if hull_area > 0 else 0.0
+    x, y, w, h = cv2.boundingRect(cnt)
+    rect_area = float(w * h)
+    extent = area / rect_area if rect_area > 0 else 0.0
+    if len(cnt) >= 5:
+        (cx, cy), (axis1, axis2), angle = cv2.fitEllipse(cnt)
+        major_axis = float(max(axis1, axis2))
+        minor_axis = float(min(axis1, axis2))
+        eccentricity = major_axis / minor_axis if minor_axis > 0 else 0.0
+    else:
+        major_axis = 0.0
+        minor_axis = 0.0
+        eccentricity = 0.0
+    compactness = (perimeter**2 / area) if area > 0 else 0.0
+    contour_mask = np.zeros_like(mask_uint8)
+    cv2.drawContours(contour_mask, [cnt], -1, 1, 1)
+    fractal_dim = fractal_dimension(contour_mask)
+    return dict(
+        area=area,
+        perimeter=perimeter,
+        circularity=circularity,
+        solidity=solidity,
+        extent=extent,
+        eccentricity=eccentricity,
+        major_axis_length=major_axis,
+        minor_axis_length=minor_axis,
+        compactness=compactness,
+        fractal_dimension=fractal_dim
+    )
+
 
 def is_black_image(image_path, threshold=10):
     """
@@ -146,6 +292,7 @@ def generate_clean_data_plantvillage_segmented_all() -> pd.DataFrame:
             fourier = compute_fourier_energy(gray)
             hog = compute_hog_features(gray)
             pix = compute_pixel_ratio_and_segments(gray)
+            shape = compute_shape_descriptors(gray)
             return pd.Series({
                 'phi1_distingue_large_vs_etroit': hu['phi1_distingue_large_vs_etroit'],
                 'phi2_distinction_elongation_forme': hu['phi2_distinction_elongation_forme'],
@@ -160,31 +307,120 @@ def generate_clean_data_plantvillage_segmented_all() -> pd.DataFrame:
                 'hog_moyenne_contours_forme': hog['hog_moyenne_contours_forme'],
                 'hog_ecarttype_texture': hog['hog_ecarttype_texture'],
                 'pixel_ratio': pix['pixel_ratio'],
-                'leaf_segments': pix['leaf_segments'],
+                                'leaf_segments': pix['leaf_segments'],
+                'area': shape['area'],
+                'perimeter': shape['perimeter'],
+                'circularity': shape['circularity'],
+                'solidity': shape['solidity'],
+                'extent': shape['extent'],
+                'eccentricity': shape['eccentricity'],
+                'major_axis_length': shape['major_axis_length'],
+                'minor_axis_length': shape['minor_axis_length'],
+                'compactness': shape['compactness'],
+                'fractal_dimension': shape['fractal_dimension'],
             })
         except Exception:
-            return pd.Series({col: None for col in [
-                'phi1_distingue_large_vs_etroit',
-                'phi2_distinction_elongation_forme',
-                'phi3_asymetrie_maladie',
-                'phi4_symetrie_diagonale_forme',
-                'phi5_concavite_extremites',
-                'phi6_decalage_torsion_maladie',
-                'phi7_asymetrie_complexe',
-                'energie_basse_forme_feuille',
-                'energie_moyenne_texture_veines',
-                'energie_haute_details_maladie',
-                'hog_moyenne_contours_forme',
-                'hog_ecarttype_texture',
-                'pixel_ratio',
-                'leaf_segments'
-            ]})
+            # Return None for all features if extraction fails
+            return pd.Series({col: None for col in FEATURE_COLS})
 
-    feats_df = df_clean.apply(extract_features, axis=1)
+
+    feats_df = extract_features_for_df(df_clean, image_col='filepath')
     df_clean = pd.concat([df_clean, feats_df], axis=1)
 
     return df_clean
 
+
+def augment_minority_classes_cv2(df, image_col='filepath', label_col='species', aug_dir=None, force_refresh: bool = False):
+    """Augment minority classes with rotation, scaling, jitter using cv2."""
+    if aug_dir is None:
+        aug_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'augmented_images'
+    else:
+        aug_dir = Path(aug_dir)
+    aug_dir = Path(aug_dir)
+    aug_dir.mkdir(parents=True, exist_ok=True)
+    # Caching: charger données augmentées existantes si non force_refresh
+    aug_csv = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv' / 'augmented_minority_cv2.csv'
+    if aug_csv.exists() and not force_refresh:
+        print(f"Chargement des données augmentées existantes : {aug_csv}")
+        return pd.read_csv(aug_csv)
+    counts = df[label_col].value_counts()
+    max_count = counts.max()
+    augmented_rows = []
+    for cls, count in counts.items():
+        needing = max_count - count
+        if needing <= 0:
+            continue
+        n_per_img = (needing // count) + (1 if needing % count else 0)
+        subset = df[df[label_col] == cls]
+        for _, row in subset.iterrows():
+            img = cv2.imread(row[image_col])
+            if img is None:
+                continue
+            h, w = img.shape[:2]
+            base = Path(row[image_col]).stem
+            species_dir = aug_dir / cls
+            species_dir.mkdir(parents=True, exist_ok=True)
+            for i in range(n_per_img):
+                angle = np.random.uniform(-20, 20)
+                M = cv2.getRotationMatrix2D((w/2, h/2), angle, 1.0)
+                rot = cv2.warpAffine(img, M, (w, h), borderMode=cv2.BORDER_REFLECT)
+                scale = np.random.uniform(0.9, 1.1)
+                rescaled = cv2.resize(rot, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+                rh, rw = rescaled.shape[:2]
+                top = max(0, (rh - h)//2)
+                left = max(0, (rw - w)//2)
+                crop = rescaled[top:top+h, left:left+w]
+                if crop.shape[:2] != (h, w):
+                    crop = cv2.resize(crop, (w, h))
+                alpha = np.random.uniform(0.8, 1.2)
+                beta = np.random.uniform(-20, 20)
+                aug_img = cv2.convertScaleAbs(crop, alpha=alpha, beta=beta)
+                new_name = f"{base}_aug_{i}.png"
+                save_path = species_dir / new_name
+                cv2.imwrite(str(save_path), aug_img)
+                new_row = row.copy()
+                new_row[image_col] = str(save_path)
+                augmented_rows.append(new_row)
+    # Création du DataFrame des images augmentées
+    df_aug = pd.DataFrame(augmented_rows)
+
+    # Extraction des features pour les images augmentées
+    def extract_features(row):
+        path = row[image_col]
+        try:
+            with Image.open(path) as img:
+                gray = np.array(img.convert('L'))
+        except Exception:
+            return pd.Series({col: None for col in FEATURE_COLS})
+        hu = compute_hu_features(gray)
+        fourier = compute_fourier_energy(gray)
+        hog = compute_hog_features(gray)
+        pix = compute_pixel_ratio_and_segments(gray)
+        shape = compute_shape_descriptors(gray)
+        feature_dict = {}
+        for col in HANDCRAFTED_FEATURE_COLS:
+            if col in hu:
+                feature_dict[col] = hu[col]
+            elif col in fourier:
+                feature_dict[col] = fourier[col]
+            elif col in hog:
+                feature_dict[col] = hog[col]
+            elif col in pix:
+                feature_dict[col] = pix[col]
+            else:
+                feature_dict[col] = None
+        for col in SHAPE_DESCRIPTOR_FEATURE_COLS:
+            feature_dict[col] = shape.get(col)
+        return pd.Series(feature_dict)
+
+    feats_df = extract_features_for_df(df_aug, image_col=image_col)
+    df_aug = pd.concat([df_aug.reset_index(drop=True), feats_df.reset_index(drop=True)], axis=1)
+
+    # Sauvegarde des données augmentées avec features
+    aug_csv.parent.mkdir(parents=True, exist_ok=True)
+    df_aug.to_csv(aug_csv, index=False)
+    print(f"Données augmentées avec features sauvegardées : {aug_csv}")
+    return df_aug
 
 def generate_clean_and_resized(force_refresh: bool = False) -> (pd.DataFrame, Path):
     """
@@ -193,23 +429,9 @@ def generate_clean_and_resized(force_refresh: bool = False) -> (pd.DataFrame, Pa
     """
     clean_csv = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv' / 'clean_data_plantvillage_segmented_all.csv'
     output_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'segmented_clean_augmented_images'
-    # Liste des colonnes de features artisanales
-    feature_cols = [
-        'phi1_distingue_large_vs_etroit',
-        'phi2_distinction_elongation_forme',
-        'phi3_asymetrie_maladie',
-        'phi4_symetrie_diagonale_forme',
-        'phi5_concavite_extremites',
-        'phi6_decalage_torsion_maladie',
-        'phi7_asymetrie_complexe',
-        'energie_basse_forme_feuille',
-        'energie_moyenne_texture_veines',
-        'energie_haute_details_maladie',
-        'hog_moyenne_contours_forme',
-        'hog_ecarttype_texture',
-        'pixel_ratio',
-        'leaf_segments',
-    ]
+    # List of feature columns to check for existing features
+    feature_cols = FEATURE_COLS
+
     if clean_csv.exists():
         df_clean = pd.read_csv(clean_csv)
         # Vérifier si les features sont déjà présentes
@@ -226,6 +448,8 @@ def generate_clean_and_resized(force_refresh: bool = False) -> (pd.DataFrame, Pa
             df_clean['height'] = 256
             # Spliter label en species et disease
             df_clean[['species', 'disease']] = df_clean['label'].str.split('___', expand=True)
+            # Drop label column now that species and disease are extracted
+            df_clean.drop(columns=['label'], inplace=True)
             # Enregistrer les modifications
             df_clean.to_csv(clean_csv, index=False)
             return df_clean, output_dir
@@ -233,6 +457,7 @@ def generate_clean_and_resized(force_refresh: bool = False) -> (pd.DataFrame, Pa
             print("Recalcul des données et des features (rafraîchissement forcé ou colonnes manquantes)...")
     else:
         print("(Aucun CSV existant) Génération du CSV clean et des images 256x256 PNG...")
+        
     print("\nGénération du CSV clean et des images 256x256 PNG en une seule passe...")
     df_clean = generate_clean_data_plantvillage_segmented_all()
     output_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'segmented_clean_augmented_images'
@@ -262,88 +487,12 @@ def generate_clean_and_resized(force_refresh: bool = False) -> (pd.DataFrame, Pa
     df_clean['height'] = 256
     # Extract species and disease from label column
     df_clean[['species', 'disease']] = df_clean['label'].str.split('___', expand=True)
+    # Drop label column now that species and disease are extracted
+    df_clean.drop(columns=['label'], inplace=True)
     # Save updated CSV
     clean_csv = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv' / 'clean_data_plantvillage_segmented_all.csv'
     df_clean.to_csv(clean_csv, index=False)
     return df_clean, output_dir
-
-
-def generate_segmented_clean_augmented_images():
-    """Deprecated: use generate_clean_and_resized()."""
-    raise NotImplementedError('generate_segmented_clean_augmented_images is deprecated; use generate_clean_and_resized')
-    """
-    Lit le fichier clean_data_plantvillage_segmented_all.csv et génère des images
-    standardisées 256x256 en format PNG dans le répertoire segmented_clean_augmented_images.
-    """
-    # Chemins des fichiers et répertoires
-    csv_path = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv' / 'clean_data_plantvillage_segmented_all.csv'
-    output_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'segmented_clean_augmented_images'
-    
-    # Vérifier que le CSV existe
-    if not csv_path.exists():
-        raise FileNotFoundError(f"Le fichier CSV {csv_path} n'existe pas. Exécutez d'abord generate_clean_data_plantvillage_segmented_all().")
-    
-    # Charger le CSV
-    print(f"Chargement du CSV depuis {csv_path}...")
-    df = pd.read_csv(csv_path)
-    print(f"Nombre d'images à traiter : {len(df)}")
-    
-    # Créer le répertoire de sortie
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Créer les sous-répertoires par classe
-    for label in df['label'].unique():
-        class_dir = output_dir / label
-        class_dir.mkdir(exist_ok=True)
-    
-    processed_count = 0
-    error_count = 0
-    
-    print("Traitement des images...")
-    for idx, row in df.iterrows():
-        try:
-            # Chemin de l'image source
-            source_path = Path(row['filepath'])
-            
-            # Nom du fichier de sortie (changement d'extension vers PNG)
-            output_filename = Path(row['filename']).stem + '.png'
-            output_path = output_dir / row['label'] / output_filename
-            
-            # Éviter de retraiter si l'image existe déjà
-            if output_path.exists():
-                processed_count += 1
-                continue
-            
-            # Charger et redimensionner l'image
-            with Image.open(source_path) as img:
-                # Convertir en RGB si nécessaire (pour assurer la compatibilité PNG)
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
-                
-                # Redimensionner à 256x256 avec un bon algorithme de rééchantillonnage
-                img_resized = img.resize((256, 256), Image.Resampling.LANCZOS)
-                
-                # Sauvegarder en PNG (format lossless)
-                img_resized.save(output_path, 'PNG', optimize=True)
-            
-            processed_count += 1
-            
-            # Affichage du progrès
-            if processed_count % 100 == 0:
-                print(f"Traité {processed_count}/{len(df)} images...")
-                
-        except Exception as e:
-            error_count += 1
-            print(f"Erreur lors du traitement de {row['filepath']}: {e}")
-            continue
-    
-    print(f"\nTraitement terminé !")
-    print(f"Images traitées avec succès : {processed_count}")
-    print(f"Erreurs : {error_count}")
-    print(f"Répertoire de sortie : {output_dir}")
-    
-    return output_dir
-
 
 if __name__ == "__main__":
     # Test simple des fonctions de chargement

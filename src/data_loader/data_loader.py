@@ -186,11 +186,53 @@ def generate_clean_data_plantvillage_segmented_all() -> pd.DataFrame:
     return df_clean
 
 
-def generate_clean_and_resized() -> (pd.DataFrame, Path):
+def generate_clean_and_resized(force_refresh: bool = False) -> (pd.DataFrame, Path):
     """
     Combine generation of clean CSV and resized images.
     Updates the CSV clean_data_plantvillage_segmented_all.csv so that filepath points to the generated PNGs.
     """
+    clean_csv = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv' / 'clean_data_plantvillage_segmented_all.csv'
+    output_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'segmented_clean_augmented_images'
+    # Liste des colonnes de features artisanales
+    feature_cols = [
+        'phi1_distingue_large_vs_etroit',
+        'phi2_distinction_elongation_forme',
+        'phi3_asymetrie_maladie',
+        'phi4_symetrie_diagonale_forme',
+        'phi5_concavite_extremites',
+        'phi6_decalage_torsion_maladie',
+        'phi7_asymetrie_complexe',
+        'energie_basse_forme_feuille',
+        'energie_moyenne_texture_veines',
+        'energie_haute_details_maladie',
+        'hog_moyenne_contours_forme',
+        'hog_ecarttype_texture',
+        'pixel_ratio',
+        'leaf_segments',
+    ]
+    if clean_csv.exists():
+        df_clean = pd.read_csv(clean_csv)
+        # Vérifier si les features sont déjà présentes
+        if not force_refresh and all(col in df_clean.columns for col in feature_cols):
+            print(f"Chargement du CSV existant avec features : {clean_csv}")
+            # Mettre à jour filepath pour pointer vers PNG
+            df_clean['filepath'] = df_clean.apply(
+                lambda r: str(output_dir / r['label'] / (Path(r['filepath']).stem + '.png')), axis=1)
+            # Mettre à jour filename et extension en png
+            df_clean['filename'] = df_clean['filepath'].apply(lambda p: Path(p).name)
+            df_clean['extension'] = df_clean['filepath'].apply(lambda p: Path(p).suffix.lstrip('.').lower())
+            # Forcer width et height pour les images redimensionnées
+            df_clean['width'] = 256
+            df_clean['height'] = 256
+            # Spliter label en species et disease
+            df_clean[['species', 'disease']] = df_clean['label'].str.split('___', expand=True)
+            # Enregistrer les modifications
+            df_clean.to_csv(clean_csv, index=False)
+            return df_clean, output_dir
+        else:
+            print("Recalcul des données et des features (rafraîchissement forcé ou colonnes manquantes)...")
+    else:
+        print("(Aucun CSV existant) Génération du CSV clean et des images 256x256 PNG...")
     print("\nGénération du CSV clean et des images 256x256 PNG en une seule passe...")
     df_clean = generate_clean_data_plantvillage_segmented_all()
     output_dir = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'segmented_clean_augmented_images'
@@ -212,6 +254,14 @@ def generate_clean_and_resized() -> (pd.DataFrame, Path):
     # Update filepaths in DataFrame
     df_clean['filepath'] = df_clean.apply(
         lambda r: str(output_dir / r['label'] / (Path(r['filepath']).stem + '.png')), axis=1)
+    # Update filename and extension to reflect new PNG files
+    df_clean['filename'] = df_clean['filepath'].apply(lambda p: Path(p).name)
+    df_clean['extension'] = df_clean['filepath'].apply(lambda p: Path(p).suffix.lstrip('.').lower())
+    # Update width and height for resized images
+    df_clean['width'] = 256
+    df_clean['height'] = 256
+    # Extract species and disease from label column
+    df_clean[['species', 'disease']] = df_clean['label'].str.split('___', expand=True)
     # Save updated CSV
     clean_csv = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'csv' / 'clean_data_plantvillage_segmented_all.csv'
     df_clean.to_csv(clean_csv, index=False)

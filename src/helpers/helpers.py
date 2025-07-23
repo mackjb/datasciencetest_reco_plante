@@ -145,27 +145,25 @@ def compute_pixel_ratio_and_segments(image_input) -> dict:
         'pixel_ratio': float(pixel_ratio),
         'leaf_segments': int(leaf_segments)
     }
+
+
+def is_image_valid(image_path: str) -> bool:
+    """Vérifie que l'image n'est pas corrompue."""
+    try:
+        with Image.open(image_path) as img:
+            img.verify()  # Vérifie que l'image peut être lue correctement
+        return True
+    except Exception:
+        return False
+
+
+def is_black_image(image_path, threshold=10) -> bool:
     """
-    Calcule les 7 moments invariants de Hu en une seule passe.
-    :param image_path: Chemin vers le fichier image.
-    :return: Dictionnaire avec clés 'phi1_distingue_large_vs_etroit', 'phi2_distinction_elongation_forme', 
-             'phi3_asymetrie_maladie', 'phi4_symetrie_diagonale_forme', 'phi5_concavite_extremites', 
-             'phi6_decalage_torsion_maladie', 'phi7_asymetrie_complexe'.
+    Returns True if the image is mostly black based on the mean grayscale value.
     """
-    # Chargement de l'image en niveaux de gris
-    image = _to_grayscale_array(image_input)
-    if image is None:
-        raise FileNotFoundError(f"Impossible de charger l'image: {image_input}")
-    # Calcul des moments normalisés centraux
-    moments = cv2.moments(image)
-    # Calcul des 7 moments de Hu
-    hu = cv2.HuMoments(moments).flatten()
-    return {
-        'phi1_distingue_large_vs_etroit': float(hu[0]),
-        'phi2_distinction_elongation_forme': float(hu[1]),
-        'phi3_asymetrie_maladie': float(hu[2]),
-        'phi4_symetrie_diagonale_forme': float(hu[3]),
-        'phi5_concavite_extremites': float(hu[4]),
-        'phi6_decalage_torsion_maladie': float(hu[5]),
-        'phi7_asymetrie_complexe': float(hu[6])
-    }
+    try:
+        with Image.open(image_path) as img:
+            stat = ImageStat.Stat(img.convert('L'))
+            return stat.mean[0] < threshold
+    except Exception:
+        return False

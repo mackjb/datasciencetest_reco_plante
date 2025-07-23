@@ -1,6 +1,5 @@
-from .data_loader import load_plantvillage_all, load_plantvillage_five_images
+from .data_loader import dataset_to_dataframe
 
 __all__ = [
-    "load_plantvillage_all",
-    "load_plantvillage_five_images",
+    "dataset_to_dataframe",
 ]

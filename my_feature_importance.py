@@ -26,6 +26,11 @@ from PIL import Image
 from joblib import Memory, Parallel, delayed
 import time
 
+# Pour la visualisation
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Mode non-interactif pour la sauvegarde des figures
+
 # Import des fonctions existantes
 from src.helpers.helpers import (
     PROJECT_ROOT, 
@@ -455,6 +460,77 @@ def print_results(results, feature_importances, selected_features_idx, feature_c
                     print(f"  {feature_cols[i]}: {importances[i]:.4f}")
 
 # -----------------------------
+# 8.1 Visualisation des résultats
+# -----------------------------
+def plot_feature_importance(feature_importances, selected_features_idx, feature_cols):
+    """
+    Génère et sauvegarde des graphiques en barres pour visualiser les caractéristiques 
+    les plus importantes pour chaque stratégie.
+    
+    Args:
+        feature_importances: Importances des caractéristiques pour chaque stratégie
+        selected_features_idx: Index des caractéristiques sélectionnées
+        feature_cols: Noms des colonnes de caractéristiques
+    """
+    print("\nGénération des graphiques d'importance des caractéristiques...")
+    
+    # Créer un répertoire pour les figures si nécessaire
+    figures_dir = Path("figures")
+    figures_dir.mkdir(exist_ok=True)
+    
+    # Pour chaque stratégie, créer un graphique
+    for strategy_type, data_dict in [
+        ("frequency", selected_features_idx),
+        ("importance", feature_importances)
+    ]:
+        for name, values in data_dict.items():
+            # Vérifier que les valeurs existent
+            if values is None or not np.any(values):
+                continue
+                
+            # Trier les valeurs et sélectionner les 10 premières
+            indices = np.argsort(-values)
+            top_indices = indices[:10]
+            top_values = values[top_indices]
+            
+            # Ne garder que les valeurs positives
+            pos_mask = top_values > 0
+            if not np.any(pos_mask):
+                continue
+                
+            top_indices = top_indices[pos_mask]
+            top_values = top_values[pos_mask]
+            top_names = [feature_cols[i] for i in top_indices]
+            
+            # Créer le graphique
+            plt.figure(figsize=(12, 8))
+            
+            # Créer des barres horizontales
+            y_pos = np.arange(len(top_names))
+            plt.barh(y_pos, top_values, align='center')
+            
+            # Ajouter les noms des caractéristiques et les étiquettes
+            plt.yticks(y_pos, top_names)
+            
+            # Ajouter un titre et des légendes
+            if strategy_type == "frequency":
+                plt.title(f'Top 10 Caractéristiques - {name} (Fréquence de Sélection)', fontsize=16)
+                plt.xlabel('Fréquence de Sélection')
+            else:
+                plt.title(f'Top 10 Caractéristiques - {name} (Importance)', fontsize=16)
+                plt.xlabel('Importance')
+                
+            plt.ylabel('Caractéristiques')
+            plt.tight_layout()
+            
+            # Sauvegarder le graphique
+            fig_path = figures_dir / f"{name}_{strategy_type}.png"
+            plt.savefig(fig_path, dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            print(f"Graphique sauvegardé: {fig_path}")
+
+# -----------------------------
 # 9. Main Function
 # -----------------------------
 def main():
@@ -491,8 +567,11 @@ def main():
         X_all, y_all, selectors, base_clf, scaler
     )
     
-    # 6. Afficher les résultats
+    # 6. Afficher les résultats textuels
     print_results(results, feature_importances, selected_features_idx, FEATURE_COLUMNS)
+    
+    # 7. Générer les visualisations
+    plot_feature_importance(feature_importances, selected_features_idx, FEATURE_COLUMNS)
     
     return results, feature_importances, selected_features_idx
 

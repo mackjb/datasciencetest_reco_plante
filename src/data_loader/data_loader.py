@@ -13,7 +13,7 @@ from typing import Tuple
 from torchvision import transforms
 
 data_root: Path = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'data'
-default_dataset: str = 'plantvillage_5images/segmented'
+default_dataset: str = 'plantvillage dataset/segmented'
 
 # Listes des colonnes de caractéristiques pour PlantVillage segmented
 HANDCRAFTED_FEATURE_COLS = [

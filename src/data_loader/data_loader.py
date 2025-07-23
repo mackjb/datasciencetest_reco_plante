@@ -15,6 +15,39 @@ from torchvision import transforms
 data_root: Path = PROJECT_ROOT / 'dataset' / 'plantvillage' / 'data'
 default_dataset: str = 'plantvillage_5images/segmented'
 
+# Listes des colonnes de caractéristiques pour PlantVillage segmented
+HANDCRAFTED_FEATURE_COLS = [
+    'phi1_distingue_large_vs_etroit',
+    'phi2_distinction_elongation_forme',
+    'phi3_asymetrie_maladie',
+    'phi4_symetrie_diagonale_forme',
+    'phi5_concavite_extremites',
+    'phi6_decalage_torsion_maladie',
+    'phi7_asymetrie_complexe',
+    'energie_basse_forme_feuille',
+    'energie_moyenne_texture_veines',
+    'energie_haute_details_maladie',
+    'hog_moyenne_contours_forme',
+    'hog_ecarttype_texture',
+    'pixel_ratio',
+    'leaf_segments',
+]
+
+SHAPE_DESCRIPTOR_FEATURE_COLS = [
+    'area',
+    'perimeter',
+    'circularity',
+    'solidity',
+    'extent',
+    'eccentricity',
+    'major_axis_length',
+    'minor_axis_length',
+    'compactness',
+    'fractal_dimension',
+]
+
+FEATURE_COLS = HANDCRAFTED_FEATURE_COLS + SHAPE_DESCRIPTOR_FEATURE_COLS
+
 
 def dataset_to_clean_dataframe(subfolder: str = default_dataset) -> pd.DataFrame:
     """

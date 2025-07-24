@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from sklearn.model_selection import StratifiedShuffleSplit, cross_validate
+from sklearn.model_selection import StratifiedShuffleSplit, cross_validate, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectKBest, f_classif, RFE, SelectFromModel
@@ -30,6 +30,9 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')  # Mode non-interactif pour la sauvegarde des figures
+
+# Pour l'explication du modèle
+import shap
 
 # Import des fonctions existantes
 from src.helpers.helpers import (
@@ -531,6 +534,176 @@ def plot_feature_importance(feature_importances, selected_features_idx, feature_
             print(f"Graphique sauvegardé: {fig_path}")
 
 # -----------------------------
+# 8.2 Explication SHAP
+# -----------------------------
+def explain_with_shap(X, y, feature_cols, random_state=RANDOM_STATE):
+    """
+    Utilise SHAP pour expliquer les prédictions du modèle RandomForest.
+    
+    Args:
+        X: Matrice de caractéristiques
+        y: Vecteur cible
+        feature_cols: Noms des colonnes de caractéristiques
+        random_state: État aléatoire pour la reproductibilité
+    """
+    print("\n" + "="*50)
+    print("ANALYSE D'EXPLICABILITÉ AVEC SHAP")
+    print("="*50)
+    
+    # Créer un répertoire pour les figures SHAP si nécessaire
+    shap_dir = Path("figures/shap")
+    shap_dir.mkdir(exist_ok=True, parents=True)
+    
+    # Sous-échantillonner les données pour accélérer le calcul de SHAP
+    # (SHAP peut être intensif en calcul pour de grands ensembles de données)
+    X_sample, _, y_sample, _ = train_test_split(
+        X, y, test_size=0.8, random_state=random_state, stratify=y
+    )
+    print(f"Utilisation d'un sous-échantillon de {len(X_sample)} exemples pour SHAP")
+    
+    # Standardiser les données
+    scaler = StandardScaler()
+    X_sample_scaled = scaler.fit_transform(X_sample)
+    
+    # Entraîner un RandomForest sur les données
+    print("Entraînement du modèle RandomForest pour l'explication SHAP...")
+    rf = RandomForestClassifier(
+        n_estimators=100, 
+        random_state=random_state, 
+        class_weight='balanced'
+    )
+    rf.fit(X_sample_scaled, y_sample)
+    
+    # Créer un explainer SHAP
+    print("Calcul des valeurs SHAP...")
+    explainer = shap.TreeExplainer(rf)
+    shap_values = explainer.shap_values(X_sample_scaled)
+    
+    # Récupérer les noms des classes
+    class_names = np.unique(y)
+    num_classes = len(class_names)
+    
+    print(f"Génération des visualisations SHAP pour {num_classes} classes...")
+    
+    # 1. Summary plot global (toutes les caractéristiques, toutes les classes combinées)
+    print("Création du summary plot global...")
+    plt.figure(figsize=(12, 10))
+    shap.summary_plot(
+        shap_values, 
+        X_sample_scaled, 
+        feature_names=feature_cols,
+        class_names=[str(c) for c in class_names],
+        show=False
+    )
+    plt.tight_layout()
+    plt.savefig(shap_dir / "shap_summary_all_classes.png", dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    # 2. Pour chaque classe, créer un summary plot spécifique
+    for i, class_name in enumerate(class_names):
+        print(f"Création du summary plot pour la classe {class_name}...")
+        plt.figure(figsize=(12, 8))
+        shap.summary_plot(
+            shap_values[i], 
+            X_sample_scaled,
+            feature_names=feature_cols,
+            plot_type='bar',
+            show=False
+        )
+        plt.title(f"Impact des caractéristiques sur la classe: {class_name}", fontsize=16)
+        plt.tight_layout()
+        plt.savefig(shap_dir / f"shap_summary_class_{i}.png", dpi=300, bbox_inches='tight')
+        plt.close()
+    
+    # 3. Pour les top 5 features, générer des partial dependence plots simplifiés
+    # Nous évitons d'utiliser shap.dependence_plot car il cause une erreur d'indexation
+    # dans ce cas d'usage multiclasse
+    
+    # Identifier les top features par leur importance moyenne absolue
+    feature_importance = np.abs(np.array(shap_values)).mean(0).mean(0)
+    top_indices = np.argsort(-feature_importance)[:5]
+    top_features = [feature_cols[i] for i in top_indices]
+    
+    # Pour chaque top feature, créer un summary plot spécifique plutôt que des scatter plots
+    # Nous évitons les scatter plots en raison de problèmes de compatibilité de taille
+    print(f"Création des visualisations pour les top 5 caractéristiques...")
+    
+    # Créer un beeswarm plot combiné pour les top 5 caractéristiques (toutes classes confondues)
+    plt.figure(figsize=(12, 7))
+    top_features_idx = np.argsort(-np.abs(np.array(shap_values)).mean(0).mean(0))[:5]
+    
+    # Fusionner les valeurs SHAP pour toutes les classes pour ces caractéristiques
+    vals = np.array(shap_values).mean(0)
+    plt.figure(figsize=(10, 6))
+    shap.summary_plot(
+        vals, 
+        X_sample_scaled, 
+        plot_type="bar",
+        feature_names=feature_cols,
+        max_display=10,  # Afficher uniquement les 10 principales caractéristiques
+        show=False
+    )
+    plt.title("Impact global moyen des caractéristiques (toutes classes)", fontsize=14)
+    plt.tight_layout()
+    plt.savefig(shap_dir / "shap_top_features_global.png", dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    # Créer un plot pour chacune des 3 premières classes
+    for class_idx in range(min(3, len(class_names))):
+        plt.figure(figsize=(10, 6))
+        class_name = class_names[class_idx]
+        
+        # Générer un bar plot pour cette classe spécifique
+        shap.summary_plot(
+            shap_values[class_idx],
+            X_sample_scaled,
+            plot_type="bar",
+            feature_names=feature_cols,
+            max_display=10,  # Afficher uniquement les 10 principales caractéristiques
+            show=False
+        )
+        
+        plt.title(f"Impact des caractéristiques pour la classe: {class_name}", fontsize=14)
+        plt.tight_layout()
+        plt.savefig(shap_dir / f"shap_top_features_class_{class_idx}.png", dpi=300, bbox_inches='tight')
+        plt.close()
+            
+    # Fin des plots pour les classes individuelles
+    
+    # Créer un heatmap des valeurs SHAP absolues moyennes pour les top features
+    plt.figure(figsize=(14, 8))
+    
+    # Préparer les données pour le heatmap (top features x classes)
+    heatmap_data = np.zeros((len(top_features), len(class_names)))
+    for i, idx in enumerate(top_indices):
+        for j in range(len(class_names)):
+            heatmap_data[i, j] = np.abs(shap_values[j][:, idx]).mean()
+    
+    # Créer le heatmap
+    ax = plt.gca()
+    im = ax.imshow(heatmap_data, cmap='viridis')
+    
+    # Ajouter les étiquettes
+    ax.set_xticks(np.arange(len(class_names)))
+    ax.set_yticks(np.arange(len(top_features)))
+    ax.set_xticklabels([str(name) for name in class_names], rotation=45, ha='right')
+    ax.set_yticklabels(top_features)
+    
+    # Ajouter les valeurs dans le heatmap
+    for i in range(len(top_features)):
+        for j in range(len(class_names)):
+            text = ax.text(j, i, f"{heatmap_data[i, j]:.2f}",
+                       ha="center", va="center", color="white" if heatmap_data[i, j] > heatmap_data.mean() else "black")
+    
+    plt.colorbar(im, ax=ax)
+    plt.title("Impact moyen des caractéristiques principales par classe", fontsize=14)
+    plt.tight_layout()
+    plt.savefig(shap_dir / "shap_feature_impact_heatmap.png", dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Les visualisations SHAP ont été sauvegardées dans {shap_dir}")
+
+# -----------------------------
 # 9. Main Function
 # -----------------------------
 def main():
@@ -572,6 +745,9 @@ def main():
     
     # 7. Générer les visualisations
     plot_feature_importance(feature_importances, selected_features_idx, FEATURE_COLUMNS)
+    
+    # 8. Explication SHAP pour une compréhension plus fine
+    explain_with_shap(X_all, y_all, FEATURE_COLUMNS)
     
     return results, feature_importances, selected_features_idx
 

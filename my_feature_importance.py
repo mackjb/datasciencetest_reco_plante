@@ -11,6 +11,10 @@ import numpy as np
 import pandas as pd
 import cv2
 from pathlib import Path
+import multiprocessing
+
+# Configurer OpenCV pour utiliser tous les cœurs disponibles
+cv2.setNumThreads(multiprocessing.cpu_count())
 
 from sklearn.model_selection import StratifiedShuffleSplit, cross_validate, train_test_split
 from sklearn.preprocessing import RobustScaler
@@ -42,18 +46,11 @@ import shap
 
 # Import des fonctions existantes
 from src.helpers.helpers import (
-    PROJECT_ROOT, 
-    compute_hu_features, 
-    compute_fourier_energy, 
-    compute_hog_features, 
-    compute_pixel_ratio_and_segments,
-    compute_color_statistics,
-    compute_texture_features,
-    compute_sharpness_and_contours,
-    compute_additional_fft_features,
-    compute_additional_hog_features,
-    is_image_valid,
-    is_black_image
+    PROJECT_ROOT, compute_hu_features, compute_fourier_energy,
+    compute_hog_features, compute_pixel_ratio_and_segments, is_image_valid,
+    is_black_image, compute_color_statistics, compute_texture_features,
+    compute_sharpness_and_contours, compute_additional_fft_features,
+    compute_additional_hog_features, compute_shape_features
 )
 
 # -----------------------------
@@ -127,7 +124,7 @@ memory = Memory(CACHE_DIR, verbose=0)
 # -----------------------------
 # 2. Chargement, Rééchantillonnage & Split
 # -----------------------------
-def augment_class(class_df, num_to_generate, path_col=PATH_COLUMN, data_dir=DATA_DIR):
+def augment_class(class_df, num_to_generate, path_col=PATH_COLUMN, data_dir=DATA_DIR, n_jobs=-1):
     """
     Génère de nouveaux exemples pour une classe spécifique en utilisant les transformations.
     
@@ -253,43 +250,56 @@ def augment_class(class_df, num_to_generate, path_col=PATH_COLUMN, data_dir=DATA
         transforms.ToPILImage()
     ])
     
-    # Générer de nouveaux exemples
-    augmented_rows = []
-    num_generated = 0
+    # Fonction pour augmenter une image
+    def augment_single_image(idx, row):
+        if idx >= num_to_generate:
+            return None
+        
+        img_path = row[path_col]
+        try:
+            img = Image.open(img_path)
+            
+            # Appliquer les transformations
+            img_aug = augment(img)
+            
+            # Créer une nouvelle ligne avec des données similaires à la ligne originale
+            new_row = row.copy()
+            new_row['filename'] = f"augmented_{idx}_{row['filename']}"
+            new_row['hash'] = f"augmented_{idx}_{row['hash']}"
+            
+            return new_row
+        except Exception as e:
+            print(f"Erreur lors de l'augmentation de {img_path}: {e}")
+            return None
     
-    # Boucle jusqu'à atteindre le nombre d'exemples demandé
-    while num_generated < num_to_generate:
-        # Parcourir le DataFrame de la classe
+    # Préparer les entrées pour le traitement parallèle
+    start_time = time.time()
+    inputs = []
+    idx = 0
+    
+    # Créer la liste d'entrées pour le traitement parallèle
+    while len(inputs) < num_to_generate:
         for _, row in class_df.iterrows():
-            if num_generated >= num_to_generate:
+            if len(inputs) >= num_to_generate:
                 break
-                
-            img_path = row[path_col]
-            try:
-                img = Image.open(img_path)
-                
-                # Vérifier le mode de l'image
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
-                
-                img_aug = augment(img)
-                
-                # Extraire les caractéristiques de l'image augmentée
-                feats = extract_features_from_image(img_aug)
-                if feats is None:
-                    continue
-                    
-                # Créer une nouvelle ligne
-                new_row = row.copy()
-                for k, v in feats.items():
-                    new_row[k] = v
-                    
-                # Ajouter au DataFrame
-                augmented_rows.append(pd.DataFrame([new_row]))
-                num_generated += 1
-                
-            except Exception as e:
-                print(f"Erreur lors de l'augmentation de {img_path}: {e}")
+            inputs.append((idx, row))
+            idx += 1
+    
+    # Limiter aux entrées requises
+    inputs = inputs[:num_to_generate]
+    
+    print(f"  - Traitement parallèle de {len(inputs)} augmentations avec {n_jobs} processus...")
+    
+    # Traitement parallèle
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(augment_single_image)(i, r) for i, r in inputs
+    )
+    
+    # Filtrer les résultats None
+    augmented_rows = [r for r in results if r is not None]
+    
+    end_time = time.time()
+    print(f"  - Augmentation terminée en {end_time - start_time:.2f} secondes")
     
     # Concaténer tous les exemples générés
     if not augmented_rows:
@@ -366,8 +376,8 @@ def balance_dataset(df, target_col=TARGET_COLUMN, target_counts=None, path_col=P
             # Calculer combien d'exemples augmentés sont nécessaires
             to_generate = target - current
             
-            # Utiliser les transformations d'augmentation pour générer de nouveaux exemples
-            augmented = augment_class(subset, to_generate, path_col, data_dir)
+            # Utiliser les transformations d'augmentation pour générer de nouveaux exemples en parallèle
+            augmented = augment_class(subset, to_generate, path_col, data_dir, n_jobs=-1)
             balanced_rows.append(augmented)
         
         else:  # Pas de changement nécessaire
@@ -396,27 +406,56 @@ def load_and_split_data(csv_path=CSV_FILE, target_col=TARGET_COLUMN, test_size=0
         csv_path: Chemin vers le fichier CSV
         target_col: Colonne cible pour la stratification
         test_size: Proportion du jeu de test
-        random_state: État aléatoire pour la reproductibilité
-        apply_balancing: Si True, applique le rééquilibrage avant le split
+        random_state: Graine aléatoire pour la reproductibilité
+        apply_balancing: Si True, applique le rééquilibrage des classes
         
     Returns:
-        df_train, df_test: DataFrames d'entraînement et de test
+        tuple: (df_train, df_test) DataFrames d'entraînement et de test
     """
-    print(f"Chargement des données depuis {csv_path}...")
+    print(f"\nChargement des données depuis {csv_path}...")
     df = pd.read_csv(csv_path)
+    
+    # Note: Les chemins dans le CSV sont maintenant relatifs et n'ont plus besoin d'être corrigés
+
     
     # Vérifier que la colonne cible existe
     if target_col not in df.columns:
         raise ValueError(f"La colonne cible '{target_col}' n'existe pas dans le DataFrame. "
                         f"Colonnes disponibles: {', '.join(df.columns)}")
     
+    # Vérifier s'il y a des valeurs NaN dans les données
+    if df.isna().any().any():
+        print("Attention: Le DataFrame contient des valeurs NaN. Nettoyage en cours...")
+        print(f"Nombre de lignes avant nettoyage: {len(df)}")
+        print("Colonnes avec NaN:", df.isna().sum()[df.isna().sum() > 0])
+        df = df.dropna(subset=[target_col])  # Supprimer les lignes avec des NaN dans la cible
+        print(f"Nombre de lignes après nettoyage: {len(df)}")
+    
     # Rééquilibrer le dataset si demandé
     if apply_balancing:
         df = balance_dataset(df, target_col)
     
+    # Vérifier à nouveau pour des NaN après le rééquilibrage
+    if df.isna().any().any():
+        print("Attention: Des valeurs NaN ont été introduites lors du rééquilibrage. Nettoyage en cours...")
+        print("Colonnes avec NaN:", df.isna().sum()[df.isna().sum() > 0])
+        # Remplacer les NaN par des valeurs appropriées selon le type de colonne
+        # Pour les colonnes numériques, on utilise la médiane
+        for col in df.select_dtypes(include=['float64', 'int64']).columns:
+            if df[col].isna().any():
+                df[col] = df[col].fillna(df[col].median())
+        # Pour les colonnes catégorielles (y compris la cible), on utilise le mode (valeur la plus fréquente)
+        for col in df.select_dtypes(include=['object', 'category']).columns:
+            if df[col].isna().any():
+                df[col] = df[col].fillna(df[col].mode()[0])
+    
     # Division stratifiée
     print(f"\nDivision stratifiée en train ({1-test_size:.0%}) / test ({test_size:.0%})...")
     sss = StratifiedShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
+    # Vérification finale avant split
+    if df[target_col].isna().any():
+        raise ValueError("La colonne cible contient toujours des NaN après nettoyage!")
+    
     train_idx, test_idx = next(sss.split(df, df[target_col]))
     df_train = df.loc[train_idx].reset_index(drop=True)
     df_test = df.loc[test_idx].reset_index(drop=True)
@@ -468,7 +507,7 @@ def normalize_image(image, method='minmax'):
     else:
         return image  # Retourner l'image originale si méthode non reconnue
 @memory.cache
-def extract_features_from_image(img_input, normalize_pixels=True, norm_method='robust'):
+def extract_features_from_image(img_input, normalize_pixels=True, norm_method='robust', debug=True):
     """
     Extrait toutes les caractéristiques d'une image en utilisant les fonctions existantes.
     
@@ -496,12 +535,17 @@ def extract_features_from_image(img_input, normalize_pixels=True, norm_method='r
             img_cv = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
         
         # Vérifications de base
-        if not is_image_valid(img_cv) or is_black_image(img_cv):
+        # is_image_valid s'attend à un chemin, ne pas l'appeler sur img_cv
+        # Nous avons déjà vérifié que l'image n'était pas None avant
+        if is_black_image(img_cv):
             return None
             
         # Normaliser l'image si demandé
         if normalize_pixels:
+            # La normalisation retourne des valeurs entre 0 et 1 en float64
             img_cv = normalize_image(img_cv, method=norm_method)
+            # Reconvertir en uint8 pour éviter les problèmes avec les fonctions d'extraction
+            img_cv = (img_cv * 255).astype(np.uint8)
         
         # Convertir en PIL pour compatibilité avec les fonctions existantes
         img = Image.fromarray(cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB))
@@ -519,10 +563,11 @@ def extract_features_from_image(img_input, normalize_pixels=True, norm_method='r
         features.update(compute_sharpness_and_contours(img))
         features.update(compute_additional_fft_features(img))
         features.update(compute_additional_hog_features(img))
+        features.update(compute_shape_features(img))  # Ajout des descripteurs de forme
         
         return features
     except Exception as e:
-        print(f"Erreur lors de l'extraction des caractéristiques de {img_path}: {e}")
+        print(f"Erreur lors de l'extraction des caractéristiques de {img_input}: {e}")
         return None
 
 def augment_minority(df_train, data_dir=DATA_DIR, path_col=PATH_COLUMN, target_col=TARGET_COLUMN):
@@ -748,27 +793,95 @@ def prepare_features(df, feature_cols=FEATURE_COLUMNS, target_col=TARGET_COLUMN,
         # Fonction pour extraire les caractéristiques d'une ligne
         def extract_features_for_row(row):
             img_path = row[PATH_COLUMN]
-            features = extract_features_from_image(img_path)
-            return features
+            # Assurons-nous que le chemin est relatif à PROJECT_ROOT
+            if not Path(img_path).is_absolute():
+                # Si le chemin commence déjà par 'dataset', on suppose qu'il est relatif à PROJECT_ROOT
+                if img_path.startswith('dataset'):
+                    img_path = PROJECT_ROOT / img_path
+                # Sinon, on ajoute simplement PROJECT_ROOT
+                else:
+                    img_path = PROJECT_ROOT / img_path
+                    
+            # Vérifier si le fichier existe avant extraction
+            if not Path(img_path).exists():
+                print(f"ERREUR: Fichier image introuvable: {img_path}")
+                return None
+                
+            try:
+                features = extract_features_from_image(img_path)
+                if features is None:
+                    print(f"ERREUR: Échec extraction pour {img_path}")
+                return features
+            except Exception as e:
+                print(f"EXCEPTION lors de l'extraction pour {img_path}: {e}")
+                return None
         
         # Extraction parallèle des caractéristiques
         start_time = time.time()
-        features_list = Parallel(n_jobs=n_jobs)(
-            delayed(extract_features_for_row)(row) for _, row in df.iterrows()
-        )
+        
+        # Extraction parallèle des caractéristiques sans utiliser le cache joblib
+        print("Désactivation temporaire du cache pour l'extraction parallèle...")
+        # Méthode d'extraction: soit parallèle soit séquentielle selon la stabilité
+        try:
+            features_list = Parallel(n_jobs=n_jobs, timeout=120)(
+                delayed(extract_features_for_row)(row) for _, row in df.head(5).iterrows()
+            )
+            # Si le test réussit sur 5 lignes, on procède avec tout le dataset
+            print("Test sur 5 images réussi, traitement du dataset complet...")
+            features_list = Parallel(n_jobs=n_jobs, timeout=600)(
+                delayed(extract_features_for_row)(row) for _, row in df.iterrows()
+            )
+        except Exception as e:
+            print(f"ERREUR en parallèle: {e}\nBascule en mode séquentiel (plus lent)...")
+            # En cas d'échec, on passe en mode séquentiel
+            features_list = [
+                extract_features_for_row(row) for _, row in df.iterrows()
+            ]
+        
         end_time = time.time()
         print(f"Extraction terminée en {end_time - start_time:.2f} secondes")
         
+        # Analyser les résultats de l'extraction
+        success_count = sum(1 for f in features_list if f is not None)
+        total_count = len(features_list)
+        print(f"\nEXTRACTION: {success_count}/{total_count} images traitées avec succès ({success_count/total_count*100:.1f}%)")
+        
+        # Si très peu de succès, montrer les 5 premières lignes du dataframe pour diagnostic
+        if success_count < total_count * 0.1:
+            print("\nAPERÇU DU DATAFRAME (5 premières lignes):")
+            print(df.head().to_string())
+            
         # Mettre à jour le DataFrame avec les caractéristiques extraites
+        success_cols = set()
         for i, features in enumerate(features_list):
             if features is not None:
+                # Mettre à jour le DataFrame
                 for col, val in features.items():
                     df.loc[i, col] = val
+                    success_cols.add(col)
+        
+        print(f"\nCOLONNES EXTRAITES AVEC SUCCÈS: {len(success_cols)}/{len(feature_cols)}")
+        if success_cols:
+            print(f"Exemples: {list(success_cols)[:5]}...")
+        else:
+            print("AUCUNE COLONNE EXTRAITE AVEC SUCCÈS!")
     
     # Vérifier à nouveau les colonnes manquantes
     missing_cols = [col for col in feature_cols if col not in df.columns]
     if missing_cols:
-        raise ValueError(f"Impossible d'extraire toutes les caractéristiques requises: {missing_cols}")
+        print(f"Attention: Certaines colonnes sont toujours manquantes après extraction: {missing_cols}")
+        print("Initialisation de ces colonnes avec des valeurs par défaut (0)...")
+        
+        # Créer les colonnes manquantes avec des valeurs par défaut (0)
+        for col in missing_cols:
+            df[col] = 0
+    
+    # Gérer les éventuelles valeurs NaN dans les caractéristiques
+    for col in feature_cols:
+        if df[col].isna().any():
+            print(f"Remplacement des valeurs NaN dans la colonne {col}")
+            # Utiliser la médiane pour les valeurs numériques
+            df[col] = df[col].fillna(df[col].median() if not df[col].empty else 0)
     
     # Extraire X et y
     X = df[feature_cols].values

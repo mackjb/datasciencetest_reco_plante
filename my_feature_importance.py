@@ -155,10 +155,101 @@ def augment_minority(df_train, data_dir=DATA_DIR, path_col=PATH_COLUMN, target_c
     print("Augmentation des classes minoritaires...")
     
     # Définir les transformations pour l'augmentation
+    # Pour ajouter du bruit gaussien
+    class AddGaussianNoise(object):
+        def __init__(self, mean=0., std=1.):
+            self.mean = mean
+            self.std = std
+        
+        def __call__(self, tensor):
+            return tensor + torch.randn(tensor.size()) * self.std + self.mean
+        
+        def __repr__(self):
+            return self.__class__.__name__ + f'(mean={self.mean}, std={self.std})'
+    
+    # Pour la translation (décalage)
+    class RandomTranslation(object):
+        def __init__(self, max_shift=10):
+            self.max_shift = max_shift
+            
+        def __call__(self, img):
+            width, height = img.size
+            shift_x = np.random.randint(-self.max_shift, self.max_shift + 1)
+            shift_y = np.random.randint(-self.max_shift, self.max_shift + 1)
+            
+            return transforms.functional.affine(
+                img,
+                angle=0,
+                translate=[shift_x, shift_y],
+                scale=1.0,
+                shear=0,
+                resample=Image.BILINEAR
+            )
+            
+        def __repr__(self):
+            return self.__class__.__name__ + f'(max_shift={self.max_shift})'
+    
+    # Pour le zoom in/out
+    class RandomZoom(object):
+        def __init__(self, min_factor=0.8, max_factor=1.2):
+            self.min_factor = min_factor
+            self.max_factor = max_factor
+            
+        def __call__(self, img):
+            scale_factor = np.random.uniform(self.min_factor, self.max_factor)
+            
+            return transforms.functional.affine(
+                img,
+                angle=0,
+                translate=[0, 0],
+                scale=scale_factor,
+                shear=0,
+                resample=Image.BILINEAR
+            )
+            
+        def __repr__(self):
+            return self.__class__.__name__ + f'(min_factor={self.min_factor}, max_factor={self.max_factor})'
+    
+    # Composition de toutes les transformations
     augment = transforms.Compose([
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(20),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+        # Flip (retournement horizontal et vertical)
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.3),
+        
+        # Rotation aléatoire (-30°, +30°)
+        transforms.RandomRotation(30),
+        
+        # Crop aléatoire (recadrage)
+        transforms.RandomResizedCrop(size=224, scale=(0.8, 1.0), ratio=(0.9, 1.1)),
+        
+        # Translation (décalage)
+        RandomTranslation(max_shift=20),
+        
+        # Zoom in/out
+        RandomZoom(min_factor=0.85, max_factor=1.15),
+        
+        # Modification de luminosité, contraste, saturation
+        transforms.ColorJitter(
+            brightness=0.3,
+            contrast=0.3, 
+            saturation=0.3, 
+            hue=0.1
+        ),
+        
+        # Conversion en tenseur pour l'ajout de bruit
+        transforms.ToTensor(),
+        
+        # Ajout de bruit gaussien
+        AddGaussianNoise(mean=0, std=0.05),
+        
+        # Gaussian blur et sharpness
+        transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+        
+        # Ajustement de la netteté (sharpness)
+        transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+        
+        # Reconversion en PIL Image
+        transforms.ToPILImage()
     ])
     
     # Compter les occurrences par classe
@@ -192,6 +283,10 @@ def augment_minority(df_train, data_dir=DATA_DIR, path_col=PATH_COLUMN, target_c
                     img_path = row[path_col]
                     try:
                         img = Image.open(img_path)
+                        # Vérifier le mode de l'image
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        
                         img_aug = augment(img)
                         
                         # Extraire les caractéristiques de l'image augmentée

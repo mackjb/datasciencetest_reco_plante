@@ -4,8 +4,10 @@ Module global pour obtenir la racine du projet via pathlib et un marker (setup.p
 from pathlib import Path
 import cv2
 import numpy as np
-from skimage.feature import hog
-from PIL import Image
+from skimage.feature import hog, graycomatrix, graycoprops
+from scipy.stats import entropy
+from PIL import Image, ImageStat
+import math
 
 
 def _to_grayscale_array(image_input):
@@ -167,3 +169,220 @@ def is_black_image(image_path, threshold=10) -> bool:
             return stat.mean[0] < threshold
     except Exception:
         return False
+
+
+def _to_rgb_array(image_input):
+    """Convertit chemin/ndarray/PIL.Image en ndarray RGB"""
+    if isinstance(image_input, (str, Path)):
+        img = cv2.imread(str(image_input))
+        if img is None: 
+            raise FileNotFoundError(f"Impossible de charger: {image_input}")
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    elif isinstance(image_input, np.ndarray):
+        img = cv2.cvtColor(image_input, cv2.COLOR_BGR2RGB) if image_input.ndim==3 else np.stack([image_input]*3, axis=2)
+    elif isinstance(image_input, Image.Image):
+        img = np.array(image_input.convert("RGB"))
+    else:
+        raise TypeError(f"Type non supporté: {type(image_input)}")
+    return img
+
+
+def compute_color_statistics(image_input) -> dict:
+    """
+    Calcule les statistiques de couleur en RGB et HSV.
+    
+    Args:
+        image_input: Image PIL ou chemin vers une image
+    
+    Returns:
+        dict: Statistiques de couleur (moyennes et écarts-types)
+    """
+    # Conversion en RGB
+    rgb_img = _to_rgb_array(image_input)
+    
+    # Calcul des statistiques RGB
+    r_channel = rgb_img[:, :, 0]
+    g_channel = rgb_img[:, :, 1]
+    b_channel = rgb_img[:, :, 2]
+    
+    mean_r = float(np.mean(r_channel))
+    mean_g = float(np.mean(g_channel))
+    mean_b = float(np.mean(b_channel))
+    
+    std_r = float(np.std(r_channel))
+    std_g = float(np.std(g_channel))
+    std_b = float(np.std(b_channel))
+    
+    # Conversion en HSV pour les statistiques HSV
+    hsv_img = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2HSV)
+    h_channel = hsv_img[:, :, 0]
+    s_channel = hsv_img[:, :, 1]
+    v_channel = hsv_img[:, :, 2]
+    
+    mean_h = float(np.mean(h_channel))
+    mean_s = float(np.mean(s_channel))
+    mean_v = float(np.mean(v_channel))
+    
+    return {
+        'mean_R': mean_r,
+        'mean_G': mean_g,
+        'mean_B': mean_b,
+        'std_R': std_r,
+        'std_G': std_g,
+        'std_B': std_b,
+        'mean_H': mean_h,
+        'mean_S': mean_s,
+        'mean_V': mean_v
+    }
+
+
+def compute_texture_features(image_input) -> dict:
+    """
+    Calcule les caractéristiques de texture basées sur la matrice GLCM (Gray-Level Co-occurrence Matrix).
+    
+    Args:
+        image_input: Image PIL ou chemin vers une image
+    
+    Returns:
+        dict: Caractéristiques de texture (contraste, énergie, homogénéité, etc.)
+    """
+    # Conversion en niveau de gris
+    gray_img = _to_grayscale_array(image_input)
+    
+    # Normaliser l'image pour réduire le nombre de niveaux de gris (accélère le calcul)
+    gray_img = (gray_img / 16).astype(np.uint8)  # Réduire à 16 niveaux de gris
+    
+    # Calculer GLCM pour différentes orientations (0°, 45°, 90°, 135°)
+    distances = [1]  # Distance entre pixels
+    angles = [0, np.pi/4, np.pi/2, 3*np.pi/4]  # 0°, 45°, 90°, 135°
+    
+    try:
+        glcm = graycomatrix(
+            gray_img, 
+            distances=distances, 
+            angles=angles, 
+            symmetric=True, 
+            normed=True
+        )
+        
+        # Extraire les propriétés GLCM
+        contrast = float(np.mean(graycoprops(glcm, 'contrast')[0]))
+        energy = float(np.mean(graycoprops(glcm, 'energy')[0]))
+        homogeneity = float(np.mean(graycoprops(glcm, 'homogeneity')[0]))
+        dissimilarity = float(np.mean(graycoprops(glcm, 'dissimilarity')[0]))
+        correlation = float(np.mean(graycoprops(glcm, 'correlation')[0]))
+        
+        return {
+            'contrast': contrast,
+            'energy': energy,
+            'homogeneity': homogeneity,
+            'dissimilarite': dissimilarity,
+            'correlation': correlation
+        }
+    except Exception as e:
+        print(f"Erreur lors du calcul des caractéristiques de texture: {e}")
+        # Retourner des valeurs par défaut en cas d'erreur
+        return {
+            'contrast': 0.0,
+            'energy': 0.0,
+            'homogeneity': 0.0,
+            'dissimilarite': 0.0,
+            'correlation': 0.0
+        }
+
+
+def compute_sharpness_and_contours(image_input) -> dict:
+    """
+    Calcule la netteté de l'image et les caractéristiques des contours.
+    
+    Args:
+        image_input: Image PIL ou chemin vers une image
+    
+    Returns:
+        dict: Caractéristiques de netteté et contours
+    """
+    # Conversion en niveau de gris
+    gray_img = _to_grayscale_array(image_input)
+    
+    # Calcul de la netteté (variance du Laplacien)
+    laplacian = cv2.Laplacian(gray_img, cv2.CV_64F)
+    sharpness = float(np.var(laplacian))
+    
+    # Détection des contours avec Canny
+    edges = cv2.Canny(gray_img, 50, 150)  # Seuils bas et haut pour Canny
+    contour_pixels = np.sum(edges > 0)
+    contour_density = float(contour_pixels / (gray_img.shape[0] * gray_img.shape[1]))
+    
+    return {
+        'nettete': sharpness,
+        'contour_density': contour_density
+    }
+
+
+def compute_additional_fft_features(image_input) -> dict:
+    """
+    Calcule des caractéristiques FFT supplémentaires (entropie, etc.)
+    
+    Args:
+        image_input: Image PIL ou chemin vers une image
+    
+    Returns:
+        dict: Caractéristiques FFT supplémentaires
+    """
+    # Conversion en niveau de gris
+    gray_img = _to_grayscale_array(image_input)
+    
+    # Transformée de Fourier
+    f = np.fft.fft2(gray_img)
+    fshift = np.fft.fftshift(f)
+    magnitude_spectrum = np.abs(fshift)
+    
+    # Normalisation du spectre pour calculer l'entropie
+    magnitude_spectrum_norm = magnitude_spectrum / np.sum(magnitude_spectrum)
+    magnitude_spectrum_flat = magnitude_spectrum_norm.flatten()
+    magnitude_spectrum_flat = magnitude_spectrum_flat[magnitude_spectrum_flat > 0]  # Éviter log(0)
+    
+    # Calcul de l'entropie
+    try:
+        fft_entropy_val = float(entropy(magnitude_spectrum_flat))
+    except Exception:
+        fft_entropy_val = 0.0
+    
+    return {
+        'fft_entropy': fft_entropy_val
+    }
+
+
+def compute_additional_hog_features(image_input) -> dict:
+    """
+    Calcule des caractéristiques HOG supplémentaires (entropie)
+    
+    Args:
+        image_input: Image PIL ou chemin vers une image
+    
+    Returns:
+        dict: Caractéristiques HOG supplémentaires
+    """
+    # Conversion en niveau de gris
+    gray_img = _to_grayscale_array(image_input)
+    
+    # Calculer les caractéristiques HOG
+    try:
+        hog_vec = hog(gray_img, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), 
+                      block_norm='L2-Hys', feature_vector=True)
+        
+        # Normalisation pour calculer l'entropie
+        hog_norm = hog_vec / np.sum(hog_vec) if np.sum(hog_vec) > 0 else hog_vec
+        hog_norm = hog_norm[hog_norm > 0]  # Éviter log(0)
+        
+        # Calcul de l'entropie
+        hog_entropy_val = float(entropy(hog_norm)) if len(hog_norm) > 0 else 0.0
+        
+        return {
+            'hog_entropy': hog_entropy_val
+        }
+    except Exception as e:
+        print(f"Erreur lors du calcul des caractéristiques HOG supplémentaires: {e}")
+        return {
+            'hog_entropy': 0.0
+        }

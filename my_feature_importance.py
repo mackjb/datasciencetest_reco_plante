@@ -9,10 +9,11 @@ Utilise différentes stratégies de sélection de caractéristiques pour compare
 import os
 import numpy as np
 import pandas as pd
+import cv2
 from pathlib import Path
 
 from sklearn.model_selection import StratifiedShuffleSplit, cross_validate, train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectKBest, f_classif, RFE, SelectFromModel
 from sklearn.ensemble import RandomForestClassifier
@@ -21,6 +22,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 
 import torch
 from torchvision import transforms
+from torchvision.transforms import InterpolationMode
 from PIL import Image
 
 from joblib import Memory, Parallel, delayed
@@ -30,6 +32,10 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')  # Mode non-interactif pour la sauvegarde des figures
+import seaborn as sns
+
+# Pour les métriques d'évaluation
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 # Pour l'explication du modèle
 import shap
@@ -40,21 +46,75 @@ from src.helpers.helpers import (
     compute_hu_features, 
     compute_fourier_energy, 
     compute_hog_features, 
-    compute_pixel_ratio_and_segments
+    compute_pixel_ratio_and_segments,
+    compute_color_statistics,
+    compute_texture_features,
+    compute_sharpness_and_contours,
+    compute_additional_fft_features,
+    compute_additional_hog_features,
+    is_image_valid,
+    is_black_image
 )
-from src.data_loader.data_loader import FEATURE_COLS, HANDCRAFTED_FEATURE_COLS
 
 # -----------------------------
 # 1. Configuration & Constants
 # -----------------------------
 # Chemins
 DATA_DIR = PROJECT_ROOT / "dataset" / "plantvillage" / "data"
+
+# Listes des colonnes de caractéristiques pour PlantVillage segmented
+HANDCRAFTED_FEATURE_COLS = [
+    # Moments de Hu
+    'phi1_distingue_large_vs_etroit',
+    'phi2_distinction_elongation_forme',
+    'phi3_asymetrie_maladie',
+    'phi4_symetrie_diagonale_forme',
+    'phi5_concavite_extremites',
+    'phi6_decalage_torsion_maladie',
+    'phi7_asymetrie_complexe',
+    # Caractéristiques FFT
+    'energie_basse_forme_feuille',
+    'energie_moyenne_texture_veines',
+    'energie_haute_details_maladie',
+    'fft_entropy',  # Nouvelle caractéristique
+    # Caractéristiques HOG
+    'hog_moyenne_contours_forme',
+    'hog_ecarttype_texture',
+    'hog_entropy',  # Nouvelle caractéristique
+    # Caractéristiques de pixel
+    'pixel_ratio',
+    'leaf_segments',
+    # Statistiques de couleur RGB
+    'mean_R', 'mean_G', 'mean_B',
+    'std_R', 'std_G', 'std_B',
+    # Statistiques de couleur HSV
+    'mean_H', 'mean_S', 'mean_V',
+    # Caractéristiques de texture
+    'contrast', 'energy', 'homogeneity', 'dissimilarite', 'correlation',
+    # Netteté et contours
+    'nettete', 'contour_density',
+]
+
+SHAPE_DESCRIPTOR_FEATURE_COLS = [
+    'area',
+    'perimeter',
+    'circularity',
+    'solidity',
+    'extent',
+    'eccentricity',
+    'major_axis_length',
+    'minor_axis_length',
+    'compactness',
+    'fractal_dimension',
+]
+
+FEATURE_COLS = HANDCRAFTED_FEATURE_COLS + SHAPE_DESCRIPTOR_FEATURE_COLS
 CSV_FILE = PROJECT_ROOT / "dataset" / "plantvillage" / "csv" / "clean_data_plantvillage_segmented_all.csv"
 TARGET_COLUMN = "species"  # Cible: espèce de la plante
 PATH_COLUMN = "filepath"   # Chemin de l'image
 
-# Colonnes de caractéristiques (reprises du module existant)
-FEATURE_COLUMNS = HANDCRAFTED_FEATURE_COLS  # Caractéristiques extraites des images
+# Colonnes de caractéristiques
+FEATURE_COLUMNS = FEATURE_COLS  # Toutes les caractéristiques extraites des images
 
 # Autres paramètres
 RANDOM_STATE = 42
@@ -104,14 +164,29 @@ def augment_class(class_df, num_to_generate, path_col=PATH_COLUMN, data_dir=DATA
             shift_x = np.random.randint(-self.max_shift, self.max_shift + 1)
             shift_y = np.random.randint(-self.max_shift, self.max_shift + 1)
             
-            return transforms.functional.affine(
-                img,
-                angle=0,
-                translate=[shift_x, shift_y],
-                scale=1.0,
-                shear=0,
-                resample=Image.BILINEAR
-            )
+            try:
+                # Essayer avec interpolation (nouvelle API)
+                return transforms.functional.affine(
+                    img,
+                    angle=0,
+                    translate=[shift_x, shift_y],
+                    scale=1.0,
+                    shear=0,
+                    interpolation=transforms.InterpolationMode.BILINEAR
+                )
+            except (TypeError, AttributeError):
+                try:
+                    # Essayer sans spécifier le mode d'interpolation
+                    return transforms.functional.affine(
+                        img,
+                        angle=0,
+                        translate=[shift_x, shift_y],
+                        scale=1.0,
+                        shear=0
+                    )
+                except Exception as e:
+                    print(f"Fallback pour translation: {e}")
+                    return img  # Retourner l'image originale si tout échoue
             
         def __repr__(self):
             return self.__class__.__name__ + f'(max_shift={self.max_shift})'
@@ -130,8 +205,7 @@ def augment_class(class_df, num_to_generate, path_col=PATH_COLUMN, data_dir=DATA
                 angle=0,
                 translate=[0, 0],
                 scale=scale_factor,
-                shear=0,
-                resample=Image.BILINEAR
+                shear=0
             )
             
         def __repr__(self):
@@ -355,20 +429,82 @@ def load_and_split_data(csv_path=CSV_FILE, target_col=TARGET_COLUMN, test_size=0
 # -----------------------------
 # 3. Data Augmentation for Minority
 # -----------------------------
+
+def normalize_image(image, method='minmax'):
+    """
+    Normalise les pixels d'une image avec différentes méthodes.
+    
+    Args:
+        image: Image à normaliser (np.ndarray)
+        method: Méthode de normalisation ('minmax', 'zscore', 'robust')
+        
+    Returns:
+        Image normalisée
+    """
+    # Vérifier que l'image n'est pas vide
+    if image is None or image.size == 0:
+        return image
+    
+    if method == 'minmax':
+        # Normalisation min-max dans [0,1]
+        img_min = np.min(image)
+        img_max = np.max(image)
+        if img_max > img_min:
+            return (image - img_min) / (img_max - img_min)
+        return image
+    elif method == 'zscore':
+        # Normalisation Z-score
+        img_mean = np.mean(image)
+        img_std = np.std(image)
+        if img_std > 0:
+            return (image - img_mean) / img_std
+        return image
+    elif method == 'robust':
+        # Normalisation robuste (utilisant les percentiles pour éviter l'impact des outliers)
+        p_low, p_high = np.percentile(image, [2, 98])
+        if p_high > p_low:
+            return np.clip((image - p_low) / (p_high - p_low), 0, 1)
+        return image
+    else:
+        return image  # Retourner l'image originale si méthode non reconnue
 @memory.cache
-def extract_features_from_image(img_path):
+def extract_features_from_image(img_input, normalize_pixels=True, norm_method='robust'):
     """
     Extrait toutes les caractéristiques d'une image en utilisant les fonctions existantes.
     
     Args:
-        img_path: Chemin vers l'image
+        img_input: Chemin vers l'image ou objet PIL.Image
+        normalize_pixels: Si True, normalise les pixels de l'image
+        norm_method: Méthode de normalisation ('minmax', 'zscore', 'robust')
         
     Returns:
         dict: Dictionnaire des caractéristiques
     """
     try:
-        # Ouvrir l'image
-        img = Image.open(img_path)
+        # Détecter si l'entrée est un chemin ou une image PIL
+        if isinstance(img_input, (str, Path)):
+            # C'est un chemin, charger avec OpenCV
+            img_cv = cv2.imread(str(img_input))
+            if img_cv is None:
+                print(f"Impossible de charger l'image: {img_input}")
+                return None
+        else:
+            # C'est un objet PIL.Image, convertir en format OpenCV
+            img_pil = img_input
+            if img_pil.mode != 'RGB':
+                img_pil = img_pil.convert('RGB')
+            img_cv = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+        
+        # Vérifications de base
+        if not is_image_valid(img_cv) or is_black_image(img_cv):
+            return None
+            
+        # Normaliser l'image si demandé
+        if normalize_pixels:
+            img_cv = normalize_image(img_cv, method=norm_method)
+        
+        # Convertir en PIL pour compatibilité avec les fonctions existantes
+        img = Image.fromarray(cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB))
         
         # Extraire les caractéristiques en utilisant les fonctions existantes
         features = {}
@@ -376,6 +512,13 @@ def extract_features_from_image(img_path):
         features.update(compute_fourier_energy(img))
         features.update(compute_hog_features(img))
         features.update(compute_pixel_ratio_and_segments(img))
+        
+        # Extraire les nouvelles caractéristiques
+        features.update(compute_color_statistics(img))
+        features.update(compute_texture_features(img))
+        features.update(compute_sharpness_and_contours(img))
+        features.update(compute_additional_fft_features(img))
+        features.update(compute_additional_hog_features(img))
         
         return features
     except Exception as e:
@@ -421,14 +564,29 @@ def augment_minority(df_train, data_dir=DATA_DIR, path_col=PATH_COLUMN, target_c
             shift_x = np.random.randint(-self.max_shift, self.max_shift + 1)
             shift_y = np.random.randint(-self.max_shift, self.max_shift + 1)
             
-            return transforms.functional.affine(
-                img,
-                angle=0,
-                translate=[shift_x, shift_y],
-                scale=1.0,
-                shear=0,
-                resample=Image.BILINEAR
-            )
+            try:
+                # Essayer avec interpolation (nouvelle API)
+                return transforms.functional.affine(
+                    img,
+                    angle=0,
+                    translate=[shift_x, shift_y],
+                    scale=1.0,
+                    shear=0,
+                    interpolation=transforms.InterpolationMode.BILINEAR
+                )
+            except (TypeError, AttributeError):
+                try:
+                    # Essayer sans spécifier le mode d'interpolation
+                    return transforms.functional.affine(
+                        img,
+                        angle=0,
+                        translate=[shift_x, shift_y],
+                        scale=1.0,
+                        shear=0
+                    )
+                except Exception as e:
+                    print(f"Fallback pour translation: {e}")
+                    return img  # Retourner l'image originale si tout échoue
             
         def __repr__(self):
             return self.__class__.__name__ + f'(max_shift={self.max_shift})'
@@ -447,8 +605,7 @@ def augment_minority(df_train, data_dir=DATA_DIR, path_col=PATH_COLUMN, target_c
                 angle=0,
                 translate=[0, 0],
                 scale=scale_factor,
-                shear=0,
-                resample=Image.BILINEAR
+                shear=0
             )
             
         def __repr__(self):
@@ -663,7 +820,7 @@ def create_selectors(random_state=RANDOM_STATE):
 # -----------------------------
 # 7. Evaluation Function
 # -----------------------------
-def evaluate_selectors(X, y, selectors, classifier, scaler=StandardScaler(), cv=5, random_state=RANDOM_STATE):
+def evaluate_selectors(X, y, selectors, classifier, scaler=RobustScaler(), cv=5, random_state=RANDOM_STATE):
     """
     Compare plusieurs stratégies de sélection via CV.
     
@@ -900,8 +1057,8 @@ def explain_with_shap(X, y, feature_cols, random_state=RANDOM_STATE):
     )
     print(f"Utilisation d'un sous-échantillon de {len(X_sample)} exemples pour SHAP")
     
-    # Standardiser les données
-    scaler = StandardScaler()
+    # Normaliser les données avec RobustScaler
+    scaler = RobustScaler()
     X_sample_scaled = scaler.fit_transform(X_sample)
     
     # Entraîner un RandomForest sur les données
@@ -1053,6 +1210,13 @@ def main():
     print("ANALYSE DE L'IMPORTANCE DES CARACTÉRISTIQUES")
     print("="*50)
     
+    # Créer le répertoire results s'il n'existe pas
+    results_dir = PROJECT_ROOT / "results"
+    results_dir.mkdir(exist_ok=True)
+    
+    figures_dir = PROJECT_ROOT / "figures"
+    figures_dir.mkdir(exist_ok=True)
+    
     # 1. Charger les données avec rééquilibrage avant le split train/test
     df_train, df_test = load_and_split_data(apply_balancing=True)
     
@@ -1069,7 +1233,7 @@ def main():
     
     # 4. Créer les objets nécessaires
     base_clf = create_base_classifier()
-    scaler = StandardScaler()
+    scaler = RobustScaler()
     selectors = create_selectors()
     
     # 5. Évaluer les sélecteurs
@@ -1083,16 +1247,173 @@ def main():
     # 7. Générer les visualisations
     plot_feature_importance(feature_importances, selected_features_idx, FEATURE_COLUMNS)
     
-    # 8. Explication SHAP pour une compréhension plus fine
+    # 8. Sélectionner les meilleures caractéristiques
+    print("\n" + "="*50)
+    print("SÉLECTION DES MEILLEURES CARACTÉRISTIQUES")
+    print("="*50)
+    
+    selected_features, feature_ranking = select_best_features(
+        results, feature_importances, selected_features_idx, FEATURE_COLUMNS, threshold=0.5
+    )
+    
+    # Afficher les caractéristiques sélectionnées
+    print(f"Nombre de caractéristiques sélectionnées: {len(selected_features)}")
+    print("\nTop 15 des caractéristiques les plus importantes:")
+    print(selected_features[['feature', 'selection_frequency', 'final_score']].head(15).to_string(index=False))
+    
+    # 9. Visualiser les caractéristiques sélectionnées
+    plot_selected_features(feature_ranking, output_dir=figures_dir)
+    
+    # 10. Entraîner un modèle final avec les caractéristiques sélectionnées
+    print("\n" + "="*50)
+    print("MODÈLE FINAL AVEC CARACTÉRISTIQUES SÉLECTIONNÉES")
+    print("="*50)
+    
+    final_model, final_scaler = train_final_model(
+        X_all, y_all, selected_features['feature'].tolist(), FEATURE_COLUMNS
+    )
+    
+    # Sauvegarder les résultats
+    feature_ranking.to_csv(results_dir / "feature_ranking.csv", index=False)
+    
+    # 11. Explication SHAP pour une compréhension plus fine
     explain_with_shap(X_all, y_all, FEATURE_COLUMNS)
     
-    return results, feature_importances, selected_features_idx
+    return results, feature_importances, selected_features_idx, selected_features
 
 # -----------------------------
-# 10. Entry Point
+# 10. Feature Selection
+# -----------------------------
+def select_best_features(results, feature_importances, selected_features_idx, feature_names, threshold=0.5):
+    """
+    Sélectionne les meilleures caractéristiques en combinant les scores des différentes méthodes
+    
+    Args:
+        results: Résultats d'évaluation des sélecteurs
+        feature_importances: Importances des caractéristiques par méthode
+        selected_features_idx: Indices des caractéristiques sélectionnées par méthode
+        feature_names: Noms des caractéristiques
+        threshold: Seuil de sélection (fréquence minimale)
+        
+    Returns:
+        Liste des meilleures caractéristiques avec leurs scores combinés
+    """
+    # Combiner les scores de sélection
+    n_features = len(feature_names)
+    combined_scores = np.zeros(n_features)
+    
+    # Calculer un score moyen basé sur toutes les méthodes
+    for method, scores in feature_importances.items():
+        combined_scores += scores / len(feature_importances)
+    
+    # Calculer la fréquence de sélection
+    selection_frequency = np.zeros(n_features)
+    for method, selected in selected_features_idx.items():
+        selection_frequency += selected
+    selection_frequency /= len(selected_features_idx)
+    
+    # Combiner score d'importance et fréquence de sélection
+    final_scores = (combined_scores + selection_frequency) / 2
+    
+    # Créer un DataFrame avec les scores
+    feature_ranking = pd.DataFrame({
+        'feature': feature_names,
+        'importance_score': combined_scores,
+        'selection_frequency': selection_frequency,
+        'final_score': final_scores
+    })
+    
+    # Trier par score final
+    feature_ranking = feature_ranking.sort_values('final_score', ascending=False)
+    
+    # Sélectionner les caractéristiques au-dessus du seuil
+    selected_features = feature_ranking[feature_ranking['selection_frequency'] >= threshold]
+    
+    return selected_features, feature_ranking
+
+def plot_selected_features(feature_ranking, output_dir=None):
+    """
+    Visualise les caractéristiques sélectionnées avec leurs scores
+    
+    Args:
+        feature_ranking: DataFrame avec les scores des caractéristiques
+        output_dir: Dossier de sortie pour sauvegarder le graphique
+    """
+    plt.figure(figsize=(12, 8))
+    
+    # Prendre les 20 meilleures caractéristiques
+    top_features = feature_ranking.head(20)
+    
+    # Créer un barplot
+    sns.barplot(x='final_score', y='feature', data=top_features)
+    
+    plt.title('Top 20 des caractéristiques les plus importantes', fontsize=14)
+    plt.xlabel('Score combiné (importance + fréquence de sélection)', fontsize=12)
+    plt.ylabel('Caractéristique', fontsize=12)
+    plt.tight_layout()
+    
+    if output_dir:
+        plt.savefig(output_dir / "selected_features.png", dpi=300, bbox_inches='tight')
+    
+    plt.close()
+
+def train_final_model(X, y, selected_features, feature_names, random_state=RANDOM_STATE):
+    """
+    Entraîne un modèle final avec les caractéristiques sélectionnées
+    
+    Args:
+        X: Matrice de caractéristiques
+        y: Vecteur cible
+        selected_features: Liste des caractéristiques sélectionnées
+        feature_names: Noms de toutes les caractéristiques
+        random_state: État aléatoire
+        
+    Returns:
+        Modèle final entraîné et scaler utilisé
+    """
+    # Obtenir les indices des caractéristiques sélectionnées
+    selected_indices = [feature_names.index(feat) for feat in selected_features]
+    
+    # Sous-ensemble des données avec caractéristiques sélectionnées
+    X_selected = X[:, selected_indices]
+    
+    # Split train/test
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_selected, y, test_size=0.2, random_state=random_state, stratify=y
+    )
+    
+    # Normalisation
+    scaler = RobustScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    # Entraîner le modèle final
+    final_model = RandomForestClassifier(
+        n_estimators=200, 
+        max_depth=10,
+        class_weight='balanced',
+        random_state=random_state
+    )
+    
+    final_model.fit(X_train_scaled, y_train)
+    
+    # Évaluer sur le test set
+    y_pred = final_model.predict(X_test_scaled)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred)
+    
+    print(f"\nModèle final avec {len(selected_features)} caractéristiques:")
+    print(f"Accuracy: {accuracy:.4f}")
+    print("\nClassification Report:")
+    print(report)
+    
+    return final_model, scaler
+
+# -----------------------------
+# 11. SHAP Explainer
 # -----------------------------
 if __name__ == '__main__':
     start_time = time.time()
-    results, feature_importances, selected_features_idx = main()
+    results, feature_importances, selected_features_idx, selected_features = main()
     end_time = time.time()
     print(f"\nTemps total d'exécution: {end_time - start_time:.2f} secondes")

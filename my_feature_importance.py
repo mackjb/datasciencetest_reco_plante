@@ -65,12 +65,257 @@ CACHE_DIR.mkdir(exist_ok=True)
 memory = Memory(CACHE_DIR, verbose=0)
 
 # -----------------------------
-# 2. Load DataFrame & Split
+# 2. Chargement, Rééchantillonnage & Split
 # -----------------------------
-@memory.cache
-def load_and_split_data(csv_path=CSV_FILE, target_col=TARGET_COLUMN, test_size=0.2, random_state=RANDOM_STATE):
+def augment_class(class_df, num_to_generate, path_col=PATH_COLUMN, data_dir=DATA_DIR):
     """
-    Charge le DataFrame et effectue une division stratifiée.
+    Génère de nouveaux exemples pour une classe spécifique en utilisant les transformations.
+    
+    Args:
+        class_df: DataFrame contenant les exemples d'une classe
+        num_to_generate: Nombre d'exemples à générer
+        path_col: Colonne contenant le chemin vers l'image
+        data_dir: Répertoire racine des données
+        
+    Returns:
+        DataFrame contenant les nouveaux exemples générés
+    """
+    print(f"  - Génération de {num_to_generate} nouveaux exemples...")
+    
+    # Pour ajouter du bruit gaussien
+    class AddGaussianNoise(object):
+        def __init__(self, mean=0., std=1.):
+            self.mean = mean
+            self.std = std
+        
+        def __call__(self, tensor):
+            return tensor + torch.randn(tensor.size()) * self.std + self.mean
+        
+        def __repr__(self):
+            return self.__class__.__name__ + f'(mean={self.mean}, std={self.std})'
+    
+    # Pour la translation (décalage)
+    class RandomTranslation(object):
+        def __init__(self, max_shift=10):
+            self.max_shift = max_shift
+            
+        def __call__(self, img):
+            width, height = img.size
+            shift_x = np.random.randint(-self.max_shift, self.max_shift + 1)
+            shift_y = np.random.randint(-self.max_shift, self.max_shift + 1)
+            
+            return transforms.functional.affine(
+                img,
+                angle=0,
+                translate=[shift_x, shift_y],
+                scale=1.0,
+                shear=0,
+                resample=Image.BILINEAR
+            )
+            
+        def __repr__(self):
+            return self.__class__.__name__ + f'(max_shift={self.max_shift})'
+    
+    # Pour le zoom in/out
+    class RandomZoom(object):
+        def __init__(self, min_factor=0.8, max_factor=1.2):
+            self.min_factor = min_factor
+            self.max_factor = max_factor
+            
+        def __call__(self, img):
+            scale_factor = np.random.uniform(self.min_factor, self.max_factor)
+            
+            return transforms.functional.affine(
+                img,
+                angle=0,
+                translate=[0, 0],
+                scale=scale_factor,
+                shear=0,
+                resample=Image.BILINEAR
+            )
+            
+        def __repr__(self):
+            return self.__class__.__name__ + f'(min_factor={self.min_factor}, max_factor={self.max_factor})'
+    
+    # Composition de toutes les transformations
+    augment = transforms.Compose([
+        # Flip (retournement horizontal et vertical)
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.3),
+        
+        # Rotation aléatoire (-30°, +30°)
+        transforms.RandomRotation(30),
+        
+        # Crop aléatoire (recadrage)
+        transforms.RandomResizedCrop(size=224, scale=(0.8, 1.0), ratio=(0.9, 1.1)),
+        
+        # Translation (décalage)
+        RandomTranslation(max_shift=20),
+        
+        # Zoom in/out
+        RandomZoom(min_factor=0.85, max_factor=1.15),
+        
+        # Modification de luminosité, contraste, saturation
+        transforms.ColorJitter(
+            brightness=0.3,
+            contrast=0.3, 
+            saturation=0.3, 
+            hue=0.1
+        ),
+        
+        # Conversion en tenseur pour l'ajout de bruit
+        transforms.ToTensor(),
+        
+        # Ajout de bruit gaussien
+        AddGaussianNoise(mean=0, std=0.05),
+        
+        # Gaussian blur et sharpness
+        transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+        
+        # Ajustement de la netteté (sharpness)
+        transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+        
+        # Reconversion en PIL Image
+        transforms.ToPILImage()
+    ])
+    
+    # Générer de nouveaux exemples
+    augmented_rows = []
+    num_generated = 0
+    
+    # Boucle jusqu'à atteindre le nombre d'exemples demandé
+    while num_generated < num_to_generate:
+        # Parcourir le DataFrame de la classe
+        for _, row in class_df.iterrows():
+            if num_generated >= num_to_generate:
+                break
+                
+            img_path = row[path_col]
+            try:
+                img = Image.open(img_path)
+                
+                # Vérifier le mode de l'image
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                img_aug = augment(img)
+                
+                # Extraire les caractéristiques de l'image augmentée
+                feats = extract_features_from_image(img_aug)
+                if feats is None:
+                    continue
+                    
+                # Créer une nouvelle ligne
+                new_row = row.copy()
+                for k, v in feats.items():
+                    new_row[k] = v
+                    
+                # Ajouter au DataFrame
+                augmented_rows.append(pd.DataFrame([new_row]))
+                num_generated += 1
+                
+            except Exception as e:
+                print(f"Erreur lors de l'augmentation de {img_path}: {e}")
+    
+    # Concaténer tous les exemples générés
+    if not augmented_rows:
+        return pd.DataFrame(columns=class_df.columns)  # DataFrame vide avec mêmes colonnes
+        
+    return pd.concat(augmented_rows, ignore_index=True)
+
+@memory.cache
+def balance_dataset(df, target_col=TARGET_COLUMN, target_counts=None, path_col=PATH_COLUMN, data_dir=DATA_DIR, random_state=RANDOM_STATE):
+    """
+    Rééquilibre le dataset complet avant le split train/test.
+    
+    Args:
+        df: DataFrame d'origine
+        target_col: Colonne cible contenant les classes
+        target_counts: Dictionnaire {classe: nombre cible d'exemples}
+                      Si None, toutes les classes auront le même nombre défini par une stratégie équilibrée
+        path_col: Colonne contenant le chemin vers l'image
+        data_dir: Répertoire racine des données
+        random_state: État aléatoire pour la reproductibilité
+    
+    Returns:
+        DataFrame rééquilibré
+    """
+    print("\nRééquilibrage des classes du dataset...")
+    
+    # 1. Analyser la distribution actuelle
+    current_counts = df[target_col].value_counts()
+    print("\nDistribution initiale des classes:")
+    for cls, count in current_counts.items():
+        print(f"  - {cls}: {count} exemples")
+    
+    # 2. Déterminer les cibles (si non spécifiées)
+    if target_counts is None:
+        # Stratégie: moyenne pondérée entre médiane et maximum
+        # Permet de sur-échantillonner les classes minoritaires sans trop sous-échantillonner les majoritaires
+        median_count = current_counts.median()
+        max_count = current_counts.max()
+        # Pondération: 70% médiane, 30% maximum pour un équilibrage modéré
+        target_size = int(0.7 * median_count + 0.3 * max_count)
+        target_counts = {cls: target_size for cls in current_counts.index}
+    
+    print("\nObjectifs de rééquilibrage:")
+    for cls, target in sorted(target_counts.items()):
+        current = current_counts.get(cls, 0)
+        diff = target - current
+        if diff > 0:
+            print(f"  - {cls}: {current} → {target} (+{diff}, oversampling)")
+        elif diff < 0:
+            print(f"  - {cls}: {current} → {target} ({diff}, undersampling)")
+        else:
+            print(f"  - {cls}: {current} (pas de changement)")
+    
+    # 3. Initialiser la liste pour les lignes du DataFrame rééquilibré
+    balanced_rows = []
+    
+    # 4. Traiter chaque classe
+    for cls in current_counts.index:
+        subset = df[df[target_col] == cls]
+        current = len(subset)
+        target = target_counts[cls]
+        
+        if current > target:  # Undersampling
+            # Réduction légère des classes sur-représentées
+            print(f"\nClasse {cls}: undersampling de {current} → {target} exemples")
+            subset = subset.sample(n=target, random_state=random_state)
+            balanced_rows.append(subset)
+            
+        elif current < target:  # Oversampling
+            # Garder tous les exemples originaux
+            print(f"\nClasse {cls}: oversampling de {current} → {target} exemples")
+            balanced_rows.append(subset)
+            
+            # Calculer combien d'exemples augmentés sont nécessaires
+            to_generate = target - current
+            
+            # Utiliser les transformations d'augmentation pour générer de nouveaux exemples
+            augmented = augment_class(subset, to_generate, path_col, data_dir)
+            balanced_rows.append(augmented)
+        
+        else:  # Pas de changement nécessaire
+            print(f"\nClasse {cls}: conservée à {current} exemples")
+            balanced_rows.append(subset)
+    
+    # 5. Combiner tous les sous-ensembles et mélanger
+    balanced_df = pd.concat(balanced_rows, ignore_index=True)
+    balanced_df = balanced_df.sample(frac=1, random_state=random_state).reset_index(drop=True)
+    
+    # Afficher la distribution finale
+    final_counts = balanced_df[target_col].value_counts()
+    print("\nDistribution après rééquilibrage:")
+    for cls, count in final_counts.items():
+        print(f"  - {cls}: {count} exemples")
+    
+    return balanced_df
+
+@memory.cache
+def load_and_split_data(csv_path=CSV_FILE, target_col=TARGET_COLUMN, test_size=0.2, random_state=RANDOM_STATE, apply_balancing=True):
+    """
+    Charge le DataFrame, effectue un rééquilibrage des classes, puis une division stratifiée.
     Mise en cache pour éviter de recharger les données à chaque exécution.
     
     Args:
@@ -78,6 +323,7 @@ def load_and_split_data(csv_path=CSV_FILE, target_col=TARGET_COLUMN, test_size=0
         target_col: Colonne cible pour la stratification
         test_size: Proportion du jeu de test
         random_state: État aléatoire pour la reproductibilité
+        apply_balancing: Si True, applique le rééquilibrage avant le split
         
     Returns:
         df_train, df_test: DataFrames d'entraînement et de test
@@ -90,14 +336,12 @@ def load_and_split_data(csv_path=CSV_FILE, target_col=TARGET_COLUMN, test_size=0
         raise ValueError(f"La colonne cible '{target_col}' n'existe pas dans le DataFrame. "
                         f"Colonnes disponibles: {', '.join(df.columns)}")
     
-    # Afficher la distribution des classes
-    class_counts = df[target_col].value_counts()
-    print(f"Distribution des classes ({len(class_counts)} classes):")
-    for cls, count in class_counts.items():
-        print(f"  - {cls}: {count} exemples")
+    # Rééquilibrer le dataset si demandé
+    if apply_balancing:
+        df = balance_dataset(df, target_col)
     
     # Division stratifiée
-    print(f"Division stratifiée en train ({1-test_size:.0%}) / test ({test_size:.0%})...")
+    print(f"\nDivision stratifiée en train ({1-test_size:.0%}) / test ({test_size:.0%})...")
     sss = StratifiedShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
     train_idx, test_idx = next(sss.split(df, df[target_col]))
     df_train = df.loc[train_idx].reset_index(drop=True)
@@ -809,13 +1053,11 @@ def main():
     print("ANALYSE DE L'IMPORTANCE DES CARACTÉRISTIQUES")
     print("="*50)
     
-    # 1. Charger les données et faire la division train/test
-    df_train, df_test = load_and_split_data()
+    # 1. Charger les données avec rééquilibrage avant le split train/test
+    df_train, df_test = load_and_split_data(apply_balancing=True)
     
-    # 2. Vérifier si on doit augmenter les données
-    # Note: L'augmentation est commentée car elle peut être coûteuse en temps
-    # df_train_aug = augment_minority(df_train)
-    df_train_aug = df_train  # Pour le moment, on utilise le train set original
+    # Note: Plus besoin d'utiliser augment_minority car le rééquilibrage est fait avant le split
+    df_train_aug = df_train
     
     # 3. Préparer X/y pour train et test
     X_train, y_train = prepare_features(df_train_aug)

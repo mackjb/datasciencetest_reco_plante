@@ -21,4 +21,6 @@ dependencies:
       - imbalanced-learn
       - seaborn
       - torchvision
+      - shap
+      - joblib
       - "-e ."

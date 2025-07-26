@@ -386,3 +386,115 @@ def compute_additional_hog_features(image_input) -> dict:
         return {
             'hog_entropy': 0.0
         }
+
+
+def compute_shape_features(image_input) -> dict:
+    """
+    Calcule les descripteurs de forme (area, perimeter, circularity, etc.)
+    
+    Args:
+        image_input: Image PIL ou chemin vers une image
+    
+    Returns:
+        dict: Descripteurs de forme de l'objet principal de l'image
+    """
+    try:
+        # Conversion en niveau de gris
+        gray_img = _to_grayscale_array(image_input)
+        
+        # Binarisation pour segmentation
+        _, binary = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+        
+        # Recherche des contours
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Si aucun contour n'est trouvé
+        if not contours:
+            return {
+                'area': 0.0, 'perimeter': 0.0, 'circularity': 0.0,
+                'solidity': 0.0, 'extent': 0.0, 'eccentricity': 0.0,
+                'major_axis_length': 0.0, 'minor_axis_length': 0.0,
+                'compactness': 0.0, 'fractal_dimension': 0.0
+            }
+        
+        # Trouver le plus grand contour (supposant que c'est l'objet principal)
+        c = max(contours, key=cv2.contourArea)
+        
+        # Calcul des descripteurs de forme
+        area = float(cv2.contourArea(c))
+        perimeter = float(cv2.arcLength(c, True))
+        
+        # Éviter division par zéro
+        if perimeter == 0:
+            perimeter = 1.0
+        
+        # Circularity = 4*pi*area/perimeter^2 (1 pour cercle parfait, < 1 pour formes irrégulières)
+        circularity = float((4 * np.pi * area) / (perimeter * perimeter)) if perimeter > 0 else 0.0
+        
+        # Enveloppe convexe et sa surface
+        hull = cv2.convexHull(c)
+        hull_area = float(cv2.contourArea(hull))
+        
+        # Solidity = area/hull_area (1 pour objet convexe, < 1 sinon)
+        solidity = float(area / hull_area) if hull_area > 0 else 0.0
+        
+        # Rectangle englobant et son aire
+        x, y, w, h = cv2.boundingRect(c)
+        rect_area = float(w * h)
+        
+        # Extent = area/rect_area (1 pour rectangle, < 1 sinon)
+        extent = float(area / rect_area) if rect_area > 0 else 0.0
+        
+        # Ellipse englobante
+        if len(c) >= 5:  # Besoin d'au moins 5 points pour ellipse
+            (x, y), (width, height), angle = cv2.fitEllipse(c)
+            major_axis = max(width, height) / 2
+            minor_axis = min(width, height) / 2
+            
+            # Eccentricité de l'ellipse
+            eccentricity = float(np.sqrt(1 - ((minor_axis * minor_axis) / (major_axis * major_axis)))) if major_axis > 0 else 0.0
+            
+            major_axis_length = float(major_axis)
+            minor_axis_length = float(minor_axis)
+        else:
+            # Valeurs par défaut si pas assez de points
+            eccentricity = 0.0
+            major_axis_length = 0.0
+            minor_axis_length = 0.0
+        
+        # Compactness = sqrt(4*area/pi) / major_axis_length
+        # Mesure à quel point l'objet est proche d'un cercle par rapport à son axe principal
+        compactness = float(np.sqrt(4 * area / np.pi) / major_axis_length) if major_axis_length > 0 else 0.0
+        
+        # Dimension fractale (estimation simplifiée basée sur le périmètre et l'aire)
+        # Plus la dimension est élevée, plus le contour est complexe
+        # D = 2 * log(P) / log(A) où P est le périmètre et A l'aire
+        if area > 0:
+            try:
+                fractal_dimension = float(2 * np.log(perimeter) / np.log(area))
+            except:
+                fractal_dimension = 0.0
+        else:
+            fractal_dimension = 0.0
+        
+        return {
+            'area': area,
+            'perimeter': perimeter,
+            'circularity': circularity,
+            'solidity': solidity,
+            'extent': extent,
+            'eccentricity': eccentricity,
+            'major_axis_length': major_axis_length,
+            'minor_axis_length': minor_axis_length,
+            'compactness': compactness,
+            'fractal_dimension': fractal_dimension
+        }
+        
+    except Exception as e:
+        print(f"Erreur lors du calcul des descripteurs de forme: {e}")
+        return {
+            'area': 0.0, 'perimeter': 0.0, 'circularity': 0.0,
+            'solidity': 0.0, 'extent': 0.0, 'eccentricity': 0.0,
+            'major_axis_length': 0.0, 'minor_axis_length': 0.0,
+            'compactness': 0.0, 'fractal_dimension': 0.0
+        }

@@ -17,13 +17,14 @@ import multiprocessing
 # Configurer OpenCV pour utiliser tous les cœurs disponibles
 cv2.setNumThreads(multiprocessing.cpu_count())
 
-from sklearn.model_selection import StratifiedShuffleSplit, cross_validate, train_test_split
+from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold, cross_validate, train_test_split
 from sklearn.preprocessing import RobustScaler
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectKBest, f_classif, RFE, SelectFromModel
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
+
 
 import torch
 from torchvision import transforms
@@ -1010,9 +1011,12 @@ def evaluate_selectors(X, y, selectors, classifier, scaler=RobustScaler(), cv=5,
             ('clf', classifier)
         ])
         
-        # Évaluation par validation croisée
+        # Création d'une validation croisée stratifiée explicite
+        stratified_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_state)
+
+         # Évaluation par validation croisée stratifiée
         cv_results = cross_validate(
-            pipe, X, y, cv=cv,
+            pipe, X, y, cv=stratified_cv,  # Utilisation explicite de StratifiedKFold
             scoring=['accuracy', 'f1_macro', 'precision_macro', 'recall_macro'],
             return_train_score=True,
             return_estimator=True  # Pour récupérer les modèles entraînés
@@ -1346,13 +1350,14 @@ def explain_with_shap(X, y, feature_cols, random_state=RANDOM_STATE):
 # -----------------------------
 # 8.3 Heatmaps pour la sélection de caractéristiques
 # -----------------------------
-def plot_feature_selection_heatmaps(feature_importances, feature_cols, output_dir):
+def plot_feature_selection_heatmaps(feature_importances, selected_features_idx, feature_cols, output_dir):
     """
     Crée des heatmaps pour visualiser les résultats de la sélection de caractéristiques
     avec différentes méthodes (UNIVARIATE_F, RFE_RF, SFM_L1, SFM_TREE).
     
     Args:
         feature_importances: Dictionnaire des importances des caractéristiques pour chaque stratégie
+        selected_features_idx: Dictionnaire des fréquences de sélection pour chaque stratégie
         feature_cols: Liste des noms des caractéristiques
         output_dir: Répertoire où sauvegarder les figures
     """
@@ -1362,11 +1367,9 @@ def plot_feature_selection_heatmaps(feature_importances, feature_cols, output_di
         # 1. Sélectionner les caractéristiques les plus importantes globalement
         all_importances = []
         
-        # Récupérer les importances pour chaque stratégie si disponible
+        # Récupérer les importances pour chaque stratégie
         for name, data in feature_importances.items():
-            if 'importance' in data:
-                values = data['importance'].mean(axis=0)
-                all_importances.append(values)
+            all_importances.append(data)
         
         # Calculer l'importance globale moyenne
         if all_importances:
@@ -1374,10 +1377,8 @@ def plot_feature_selection_heatmaps(feature_importances, feature_cols, output_di
         else:
             # Si pas d'importances disponibles, utiliser les fréquences
             all_frequencies = []
-            for name, data in feature_importances.items():
-                if 'frequency' in data:
-                    values = data['frequency'].mean(axis=0)
-                    all_frequencies.append(values)
+            for name, freq in selected_features_idx.items():
+                all_frequencies.append(freq)
             
             global_importance = np.mean(all_frequencies, axis=0) if all_frequencies else np.ones(len(feature_cols))
         
@@ -1390,42 +1391,76 @@ def plot_feature_selection_heatmaps(feature_importances, feature_cols, output_di
         selector_names = list(feature_importances.keys())
         
         # Créer deux heatmaps: une pour la fréquence, une pour l'importance
-        for metric_type in ['frequency', 'importance']:
-            if all(metric_type in feature_importances[name] for name in selector_names):
-                # Initialiser la matrice
-                heatmap_data = np.zeros((len(top_features), len(selector_names)))
-                
-                # Remplir la matrice
-                for j, name in enumerate(selector_names):
-                    data = feature_importances[name][metric_type].mean(axis=0)
-                    for i, feat_idx in enumerate(top_indices):
-                        heatmap_data[i, j] = data[feat_idx]
-                
-                # Créer la heatmap
-                plt.figure(figsize=(14, 10))
-                title = f"Heatmap de {metric_type.capitalize()} des Caractéristiques par Sélecteur"
-                plt.title(title, fontsize=16)
-                
-                # Créer le heatmap
-                ax = sns.heatmap(
-                    heatmap_data, 
-                    annot=True, 
-                    fmt=".3f" if metric_type == 'importance' else ".2f",
-                    cmap="viridis", 
-                    xticklabels=selector_names, 
-                    yticklabels=top_features,
-                    cbar_kws={'label': metric_type.capitalize()}
-                )
-                
-                plt.xlabel("Sélecteurs", fontsize=12)
-                plt.ylabel("Caractéristiques", fontsize=12)
-                plt.tight_layout()
-                
-                # Sauvegarder la heatmap
-                filename = f"heatmap_{metric_type}_by_selector.png"
-                plt.savefig(output_dir / filename, dpi=300, bbox_inches='tight')
-                plt.close()
-                print(f"Heatmap sauvegardée : {filename}")
+        
+        # 2.1 Heatmap pour les fréquences de sélection
+        # Initialiser la matrice
+        heatmap_freq = np.zeros((len(top_features), len(selector_names)))
+        
+        # Remplir la matrice avec les fréquences
+        for j, name in enumerate(selector_names):
+            freq_data = selected_features_idx[name]
+            for i, feat_idx in enumerate(top_indices):
+                heatmap_freq[i, j] = freq_data[feat_idx]
+        
+        # Créer la heatmap de fréquence
+        plt.figure(figsize=(14, 10))
+        plt.title("Heatmap des Fréquences de Sélection des Caractéristiques", fontsize=16)
+        
+        # Créer le heatmap
+        ax = sns.heatmap(
+            heatmap_freq, 
+            annot=True, 
+            fmt=".2f",
+            cmap="viridis", 
+            xticklabels=selector_names, 
+            yticklabels=top_features,
+            cbar_kws={'label': 'Fréquence de Sélection'}
+        )
+        
+        plt.xlabel("Sélecteurs", fontsize=12)
+        plt.ylabel("Caractéristiques", fontsize=12)
+        plt.tight_layout()
+        
+        # Sauvegarder la heatmap
+        filename = "heatmap_frequency_by_selector.png"
+        plt.savefig(output_dir / filename, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Heatmap de fréquence sauvegardée : {filename}")
+        
+        # 2.2 Heatmap pour les importances
+        # Initialiser la matrice
+        heatmap_imp = np.zeros((len(top_features), len(selector_names)))
+        
+        # Remplir la matrice avec les importances
+        for j, name in enumerate(selector_names):
+            imp_data = feature_importances[name]
+            for i, feat_idx in enumerate(top_indices):
+                heatmap_imp[i, j] = imp_data[feat_idx]
+        
+        # Créer la heatmap d'importance
+        plt.figure(figsize=(14, 10))
+        plt.title("Heatmap des Importances des Caractéristiques", fontsize=16)
+        
+        # Créer le heatmap
+        ax = sns.heatmap(
+            heatmap_imp, 
+            annot=True, 
+            fmt=".3f",
+            cmap="viridis", 
+            xticklabels=selector_names, 
+            yticklabels=top_features,
+            cbar_kws={'label': 'Importance'}
+        )
+        
+        plt.xlabel("Sélecteurs", fontsize=12)
+        plt.ylabel("Caractéristiques", fontsize=12)
+        plt.tight_layout()
+        
+        # Sauvegarder la heatmap
+        filename = "heatmap_importance_by_selector.png"
+        plt.savefig(output_dir / filename, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Heatmap d'importance sauvegardée : {filename}")
         
         # 3. Créer une heatmap comparative qui montre toutes les méthodes côte à côte avec un score normalisé
         plt.figure(figsize=(16, 12))
@@ -1436,20 +1471,22 @@ def plot_feature_selection_heatmaps(feature_importances, feature_cols, output_di
         
         # Pour chaque sélecteur, normaliser les scores
         for j, name in enumerate(selector_names):
-            # Prendre la fréquence comme base et améliorer avec l'importance si disponible
-            if 'frequency' in feature_importances[name]:
-                freq = feature_importances[name]['frequency'].mean(axis=0)
-                for i, feat_idx in enumerate(top_indices):
-                    score = freq[feat_idx]  # Score de base: fréquence
-                    
-                    # Si l'importance est disponible, l'incorporer
-                    if 'importance' in feature_importances[name]:
-                        imp = feature_importances[name]['importance'].mean(axis=0)
-                        # Score = fréquence * (1 + importance normalisée)
-                        imp_norm = imp[feat_idx] / imp.max() if imp.max() > 0 else 0
-                        score = score * (1 + imp_norm) / 2
-                    
-                    combined_data[i, j] = score
+            # Obtenir les fréquences
+            freq = selected_features_idx[name]
+            # Obtenir les importances
+            imp = feature_importances[name]
+            
+            for i, feat_idx in enumerate(top_indices):
+                # Score de base = fréquence
+                score = freq[feat_idx]
+                
+                # Incorporer l'importance
+                if np.max(imp) > 0:  # Éviter la division par zéro
+                    # Score = fréquence * (1 + importance normalisée)
+                    imp_norm = imp[feat_idx] / np.max(imp)
+                    score = score * (1 + imp_norm) / 2
+                
+                combined_data[i, j] = score
         
         # Créer la heatmap comparative
         ax = sns.heatmap(
@@ -1525,7 +1562,7 @@ def main():
     plot_feature_importance(feature_importances, selected_features_idx, FEATURE_COLUMNS)
     
     # Ajouter des heatmaps pour la sélection de caractéristiques
-    plot_feature_selection_heatmaps(feature_importances, FEATURE_COLUMNS, figures_dir)
+    plot_feature_selection_heatmaps(feature_importances, selected_features_idx, FEATURE_COLUMNS, figures_dir)
     
     # 8. Sélectionner les meilleures caractéristiques
     print("\n" + "="*50)

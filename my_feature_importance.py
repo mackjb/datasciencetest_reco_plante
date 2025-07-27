@@ -1334,7 +1334,58 @@ def explain_with_shap(X, y, feature_cols, random_state=RANDOM_STATE):
                     traceback.print_exc()
             else:
                 print(f"Forme des valeurs SHAP: {shap_values.shape}")
-                print("Format inattendu pour les valeurs SHAP - graphique non généré")
+                # Format spécifique (n_samples, n_features, n_classes)
+                if len(shap_values.shape) == 3:
+                    print("Génération de la heatmap SHAP par classe et feature pour le format 3D...")
+                    try:
+                        # Obtenir les noms de classes
+                        class_names = [str(c) for c in np.unique(y_sample)]
+                        n_samples, n_features, n_classes = shap_values.shape
+                        
+                        # Sélectionner les top features pour la visualisation
+                        top_n_features = min(20, n_features)  # Limiter à 20 features max pour la lisibilité
+                        
+                        # Calculer l'importance absolue moyenne de chaque feature pour chaque classe
+                        # Pour le format 3D, nous prenons la moyenne sur tous les échantillons
+                        feature_importance_by_class = np.zeros((top_n_features, n_classes))
+                        feature_importance_global = np.abs(shap_values).mean(axis=0).mean(axis=1)  # Moyenne sur échantillons et classes
+                        top_feature_idx = np.argsort(feature_importance_global)[::-1][:top_n_features]
+                        top_feature_names = [feature_cols[i] for i in top_feature_idx]
+                        
+                        # Calcul des valeurs d'importance pour la heatmap
+                        for class_idx in range(n_classes):
+                            for i, feat_idx in enumerate(top_feature_idx):
+                                # Moyenne absolue pour chaque feature et classe
+                                feature_importance_by_class[i, class_idx] = np.abs(shap_values[:, feat_idx, class_idx]).mean()
+                        
+                        # Créer la heatmap
+                        plt.figure(figsize=(14, 10))
+                        plt.title("Importance des caractéristiques par classe (SHAP)", fontsize=16)
+                        
+                        # Créer la heatmap avec seaborn
+                        ax = sns.heatmap(
+                            feature_importance_by_class, 
+                            annot=True, 
+                            fmt=".3f",
+                            cmap="viridis", 
+                            xticklabels=class_names, 
+                            yticklabels=top_feature_names,
+                            cbar_kws={'label': 'Importance SHAP (absolue moyenne)'}
+                        )
+                        
+                        plt.xlabel("Classes", fontsize=12)
+                        plt.ylabel("Caractéristiques", fontsize=12)
+                        plt.tight_layout()
+                        
+                        # Sauvegarder la heatmap
+                        plt.savefig(figures_dir / "shap_heatmap_class_feature.png", dpi=300, bbox_inches='tight')
+                        plt.close()
+                        print("Heatmap SHAP sauvegardée : figures/shap_heatmap_class_feature.png")
+                    except Exception as e:
+                        print(f"Erreur lors de la création de la heatmap SHAP 3D: {e}")
+                        traceback.print_exc()
+                else:
+                    print("Format inattendu pour les valeurs SHAP - graphique non généré")
         except Exception as e:
             print(f"Erreur lors du calcul SHAP: {e}")
             print("Passage à l'importance des caractéristiques basique")

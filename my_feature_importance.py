@@ -126,6 +126,45 @@ memory = Memory(CACHE_DIR, verbose=0)
 # -----------------------------
 # 2. Chargement, Rééchantillonnage & Split
 # -----------------------------
+
+def process_and_save_clean_data_with_features(csv_path=CSV_FILE, output_path=None):
+    """
+    Charge les données propres originales, calcule toutes les features et les sauvegarde dans un CSV.
+    
+    Args:
+        csv_path: Chemin vers le fichier CSV original avec les données propres
+        output_path: Chemin où sauvegarder le nouveau CSV avec les features
+    
+    Returns:
+        DataFrame contenant les données avec les features calculées
+    """
+    print(f"\nTraitement des données originales depuis {csv_path}...")
+    # Charger les données originales
+    df_original = pd.read_csv(csv_path)
+    
+    # Préparer les features
+    print("Calcul des features pour les données originales...")
+    X, y = prepare_features(df_original)
+    
+    # Créer un DataFrame avec les features
+    features_df = pd.DataFrame(X, columns=FEATURE_COLUMNS)
+    features_df[TARGET_COLUMN] = y
+    
+    # Ajouter les autres colonnes du DataFrame original si nécessaires
+    for col in df_original.columns:
+        if col != TARGET_COLUMN and col not in FEATURE_COLUMNS:
+            features_df[col] = df_original.reset_index(drop=True)[col]
+    
+    # Sauvegarder le DataFrame
+    if output_path:
+        # Créer le répertoire si nécessaire
+        output_path.parent.mkdir(exist_ok=True, parents=True)
+        
+        # Sauvegarder au format CSV
+        features_df.to_csv(output_path, index=False)
+        print(f"Données avec features sauvegardées dans: {output_path}")
+    
+    return features_df
 def augment_class(class_df, num_to_generate, path_col=PATH_COLUMN, data_dir=DATA_DIR, n_jobs=-1):
     """
     Génère de nouveaux exemples pour une classe spécifique en utilisant les transformations.
@@ -1582,6 +1621,10 @@ def main():
     figures_dir = PROJECT_ROOT / "figures"
     figures_dir.mkdir(exist_ok=True)
     
+    # 0. Traiter et sauvegarder les données originales avec features
+    clean_output_path = PROJECT_ROOT / "dataset" / "plantvillage" / "csv" / "clean_with_features_data_plantvillage_segmented_all.csv"
+    process_and_save_clean_data_with_features(CSV_FILE, clean_output_path)
+    
     # 1. Charger les données avec rééquilibrage avant le split train/test
     df_train, df_test = load_and_split_data(apply_balancing=True)
     
@@ -1591,6 +1634,25 @@ def main():
     # 3. Préparer X/y pour train et test
     X_train, y_train = prepare_features(df_train_aug)
     X_test, y_test = prepare_features(df_test)
+    
+    # Sauvegarder les données augmentées avec features sous CSV
+    print("\nSauvegarde des features après oversampling...")
+    # Créer un nouveau DataFrame avec les caractéristiques extraites
+    features_df = pd.DataFrame(X_train, columns=FEATURE_COLUMNS)
+    # Ajouter la colonne cible (espèce)
+    features_df[TARGET_COLUMN] = y_train
+    # Ajouter les autres colonnes du DataFrame original si nécessaires
+    for col in df_train_aug.columns:
+        if col != TARGET_COLUMN and col not in FEATURE_COLUMNS:
+            features_df[col] = df_train_aug.reset_index(drop=True)[col]
+    
+    # Créer le répertoire si nécessaire
+    csv_output_path = PROJECT_ROOT / "dataset" / "plantvillage" / "csv" / "oversampling_with_features_data_plantvillage_segmented_all.csv"
+    csv_output_path.parent.mkdir(exist_ok=True, parents=True)
+    
+    # Sauvegarder au format CSV
+    features_df.to_csv(csv_output_path, index=False)
+    print(f"Données sauvegardées dans: {csv_output_path}")
     
     # Combiner pour l'évaluation complète
     X_all = np.vstack([X_train, X_test])

@@ -169,6 +169,4 @@ dataset/flavia/data/**
 dataset/flavia/Leaves.tar.bz2
 dataset/new_plant_diseases_dataset/data/**
 dataset/plant_disease/data/**
-dataset/plantvillage/segmented_clean_images/**
-dataset/plantvillage/clean_images/**
-dataset/plantvillage/augmented_images/**
+

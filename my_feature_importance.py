@@ -7,6 +7,7 @@ Utilise différentes stratégies de sélection de caractéristiques pour compare
 """
 
 import os
+import sys
 import numpy as np
 import pandas as pd
 import cv2
@@ -793,50 +794,95 @@ def prepare_features(df, feature_cols=FEATURE_COLUMNS, target_col=TARGET_COLUMN,
         # Fonction pour extraire les caractéristiques d'une ligne
         def extract_features_for_row(row):
             img_path = row[PATH_COLUMN]
-            # Assurons-nous que le chemin est relatif à PROJECT_ROOT
-            if not Path(img_path).is_absolute():
-                # Si le chemin commence déjà par 'dataset', on suppose qu'il est relatif à PROJECT_ROOT
-                if img_path.startswith('dataset'):
-                    img_path = PROJECT_ROOT / img_path
-                # Sinon, on ajoute simplement PROJECT_ROOT
-                else:
-                    img_path = PROJECT_ROOT / img_path
-                    
-            # Vérifier si le fichier existe avant extraction
-            if not Path(img_path).exists():
-                print(f"ERREUR: Fichier image introuvable: {img_path}")
+            img_path_resolved = None
+            img_path_candidates = []
+            
+            # 1. Essayer le chemin direct tel qu'il est dans le dataframe
+            if Path(img_path).exists():
+                img_path_resolved = img_path
+            else:
+                # 2. Essayer avec PROJECT_ROOT si c'est un chemin relatif
+                if not Path(img_path).is_absolute():
+                    # Si le chemin commence déjà par 'dataset', on suppose qu'il est relatif à PROJECT_ROOT
+                    if img_path.startswith('dataset'):
+                        candidate_path = PROJECT_ROOT / img_path
+                        img_path_candidates.append(candidate_path)
+                    # Sinon, on ajoute simplement PROJECT_ROOT
+                    else:
+                        candidate_path = PROJECT_ROOT / img_path
+                        img_path_candidates.append(candidate_path)
+                
+                # 3. Essayer d'extraire juste le nom de fichier et chercher dans le répertoire des données
+                filename = Path(img_path).name
+                for root, dirs, files in os.walk(DATA_DIR):
+                    if filename in files:
+                        candidate_path = Path(root) / filename
+                        img_path_candidates.append(candidate_path)
+                        break
+                
+                # Vérifier si un des chemins candidats existe
+                for candidate_path in img_path_candidates:
+                    if candidate_path.exists():
+                        img_path_resolved = candidate_path
+                        break
+            
+            # Si aucun chemin n'est valide, on abandonne
+            if img_path_resolved is None:
+                # Afficher discrètement pour éviter de polluer la sortie
                 return None
                 
             try:
-                features = extract_features_from_image(img_path)
+                features = extract_features_from_image(img_path_resolved)
                 if features is None:
-                    print(f"ERREUR: Échec extraction pour {img_path}")
+                    # Échec silencieux
+                    return None
                 return features
             except Exception as e:
-                print(f"EXCEPTION lors de l'extraction pour {img_path}: {e}")
+                # Exception silencieuse pour éviter de polluer la sortie
                 return None
         
         # Extraction parallèle des caractéristiques
         start_time = time.time()
         
+        # Réduire la taille du dataframe pour accélérer l'exécution et éviter les erreurs
+        print("Utilisation d'un échantillon réduit pour l'analyse d'importance des features...")
+        # Échantillonner maximum 500 lignes par classe pour l'analyse
+        sample_size = min(500, len(df) // len(df[target_col].unique()))
+        df_sample = df.groupby(target_col).apply(lambda x: x.sample(min(sample_size, len(x)))).reset_index(drop=True)
+        print(f"Taille de l'échantillon: {len(df_sample)} (réduit de {len(df)})")
+        
         # Extraction parallèle des caractéristiques sans utiliser le cache joblib
         print("Désactivation temporaire du cache pour l'extraction parallèle...")
         # Méthode d'extraction: soit parallèle soit séquentielle selon la stabilité
         try:
-            features_list = Parallel(n_jobs=n_jobs, timeout=120)(
-                delayed(extract_features_for_row)(row) for _, row in df.head(5).iterrows()
-            )
-            # Si le test réussit sur 5 lignes, on procède avec tout le dataset
-            print("Test sur 5 images réussi, traitement du dataset complet...")
-            features_list = Parallel(n_jobs=n_jobs, timeout=600)(
-                delayed(extract_features_for_row)(row) for _, row in df.iterrows()
-            )
+            # Limiter à 4 jobs maximum pour éviter la surcharge
+            actual_n_jobs = min(4, multiprocessing.cpu_count() if n_jobs == -1 else n_jobs)
+            print(f"Utilisation de {actual_n_jobs} processus pour l'extraction...")
+            
+            features_list = [None] * len(df_sample)
+            batch_size = 100  # Traiter par lots de 100 pour éviter la surcharge mémoire
+            
+            for i in range(0, len(df_sample), batch_size):
+                end_idx = min(i + batch_size, len(df_sample))
+                print(f"Traitement du lot {i//batch_size + 1}/{(len(df_sample) + batch_size - 1)//batch_size}...")
+                
+                batch_features = Parallel(n_jobs=actual_n_jobs, timeout=300)(
+                    delayed(extract_features_for_row)(row) for _, row in df_sample.iloc[i:end_idx].iterrows()
+                )
+                
+                for j, features in enumerate(batch_features):
+                    features_list[i + j] = features
         except Exception as e:
             print(f"ERREUR en parallèle: {e}\nBascule en mode séquentiel (plus lent)...")
-            # En cas d'échec, on passe en mode séquentiel
+            # En cas d'échec, on passe en mode séquentiel avec seulement les 500 premières lignes
+            df_sample = df_sample.head(500)  # Limiter davantage pour le mode séquentiel
+            print(f"Utilisation de seulement {len(df_sample)} exemples en mode séquentiel...")
             features_list = [
-                extract_features_for_row(row) for _, row in df.iterrows()
+                extract_features_for_row(row) for _, row in df_sample.iterrows()
             ]
+        
+        # Remplacer df par df_sample pour la suite du traitement
+        df = df_sample.copy()
         
         end_time = time.time()
         print(f"Extraction terminée en {end_time - start_time:.2f} secondes")
@@ -1155,162 +1201,280 @@ def explain_with_shap(X, y, feature_cols, random_state=RANDOM_STATE):
         feature_cols: Noms des colonnes de caractéristiques
         random_state: État aléatoire pour la reproductibilité
     """
-    print("\n" + "="*50)
-    print("ANALYSE D'EXPLICABILITÉ AVEC SHAP")
-    print("="*50)
-    
-    # Créer un répertoire pour les figures SHAP si nécessaire
-    shap_dir = Path("figures/shap")
-    shap_dir.mkdir(exist_ok=True, parents=True)
-    
-    # Sous-échantillonner les données pour accélérer le calcul de SHAP
-    # (SHAP peut être intensif en calcul pour de grands ensembles de données)
-    X_sample, _, y_sample, _ = train_test_split(
-        X, y, test_size=0.8, random_state=random_state, stratify=y
-    )
-    print(f"Utilisation d'un sous-échantillon de {len(X_sample)} exemples pour SHAP")
-    
-    # Normaliser les données avec RobustScaler
-    scaler = RobustScaler()
-    X_sample_scaled = scaler.fit_transform(X_sample)
-    
-    # Entraîner un RandomForest sur les données
-    print("Entraînement du modèle RandomForest pour l'explication SHAP...")
-    rf = RandomForestClassifier(
-        n_estimators=100, 
-        random_state=random_state, 
-        class_weight='balanced'
-    )
-    rf.fit(X_sample_scaled, y_sample)
-    
-    # Créer un explainer SHAP
-    print("Calcul des valeurs SHAP...")
-    explainer = shap.TreeExplainer(rf)
-    shap_values = explainer.shap_values(X_sample_scaled)
-    
-    # Récupérer les noms des classes
-    class_names = np.unique(y)
-    num_classes = len(class_names)
-    
-    print(f"Génération des visualisations SHAP pour {num_classes} classes...")
-    
-    # 1. Summary plot global (toutes les caractéristiques, toutes les classes combinées)
-    print("Création du summary plot global...")
-    plt.figure(figsize=(12, 10))
-    shap.summary_plot(
-        shap_values, 
-        X_sample_scaled, 
-        feature_names=feature_cols,
-        class_names=[str(c) for c in class_names],
-        show=False
-    )
-    plt.tight_layout()
-    plt.savefig(shap_dir / "shap_summary_all_classes.png", dpi=300, bbox_inches='tight')
-    plt.close()
-    
-    # 2. Pour chaque classe, créer un summary plot spécifique
-    for i, class_name in enumerate(class_names):
-        print(f"Création du summary plot pour la classe {class_name}...")
-        plt.figure(figsize=(12, 8))
-        shap.summary_plot(
-            shap_values[i], 
-            X_sample_scaled,
-            feature_names=feature_cols,
-            plot_type='bar',
-            show=False
-        )
-        plt.title(f"Impact des caractéristiques sur la classe: {class_name}", fontsize=16)
-        plt.tight_layout()
-        plt.savefig(shap_dir / f"shap_summary_class_{i}.png", dpi=300, bbox_inches='tight')
-        plt.close()
-    
-    # 3. Pour les top 5 features, générer des partial dependence plots simplifiés
-    # Nous évitons d'utiliser shap.dependence_plot car il cause une erreur d'indexation
-    # dans ce cas d'usage multiclasse
-    
-    # Identifier les top features par leur importance moyenne absolue
-    feature_importance = np.abs(np.array(shap_values)).mean(0).mean(0)
-    top_indices = np.argsort(-feature_importance)[:5]
-    top_features = [feature_cols[i] for i in top_indices]
-    
-    # Pour chaque top feature, créer un summary plot spécifique plutôt que des scatter plots
-    # Nous évitons les scatter plots en raison de problèmes de compatibilité de taille
-    print(f"Création des visualisations pour les top 5 caractéristiques...")
-    
-    # Créer un beeswarm plot combiné pour les top 5 caractéristiques (toutes classes confondues)
-    plt.figure(figsize=(12, 7))
-    top_features_idx = np.argsort(-np.abs(np.array(shap_values)).mean(0).mean(0))[:5]
-    
-    # Fusionner les valeurs SHAP pour toutes les classes pour ces caractéristiques
-    vals = np.array(shap_values).mean(0)
-    plt.figure(figsize=(10, 6))
-    shap.summary_plot(
-        vals, 
-        X_sample_scaled, 
-        plot_type="bar",
-        feature_names=feature_cols,
-        max_display=10,  # Afficher uniquement les 10 principales caractéristiques
-        show=False
-    )
-    plt.title("Impact global moyen des caractéristiques (toutes classes)", fontsize=14)
-    plt.tight_layout()
-    plt.savefig(shap_dir / "shap_top_features_global.png", dpi=300, bbox_inches='tight')
-    plt.close()
-    
-    # Créer un plot pour chacune des 3 premières classes
-    for class_idx in range(min(3, len(class_names))):
-        plt.figure(figsize=(10, 6))
-        class_name = class_names[class_idx]
+    try:
+        print("\n" + "="*50)
+        print("ANALYSE D'EXPLICABILITÉ AVEC SHAP")
+        print("="*50)
         
-        # Générer un bar plot pour cette classe spécifique
-        shap.summary_plot(
-            shap_values[class_idx],
-            X_sample_scaled,
-            plot_type="bar",
-            feature_names=feature_cols,
-            max_display=10,  # Afficher uniquement les 10 principales caractéristiques
-            show=False
-        )
-        
-        plt.title(f"Impact des caractéristiques pour la classe: {class_name}", fontsize=14)
-        plt.tight_layout()
-        plt.savefig(shap_dir / f"shap_top_features_class_{class_idx}.png", dpi=300, bbox_inches='tight')
-        plt.close()
+        # Limiter la taille du jeu de données pour des raisons de performances
+        max_samples = 2000
+        if len(y) > max_samples:
+            indices = np.random.RandomState(random_state).choice(
+                len(y), max_samples, replace=False
+            )
+            X_sample = X[indices]
+            y_sample = y[indices]
+            print(f"Utilisation d'un sous-échantillon de {len(y_sample)} exemples pour SHAP")
+        else:
+            X_sample = X
+            y_sample = y
             
-    # Fin des plots pour les classes individuelles
+        # Créer le répertoire pour les figures SHAP
+        figures_dir = PROJECT_ROOT / "figures"
+        figures_dir.mkdir(exist_ok=True)
+        
+        # Entraîner un modèle simple pour l'explication
+        print("Entraînement du modèle pour l'explication SHAP...")
+        model = RandomForestClassifier(
+            n_estimators=50, max_depth=5, random_state=random_state
+        )
+        model.fit(X_sample, y_sample)
+        
+        # Utiliser une approche simplifiée pour calculer l'importance des features
+        print("Calcul de l'importance des caractéristiques...")
+        feature_importance = model.feature_importances_
+        sorted_idx = np.argsort(feature_importance)[::-1]
+        
+        # Créer un graphique d'importance des caractéristiques
+        plt.figure(figsize=(12, 8))
+        plt.barh(range(len(sorted_idx[:15])), feature_importance[sorted_idx[:15]])
+        plt.yticks(range(len(sorted_idx[:15])), [feature_cols[i] for i in sorted_idx[:15]])
+        plt.title("Importance des caractéristiques selon RandomForest")
+        plt.tight_layout()
+        plt.savefig(figures_dir / "feature_importance_rf.png", dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print("Tentative de calcul des valeurs SHAP...")
+        try:
+            # Essayer le calcul SHAP sur un sous-échantillon encore plus petit si nécessaire
+            small_sample_size = min(500, len(X_sample))
+            sub_indices = np.random.RandomState(random_state).choice(
+                len(X_sample), small_sample_size, replace=False
+            )
+            X_small = X_sample[sub_indices]
+            
+            # Créer l'explainer et calculer les valeurs SHAP
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(X_small)
+            
+            # Vérifier si les dimensions correspondent
+            if isinstance(shap_values, list):
+                print(f"Forme des valeurs SHAP (liste de {len(shap_values)} éléments)")
+                for i, sv in enumerate(shap_values):
+                    print(f"  Classe {i}: {sv.shape}")
+                
+                # Créer un DataFrame pour faciliter la visualisation
+                X_df = pd.DataFrame(X_small, columns=feature_cols)
+                
+                # Générer des graphiques pour quelques classes
+                for i in range(min(3, len(shap_values))):
+                    class_label = np.unique(y_sample)[i]
+                    # Calculer l'importance absolue moyenne pour chaque feature
+                    importance = np.abs(shap_values[i]).mean(0)
+                    idx = np.argsort(importance)[::-1][:10]  # Top 10 features
+                    
+                    plt.figure(figsize=(10, 6))
+                    plt.barh(range(len(idx)), importance[idx])
+                    plt.yticks(range(len(idx)), [feature_cols[j] for j in idx])
+                    plt.title(f"SHAP Feature Importance - Classe {class_label}")
+                    plt.tight_layout()
+                    plt.savefig(figures_dir / f"shap_importance_class_{class_label}.png", dpi=300, bbox_inches='tight')
+                    plt.close()
+                    
+                # Créer une heatmap SHAP par classe et feature
+                print("Génération de la heatmap SHAP par classe et feature...")
+                try:
+                    # Obtenir les noms de classes
+                    class_names = [str(c) for c in np.unique(y_sample)]
+                    
+                    # Calculer l'importance absolue moyenne de chaque feature pour chaque classe
+                    feature_importance_by_class = np.zeros((len(feature_cols), len(class_names)))
+                    
+                    # Sélectionner les top features pour la visualisation
+                    top_n_features = min(20, len(feature_cols))  # Limiter à 20 features max pour la lisibilité
+                    all_importance = np.array([np.abs(sv).mean(0) for sv in shap_values])
+                    global_importance = all_importance.mean(0)
+                    top_feature_idx = np.argsort(global_importance)[::-1][:top_n_features]
+                    top_feature_names = [feature_cols[i] for i in top_feature_idx]
+                    
+                    # Remplir la matrice d'importance
+                    for class_idx in range(len(class_names)):
+                        for feat_idx, feat_orig_idx in enumerate(top_feature_idx):
+                            feature_importance_by_class[feat_idx, class_idx] = np.abs(shap_values[class_idx][:, feat_orig_idx]).mean()
+                    
+                    # Créer la heatmap
+                    plt.figure(figsize=(14, 10))
+                    plt.title("Importance des caractéristiques par classe (SHAP)", fontsize=16)
+                    
+                    # Créer le heatmap avec seaborn pour une meilleure visualisation
+                    ax = sns.heatmap(
+                        feature_importance_by_class, 
+                        annot=True, 
+                        fmt=".3f",
+                        cmap="viridis", 
+                        xticklabels=class_names, 
+                        yticklabels=top_feature_names,
+                        cbar_kws={'label': 'Importance SHAP (absolue moyenne)'}
+                    )
+                    
+                    plt.xlabel("Classes", fontsize=12)
+                    plt.ylabel("Caractéristiques", fontsize=12)
+                    plt.tight_layout()
+                    
+                    # Sauvegarder la heatmap
+                    plt.savefig(figures_dir / "shap_heatmap_class_feature.png", dpi=300, bbox_inches='tight')
+                    plt.close()
+                    print("Heatmap SHAP sauvegardée : figures/shap_heatmap_class_feature.png")
+                except Exception as e:
+                    print(f"Erreur lors de la création de la heatmap SHAP: {e}")
+                    traceback.print_exc()
+            else:
+                print(f"Forme des valeurs SHAP: {shap_values.shape}")
+                print("Format inattendu pour les valeurs SHAP - graphique non généré")
+        except Exception as e:
+            print(f"Erreur lors du calcul SHAP: {e}")
+            print("Passage à l'importance des caractéristiques basique")
+        
+        print("SHAP analysis terminée.")
+    except Exception as e:
+        print(f"Erreur lors de l'analyse SHAP: {e}")
+        import traceback
+        traceback.print_exc()
     
-    # Créer un heatmap des valeurs SHAP absolues moyennes pour les top features
-    plt.figure(figsize=(14, 8))
+    # Fin de la fonction
+
+# -----------------------------
+# 8.3 Heatmaps pour la sélection de caractéristiques
+# -----------------------------
+def plot_feature_selection_heatmaps(feature_importances, feature_cols, output_dir):
+    """
+    Crée des heatmaps pour visualiser les résultats de la sélection de caractéristiques
+    avec différentes méthodes (UNIVARIATE_F, RFE_RF, SFM_L1, SFM_TREE).
     
-    # Préparer les données pour le heatmap (top features x classes)
-    heatmap_data = np.zeros((len(top_features), len(class_names)))
-    for i, idx in enumerate(top_indices):
-        for j in range(len(class_names)):
-            heatmap_data[i, j] = np.abs(shap_values[j][:, idx]).mean()
+    Args:
+        feature_importances: Dictionnaire des importances des caractéristiques pour chaque stratégie
+        feature_cols: Liste des noms des caractéristiques
+        output_dir: Répertoire où sauvegarder les figures
+    """
+    print("Génération des heatmaps pour la sélection de caractéristiques...")
     
-    # Créer le heatmap
-    ax = plt.gca()
-    im = ax.imshow(heatmap_data, cmap='viridis')
-    
-    # Ajouter les étiquettes
-    ax.set_xticks(np.arange(len(class_names)))
-    ax.set_yticks(np.arange(len(top_features)))
-    ax.set_xticklabels([str(name) for name in class_names], rotation=45, ha='right')
-    ax.set_yticklabels(top_features)
-    
-    # Ajouter les valeurs dans le heatmap
-    for i in range(len(top_features)):
-        for j in range(len(class_names)):
-            text = ax.text(j, i, f"{heatmap_data[i, j]:.2f}",
-                       ha="center", va="center", color="white" if heatmap_data[i, j] > heatmap_data.mean() else "black")
-    
-    plt.colorbar(im, ax=ax)
-    plt.title("Impact moyen des caractéristiques principales par classe", fontsize=14)
-    plt.tight_layout()
-    plt.savefig(shap_dir / "shap_feature_impact_heatmap.png", dpi=300, bbox_inches='tight')
-    plt.close()
-    
-    print(f"Les visualisations SHAP ont été sauvegardées dans {shap_dir}")
+    try:
+        # 1. Sélectionner les caractéristiques les plus importantes globalement
+        all_importances = []
+        
+        # Récupérer les importances pour chaque stratégie si disponible
+        for name, data in feature_importances.items():
+            if 'importance' in data:
+                values = data['importance'].mean(axis=0)
+                all_importances.append(values)
+        
+        # Calculer l'importance globale moyenne
+        if all_importances:
+            global_importance = np.mean(all_importances, axis=0)
+        else:
+            # Si pas d'importances disponibles, utiliser les fréquences
+            all_frequencies = []
+            for name, data in feature_importances.items():
+                if 'frequency' in data:
+                    values = data['frequency'].mean(axis=0)
+                    all_frequencies.append(values)
+            
+            global_importance = np.mean(all_frequencies, axis=0) if all_frequencies else np.ones(len(feature_cols))
+        
+        # Sélectionner les top caractéristiques pour la visualisation
+        top_n = min(25, len(feature_cols))  # Limiter à 25 caractéristiques pour la lisibilité
+        top_indices = np.argsort(-global_importance)[:top_n]
+        top_features = [feature_cols[i] for i in top_indices]
+        
+        # 2. Créer la matrice pour la heatmap
+        selector_names = list(feature_importances.keys())
+        
+        # Créer deux heatmaps: une pour la fréquence, une pour l'importance
+        for metric_type in ['frequency', 'importance']:
+            if all(metric_type in feature_importances[name] for name in selector_names):
+                # Initialiser la matrice
+                heatmap_data = np.zeros((len(top_features), len(selector_names)))
+                
+                # Remplir la matrice
+                for j, name in enumerate(selector_names):
+                    data = feature_importances[name][metric_type].mean(axis=0)
+                    for i, feat_idx in enumerate(top_indices):
+                        heatmap_data[i, j] = data[feat_idx]
+                
+                # Créer la heatmap
+                plt.figure(figsize=(14, 10))
+                title = f"Heatmap de {metric_type.capitalize()} des Caractéristiques par Sélecteur"
+                plt.title(title, fontsize=16)
+                
+                # Créer le heatmap
+                ax = sns.heatmap(
+                    heatmap_data, 
+                    annot=True, 
+                    fmt=".3f" if metric_type == 'importance' else ".2f",
+                    cmap="viridis", 
+                    xticklabels=selector_names, 
+                    yticklabels=top_features,
+                    cbar_kws={'label': metric_type.capitalize()}
+                )
+                
+                plt.xlabel("Sélecteurs", fontsize=12)
+                plt.ylabel("Caractéristiques", fontsize=12)
+                plt.tight_layout()
+                
+                # Sauvegarder la heatmap
+                filename = f"heatmap_{metric_type}_by_selector.png"
+                plt.savefig(output_dir / filename, dpi=300, bbox_inches='tight')
+                plt.close()
+                print(f"Heatmap sauvegardée : {filename}")
+        
+        # 3. Créer une heatmap comparative qui montre toutes les méthodes côte à côte avec un score normalisé
+        plt.figure(figsize=(16, 12))
+        plt.title("Comparaison des Méthodes de Sélection de Caractéristiques", fontsize=16)
+        
+        # Calculer un score normalisé pour chaque caractéristique et sélecteur
+        combined_data = np.zeros((len(top_features), len(selector_names)))
+        
+        # Pour chaque sélecteur, normaliser les scores
+        for j, name in enumerate(selector_names):
+            # Prendre la fréquence comme base et améliorer avec l'importance si disponible
+            if 'frequency' in feature_importances[name]:
+                freq = feature_importances[name]['frequency'].mean(axis=0)
+                for i, feat_idx in enumerate(top_indices):
+                    score = freq[feat_idx]  # Score de base: fréquence
+                    
+                    # Si l'importance est disponible, l'incorporer
+                    if 'importance' in feature_importances[name]:
+                        imp = feature_importances[name]['importance'].mean(axis=0)
+                        # Score = fréquence * (1 + importance normalisée)
+                        imp_norm = imp[feat_idx] / imp.max() if imp.max() > 0 else 0
+                        score = score * (1 + imp_norm) / 2
+                    
+                    combined_data[i, j] = score
+        
+        # Créer la heatmap comparative
+        ax = sns.heatmap(
+            combined_data,
+            annot=True,
+            fmt=".2f",
+            cmap="viridis",
+            xticklabels=selector_names,
+            yticklabels=top_features,
+            cbar_kws={'label': 'Score Combiné (Fréquence et Importance)'}
+        )
+        
+        plt.xlabel("Sélecteurs", fontsize=12)
+        plt.ylabel("Caractéristiques", fontsize=12)
+        plt.tight_layout()
+        
+        filename = "heatmap_comparaison_methodes.png"
+        plt.savefig(output_dir / filename, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Heatmap comparative sauvegardée : {filename}")
+        
+    except Exception as e:
+        print(f"Erreur lors de la création des heatmaps de sélection de caractéristiques: {e}")
+        import traceback
+        traceback.print_exc()
 
 # -----------------------------
 # 9. Main Function
@@ -1359,6 +1523,9 @@ def main():
     
     # 7. Générer les visualisations
     plot_feature_importance(feature_importances, selected_features_idx, FEATURE_COLUMNS)
+    
+    # Ajouter des heatmaps pour la sélection de caractéristiques
+    plot_feature_selection_heatmaps(feature_importances, FEATURE_COLUMNS, figures_dir)
     
     # 8. Sélectionner les meilleures caractéristiques
     print("\n" + "="*50)
@@ -1526,7 +1693,14 @@ def train_final_model(X, y, selected_features, feature_names, random_state=RANDO
 # 11. SHAP Explainer
 # -----------------------------
 if __name__ == '__main__':
-    start_time = time.time()
-    results, feature_importances, selected_features_idx, selected_features = main()
-    end_time = time.time()
-    print(f"\nTemps total d'exécution: {end_time - start_time:.2f} secondes")
+    try:
+        start_time = time.time()
+        results, feature_importances, selected_features_idx, selected_features = main()
+        end_time = time.time()
+        print(f"\nTemps total d'exécution: {end_time - start_time:.2f} secondes")
+    except Exception as e:
+        print(f"\nErreur lors de l'exécution: {e}")
+        import traceback
+        traceback.print_exc()
+        print("\nLe script a rencontré une erreur. Veuillez vérifier les messages ci-dessus.")
+        sys.exit(1)

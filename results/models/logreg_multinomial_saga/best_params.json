@@ -1,0 +1,9 @@
+{
+  "best_params": {
+    "model__C": 0.1,
+    "model__class_weight": null,
+    "model__l1_ratio": 0.0,
+    "sampler": "passthrough"
+  },
+  "best_score_f1_macro": 0.2998230954170952
+}

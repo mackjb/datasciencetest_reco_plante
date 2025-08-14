@@ -1,23 +1,25 @@
 {
-  "name": "datasciencetest_reco_plante",
+  "name": "Python & Conda + SSH",
+  "image": "mcr.microsoft.com/vscode/devcontainers/python:3.10-bullseye",
   "workspaceFolder": "/workspaces/datasciencetest_reco_plante",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
-    "ghcr.io/devcontainers/features/sshd:1": {},
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/conda:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/rocker-org/devcontainer-features/miniforge:2": {
+      "version": "latest",
+      "variant": "Miniforge3"
+    },
+    "ghcr.io/devcontainers/features/sshd:1": {}
   },
-  // "extensions": [
-  //   "ms-python.python",
-  //   "ms-python.debugpy",
-  //   "ms-toolsai.jupyter-keymap",
-  //   "ms-toolsai.vscode-jupyter-slideshow",
-  //   "ms-toolsai.jupyter"
-  // ],
-  "postCreateCommand": "if [ ! -d \"/workspaces/datasciencetest_reco_plante/.git\" ]; then git clone https://github.com/mackjb/datasciencetest_reco_plante.git /workspaces/datasciencetest_reco_plante; fi",
+  "remoteUser": "vscode",
   "postStartCommand": "sudo service ssh start",
-  "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-  ]
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.pythonPath": "/usr/local/miniconda/bin/python",
+        "terminal.integrated.shell.linux": "/bin/bash"
+      },
+      "extensions": [
+        "ms-python.python"
+      ]
+    }
+  }
 }

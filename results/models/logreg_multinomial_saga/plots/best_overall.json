@@ -1,0 +1,10 @@
+{
+  "approach": "Baseline",
+  "sampler_name": "passthrough",
+  "class_weight": "None",
+  "C": 100.0,
+  "l1_ratio": 0.75,
+  "mean_test_f1_macro": 0.2998230954170952,
+  "mean_test_bal_acc": 0.381410411622276,
+  "rank_test_f1_macro": 1
+}

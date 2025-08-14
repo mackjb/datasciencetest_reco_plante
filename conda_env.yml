@@ -18,5 +18,9 @@ dependencies:
       - scikit-learn
       - albumentations
       - scikit-image
+      - imbalanced-learn
       - seaborn
+      - torchvision
+      - shap
+      - joblib
       - "-e ."

@@ -1,115 +1,105 @@
 <!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Slides — ExtraTrees PlantVillage v2</title>
-  <link rel="preconnect" href="https://remarkjs.com" crossorigin>
-  <style>
-    :root { color-scheme: light dark; }
-    .remark-slide-content { font-size: 28px; }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-  </style>
-</head>
-<body>
-  <textarea id="source" style="display:none">
----
-marp: true
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slides ExtraTrees v2</title></head><body>
+<hr />
+<p>marp: true
 paginate: true
 style: |
-  section { font-size: 28px; }
----
-
-# ExtraTrees PlantVillage v2
-
-- Pipeline robuste + traçabilité
-- Dataset: PlantVillage (features extraites)
-- Auteur: Cascade • Date: 2025-08-22
-
----
-
-## Objectif & Données
-
-- Objectif: ExtraTrees performant et interprétable, bonnes pratiques ML
-- Données: `clean_with_features_data_plantvillage_segmented_all.csv`
-  - 6 871 lignes • 42 features num • 14 classes
-  - Nettoyage: drop NA sur cible, exclure `is_na`/doublons si présents
-
----
-
-## Pipeline (prétraitement)
-
-- Numériques: Imputation médiane + Winsorizer (1–99%)
-- Catégorielles: OHE `handle_unknown="ignore"` (pas de cat ici mais supporté)
-- Pas de scaling: arbres invariants à l’échelle
-
----
-
-## Déséquilibre & Validation
-
-- Déséquilibre: comparer `class_weight ∈ {None, "balanced"}` vs `RandomOverSampler`
-  - Ne pas cumuler `class_weight` + oversampling
-- Validation: CV 5-fold stratifiée + split stratifié
-- Scoring: `f1_macro` (refit) + `balanced_accuracy`
-
----
-
-## Grille & Ressources
-
-- Grille (24 cand.): `n_estimators {200,400}`, `min_samples_split {2,5}`, `min_samples_leaf {1,2}`
-  - `max_features="sqrt"`, `bootstrap=False`, `criterion="gini"`, `sampler {passthrough, ROS}`
-- Ressources: `N_JOBS_ESTIMATOR` (threads ExtraTrees), `N_JOBS_OUTER` (CV)
-
----
-
-## Résultats principaux
-
-- Baseline CV (mean): bal.acc ≈ 0.7662 • F1-macro ≈ 0.7625
-- Meilleurs hyperparams:
-```json
-{"sampler":"passthrough","model__class_weight":null,
- "model__n_estimators":400,"model__max_features":"sqrt",
- "model__min_samples_split":2,"model__min_samples_leaf":1,
- "model__criterion":"gini","model__bootstrap":false,"model__max_depth":null}
-```
-- Test: bal.acc = 0.7676 • F1-macro = 0.7659
-
----
-
-## Interprétabilité
-
-- Top features: `std_B`, `mean_B`, `mean_H`, `std_G`, `mean_R`, `contrast`, ...
-- Fichiers: `feature_importances.csv`
-- SHAP: optionnel via `ENABLE_SHAP=1`
-
----
-
-## Artefacts clés
-
-- `results/models/extratrees_plantvillage_v2/`
-  - `cv_baseline_scores.csv`, `gridsearch_results.csv`, `best_params.json`
-  - `evaluation/{classification_report.txt, confusion_matrix.csv, predictions_test.csv}`
-  - `feature_importances.csv`, `plots/*.html`
-  - `grid_trials.jsonl` (tous les essais)
-
----
-
-## Pistes d'amélioration
-
-- Étendre la grille: `criterion {gini, entropy}`, `ccp_alpha`, `min_impurity_decrease`
-- Tester RUS/SMOTE (SMOTENC si cat.)
-- Ajouter `f1_micro`/`f1_weighted` en suivi complémentaire
-- Activer SHAP (diagnostic global/local)
-- Seeds multiples / CV répétée pour robustesse
-  </textarea>
-
-  <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
-  <script>
-    const slideshow = remark.create({
-      ratio: '16:9',
-      navigation: { click: true },
-      highlightStyle: 'github',
-    });
-  </script>
-</body>
-</html>
+  section { font-size: 28px; }</p>
+<hr />
+<h1>ExtraTrees PlantVillage v2</h1>
+<ul>
+<li>Pipeline robuste + traçabilité</li>
+<li>Dataset: PlantVillage (features extraites)</li>
+<li>Auteur: Cascade • Date: 2025-08-22</li>
+</ul>
+<hr />
+<h2>Objectif &amp; Données</h2>
+<ul>
+<li>Objectif: ExtraTrees performant et interprétable, bonnes pratiques ML</li>
+<li>Données: <code>clean_with_features_data_plantvillage_segmented_all.csv</code></li>
+<li>6 871 lignes • 42 features num • 14 classes</li>
+<li>Nettoyage: drop NA sur cible, exclure <code>is_na</code>/doublons si présents</li>
+</ul>
+<hr />
+<h2>Pipeline (prétraitement)</h2>
+<ul>
+<li>Numériques: Imputation médiane + Winsorizer (1–99%)</li>
+<li>Catégorielles: OHE <code>handle_unknown="ignore"</code> (pas de cat ici mais supporté)</li>
+<li>Pas de scaling: arbres invariants à l’échelle</li>
+</ul>
+<hr />
+<h2>Déséquilibre &amp; Validation</h2>
+<ul>
+<li>Déséquilibre: comparer <code>class_weight ∈ {None, "balanced"}</code> vs <code>RandomOverSampler</code></li>
+<li>Ne pas cumuler <code>class_weight</code> + oversampling</li>
+<li>Validation: CV 5-fold stratifiée + split stratifié</li>
+<li>Scoring: <code>f1_macro</code> (refit) + <code>balanced_accuracy</code></li>
+</ul>
+<hr />
+<h2>Grille &amp; Ressources</h2>
+<ul>
+<li>Grille (432 cand.): <code>n_estimators {200,400}</code>, <code>min_samples_split {2,5}</code>, <code>min_samples_leaf {1,2}</code>, <code>max_features {"sqrt", 0.5, 0.8}</code>, <code>bootstrap=False</code>, <code>criterion="gini"</code></li>
+<li>Équilibrage: <code>sampler ∈ {passthrough, ROS, SMOTE, BorderlineSMOTE}</code> (pas de cumul avec <code>class_weight="balanced"</code>)</li>
+<li>Sélecteurs: <code>selector ∈ {passthrough, SelectKBest(k=30), SelectFromModel}</code> • Winsorisation numériques: <code>passthrough</code> ou <code>Winsorizer(0.001,0.999)</code> • <code>RobustScaler</code> activé uniquement avec SMOTE/BorderlineSMOTE</li>
+<li>Ressources: <code>N_JOBS_ESTIMATOR</code> (threads ExtraTrees), <code>N_JOBS_OUTER</code> (CV)</li>
+</ul>
+<hr />
+<h2>Encadré 1 — Résumé ExtraTrees v2 (PlantVillage)</h2>
+<ul>
+<li>Meilleur modèle (CV 5-fold, refit f1_macro)</li>
+<li>Sampler: ROS (RandomOverSampler)</li>
+<li>max_features: 0.8</li>
+<li>n_estimators: 400</li>
+<li>min_samples_split: 2</li>
+<li>min_samples_leaf: 1</li>
+<li>criterion: gini • bootstrap: False • class_weight: None</li>
+<li>selector: passthrough</li>
+<li>Scores CV (moyenne 5-fold)</li>
+<li>F1-macro ≈ 0.784</li>
+<li>Balanced accuracy ≈ 0.787</li>
+<li>Scores test</li>
+<li>F1-macro = 0.7659</li>
+<li>Balanced accuracy = 0.7676</li>
+</ul>
+<hr />
+<h2>Résultats principaux</h2>
+<ul>
+<li>Baseline CV (mean): bal.acc ≈ 0.7662 • F1-macro ≈ 0.7625</li>
+<li>Meilleurs hyperparams:</li>
+</ul>
+<pre><code class="language-json">{&quot;sampler&quot;:&quot;ROS&quot;,&quot;model__class_weight&quot;:null,
+ &quot;model__n_estimators&quot;:400,&quot;model__max_features&quot;:0.8,
+ &quot;model__min_samples_split&quot;:2,&quot;model__min_samples_leaf&quot;:1,
+ &quot;model__criterion&quot;:&quot;gini&quot;,&quot;model__bootstrap&quot;:false,&quot;model__max_depth&quot;:null,
+ &quot;selector&quot;:&quot;passthrough&quot;}
+</code></pre>
+<ul>
+<li>Test: bal.acc = 0.7676 • F1-macro = 0.7659</li>
+</ul>
+<hr />
+<h2>Interprétabilité</h2>
+<ul>
+<li>Top features: <code>std_B</code>, <code>mean_B</code>, <code>mean_H</code>, <code>std_G</code>, <code>mean_R</code>, <code>contrast</code>, ...</li>
+<li>Fichiers: <code>feature_importances.csv</code></li>
+<li>SHAP: optionnel via <code>ENABLE_SHAP=1</code></li>
+</ul>
+<hr />
+<h2>Artefacts clés</h2>
+<ul>
+<li><code>results/models/extratrees_plantvillage_v2/</code></li>
+<li><code>cv_baseline_scores.csv</code>, <code>gridsearch_results.csv</code>, <code>best_params.json</code></li>
+<li><code>evaluation/{classification_report.txt, confusion_matrix.csv, predictions_test.csv}</code></li>
+<li><code>feature_importances.csv</code>, <code>plots/*.html</code></li>
+<li><code>grid_trials.jsonl</code> (tous les essais)</li>
+</ul>
+<hr />
+<h2>Pistes d'amélioration</h2>
+<ul>
+<li>Étendre la grille: <code>criterion {gini, entropy}</code>, <code>ccp_alpha</code>, <code>min_impurity_decrease</code></li>
+<li>Tester RUS/SMOTE (SMOTENC si cat.)</li>
+<li>Ajouter <code>f1_micro</code>/<code>f1_weighted</code> en suivi complémentaire</li>
+<li>Activer SHAP (diagnostic global/local)</li>
+<li>Seeds multiples / CV répétée pour robustesse</li>
+</ul>
+</body></html>

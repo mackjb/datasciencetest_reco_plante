@@ -1,0 +1,4 @@
+approach,mean_test_f1_macro,mean_test_bal_acc,param_model__bootstrap,param_model__class_weight,param_model__criterion,param_model__max_depth,param_model__max_features,param_model__min_samples_leaf,param_model__min_samples_split,param_model__n_estimators,param_sampler,param_selector,param_selector__k
+Oversampling: ROS,0.783964408752736,0.7869158595641647,False,,gini,,0.8,1,2,400,RandomOverSampler(random_state=42),passthrough,
+ClassWeight balanced,0.779681704543153,0.7825585149313962,False,balanced,gini,,0.8,1,2,400,passthrough,passthrough,
+Baseline,0.7784803360714008,0.7814870863599678,False,,gini,,0.8,1,2,400,passthrough,passthrough,

@@ -35,15 +35,35 @@ style: |
 - Déséquilibre: comparer `class_weight ∈ {None, "balanced"}` vs `RandomOverSampler`
   - Ne pas cumuler `class_weight` + oversampling
 - Validation: CV 5-fold stratifiée + split stratifié
-- Scoring: `f1_macro` (refit) + `balanced_accuracy`
+  - Scoring: `f1_macro` (refit) + `balanced_accuracy`
 
 ---
 
 ## Grille & Ressources
 
-- Grille (24 cand.): `n_estimators {200,400}`, `min_samples_split {2,5}`, `min_samples_leaf {1,2}`
-  - `max_features="sqrt"`, `bootstrap=False`, `criterion="gini"`, `sampler {passthrough, ROS}`
-- Ressources: `N_JOBS_ESTIMATOR` (threads ExtraTrees), `N_JOBS_OUTER` (CV)
+ - Grille (432 cand.): `n_estimators {200,400}`, `min_samples_split {2,5}`, `min_samples_leaf {1,2}`, `max_features {"sqrt", 0.5, 0.8}`, `bootstrap=False`, `criterion="gini"`
+ - Équilibrage: `sampler ∈ {passthrough, ROS, SMOTE, BorderlineSMOTE}` (pas de cumul avec `class_weight="balanced"`)
+ - Sélecteurs: `selector ∈ {passthrough, SelectKBest(k=30), SelectFromModel}` • Winsorisation numériques: `passthrough` ou `Winsorizer(0.001,0.999)` • `RobustScaler` activé uniquement avec SMOTE/BorderlineSMOTE
+ - Ressources: `N_JOBS_ESTIMATOR` (threads ExtraTrees), `N_JOBS_OUTER` (CV)
+
+---
+
+## Encadré 1 — Résumé ExtraTrees v2 (PlantVillage)
+
+- Meilleur modèle (CV 5-fold, refit f1_macro)
+  - Sampler: ROS (RandomOverSampler)
+  - max_features: 0.8
+  - n_estimators: 400
+  - min_samples_split: 2
+  - min_samples_leaf: 1
+  - criterion: gini • bootstrap: False • class_weight: None
+  - selector: passthrough
+- Scores CV (moyenne 5-fold)
+  - F1-macro ≈ 0.784
+  - Balanced accuracy ≈ 0.787
+- Scores test
+  - F1-macro = 0.7659
+  - Balanced accuracy = 0.7676
 
 ---
 
@@ -52,10 +72,11 @@ style: |
 - Baseline CV (mean): bal.acc ≈ 0.7662 • F1-macro ≈ 0.7625
 - Meilleurs hyperparams:
 ```json
-{"sampler":"passthrough","model__class_weight":null,
- "model__n_estimators":400,"model__max_features":"sqrt",
+{"sampler":"ROS","model__class_weight":null,
+ "model__n_estimators":400,"model__max_features":0.8,
  "model__min_samples_split":2,"model__min_samples_leaf":1,
- "model__criterion":"gini","model__bootstrap":false,"model__max_depth":null}
+ "model__criterion":"gini","model__bootstrap":false,"model__max_depth":null,
+ "selector":"passthrough"}
 ```
 - Test: bal.acc = 0.7676 • F1-macro = 0.7659
 

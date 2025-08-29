@@ -5,8 +5,9 @@ ExtraTreesClassifier sur PlantVillage (v2) avec bonnes pratiques, commentaires e
 
 Objectifs et justifications:
 - Encodage / normalisation:
-  * Pas de standardisation/normalisation: les arbres de décision sont invariants aux échelles.
-  * Numériques: imputation médiane + winsorisation (1%–99%) pour limiter l'influence des valeurs extrêmes tout en conservant l'information.
+  * Par défaut: pas de standardisation/normalisation (arbres invariants aux échelles).
+  * Numériques: imputation médiane + winsorisation désactivée par défaut (ablation 0.1%–99.9% en grille).
+  * Conditionnel: RobustScaler activé uniquement quand un sur-échantillonnage synthétique (SMOTE/BorderlineSMOTE) est utilisé.
   * Catégorielles: OneHotEncoder(handle_unknown="ignore") pour robustesse aux nouvelles modalités.
 - Déséquilibre de classes:
   * Comparer class_weight (None, "balanced") avec RandomOverSampler (ROS), sans les cumuler.
@@ -39,7 +40,7 @@ import pandas as pd
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, RobustScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline as SkPipeline
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate, GridSearchCV
@@ -52,9 +53,11 @@ from sklearn.metrics import (
     make_scorer,
 )
 from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.feature_selection import SelectFromModel, SelectKBest, mutual_info_classif
+from sklearn.inspection import permutation_importance
 
 from imblearn.pipeline import Pipeline as ImbPipeline
-from imblearn.over_sampling import RandomOverSampler
+from imblearn.over_sampling import RandomOverSampler, SMOTE, BorderlineSMOTE
 
 import plotly.express as px
 import plotly.io as pio
@@ -72,7 +75,10 @@ from src.helpers.helpers import PROJECT_ROOT
 # Configuration & chemins
 # -----------------------------
 RANDOM_STATE: int = 42
-CSV_PATH: Path = PROJECT_ROOT / "dataset" / "plantvillage" / "csv" / "clean_with_features_data_plantvillage_segmented_all.csv"
+# CSV unique par défaut (override possible via CSV_PATH)
+DEFAULT_CSV_PATH: Path = PROJECT_ROOT / "dataset" / "plantvillage" / "csv" / "clean_data_plantvillage_segmented_all_with_features.csv"
+CSV_PATH_ENV = os.environ.get("CSV_PATH")
+CSV_PATH: Path = Path(CSV_PATH_ENV) if CSV_PATH_ENV else DEFAULT_CSV_PATH
 RESULTS_DIR: Path = PROJECT_ROOT / "results" / "models" / "extratrees_plantvillage_v2"  # dossier séparé pour v2
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 TARGET_COL: str = "species"
@@ -95,12 +101,13 @@ def print_plan() -> None:
     steps = [
         "1) Charger CSV propre + traiter NA cible/drapeaux is_na & is_duplicate_after_first",
         "2) Détecter colonnes numériques/catégorielles (exclure NON_FEATURE_COLS)",
-        "3) Pipeline: sampler -> preprocess(num: impute+winsorize, cat: impute+OHE) -> ExtraTrees",
+        "3) Pipeline: preprocess(num: impute[+winsor optionnel]+[scaler cond. si SMOTE], cat: impute+OHE) -> sampler -> selector -> ExtraTrees",
         "4) CV 5-fold stratifiée (balanced_accuracy, f1_macro, f1_micro, f1_weighted)",
-        "5) GridSearch: n_estimators, max_features, min_samples_*, class_weight vs ROS",
+        "5) GridSearch: n_estimators, max_features, min_samples_*, class_weight vs ROS/SMOTE/BorderlineSMOTE, winsor ablation, scaler conditionnel pour SMOTE",
         "6) Évaluation test + rapport + matrice de confusion + prédictions",
         "7) Interprétabilité: feature_importances_ (+ SHAP optionnel)",
         "8) Registre JSONL: dump de TOUS les essais de grid (params + scores)",
+        "9) Importance par permutation (scoring=f1_macro)",
     ]
     for s in steps:
         print(" -", s)
@@ -168,7 +175,12 @@ def load_clean_dataset(csv_path: Path = CSV_PATH, drop_duplicates_flag: bool = T
     n0 = len(df)
 
     if TARGET_COL not in df.columns:
-        raise ValueError(f"Colonne cible '{TARGET_COL}' absente du CSV. Colonnes: {list(df.columns)[:20]} ...")
+        # Mapping automatique courant: 'nom_plante' -> 'species'
+        if "nom_plante" in df.columns:
+            df = df.rename(columns={"nom_plante": TARGET_COL})
+            print("[INFO] Colonne cible renommée: 'nom_plante' -> 'species'")
+        else:
+            raise ValueError(f"Colonne cible '{TARGET_COL}' absente du CSV. Colonnes: {list(df.columns)[:20]} ...")
     df = df.dropna(subset=[TARGET_COL])
 
     if drop_duplicates_flag and ("is_duplicate_after_first" in df.columns):
@@ -208,11 +220,11 @@ def stratified_split(X: pd.DataFrame, y: pd.Series, test_size: float = 0.2, rand
 # -----------------------------
 
 def build_preprocessor(numeric_features: List[str], categorical_features: List[str]) -> ColumnTransformer:
-    # Numériques: imputer médiane + winsorisation pour gérer NA/outliers
+    # Numériques: imputer médiane (winsor optionnel, désactivé par défaut)
     num_pipe = SkPipeline(steps=[
         ("imputer", SimpleImputer(strategy="median")),
-        ("winsor", Winsorizer(lower=0.01, upper=0.99)),
-        # IMPORTANT: pas de scaler (arbres invariants aux échelles)
+        ("winsor", "passthrough"),  # ablation possible via grille si souhaité
+        ("scaler", "passthrough"),  # RobustScaler activé conditionnellement si SMOTE/BorderlineSMOTE
     ])
     # Catégorielles: imputer mode + OHE robuste aux catégories inconnues
     cat_pipe = SkPipeline(steps=[
@@ -243,10 +255,11 @@ def build_pipeline(numeric_features: List[str], categorical_features: List[str],
         random_state=random_state,
         n_jobs=N_JOBS_ESTIMATOR,  # parallélisation interne
     )
-    # ImbPipeline: sampler AVANT preprocess pour éviter fuite de données
+    # Ordre: preprocess -> sampler -> selector -> model (sampler agit sur les features déjà prétraitées)
     pipe = ImbPipeline(steps=[
-        ("sampler", "passthrough"),  # configuré par Grid (passthrough, ROS)
         ("preprocess", pre),
+        ("sampler", "passthrough"),  # configuré par Grid (passthrough, ROS)
+        ("selector", "passthrough"),  # SelectKBest / SelectFromModel / passthrough
         ("model", model),
     ])
     return pipe
@@ -275,7 +288,7 @@ def _param_grid_common() -> Dict[str, List[Any]]:
         "model__max_depth": [None],
         "model__min_samples_split": [2, 5],
         "model__min_samples_leaf": [1, 2],
-        "model__max_features": ["sqrt"],
+        "model__max_features": ["sqrt", 0.5, 0.8],
         "model__bootstrap": [False],
         "model__criterion": ["gini"],
     }
@@ -291,15 +304,89 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
     }
 
     # Ne pas cumuler sampler et class_weight="balanced" (évite double correction du déséquilibre)
+    # Sélecteurs de features optionnels
+    selector_kbest = SelectKBest(score_func=mutual_info_classif)
+    selector_sfm = SelectFromModel(
+        estimator=ExtraTreesClassifier(
+            n_estimators=100,
+            max_depth=None,
+            max_features="sqrt",
+            random_state=random_state,
+            n_jobs=N_JOBS_ESTIMATOR,
+        ),
+        threshold="median",
+    )
     param_grid = [
         {
             "sampler": ["passthrough"],
+            "selector": ["passthrough"],
+            "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
+            "preprocess__num__scaler": ["passthrough"],
             "model__class_weight": [None, "balanced"],
             **_param_grid_common(),
         },
         {
-            # Over-sampling simple
+            # Over-sampling simple (ROS)
             "sampler": [RandomOverSampler(random_state=random_state)],
+            "selector": ["passthrough"],
+            "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
+            "preprocess__num__scaler": ["passthrough"],
+            "model__class_weight": [None],
+            **_param_grid_common(),
+        },
+        {
+            # SMOTE + scaler robuste sur numériques
+            "sampler": [SMOTE(random_state=random_state)],
+            "selector": ["passthrough"],
+            "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
+            "preprocess__num__scaler": [RobustScaler()],
+            "model__class_weight": [None],
+            **_param_grid_common(),
+        },
+        {
+            # BorderlineSMOTE + scaler robuste sur numériques
+            "sampler": [BorderlineSMOTE(random_state=random_state)],
+            "selector": ["passthrough"],
+            "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
+            "preprocess__num__scaler": [RobustScaler()],
+            "model__class_weight": [None],
+            **_param_grid_common(),
+        },
+        {
+            # Sélection univariée mutual information
+            "sampler": ["passthrough"],
+            "selector": [selector_kbest],
+            "selector__k": [30],
+            "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
+            "preprocess__num__scaler": ["passthrough"],
+            "model__class_weight": [None],
+            **_param_grid_common(),
+        },
+        {
+            # Sélection univariée + ROS
+            "sampler": [RandomOverSampler(random_state=random_state)],
+            "selector": [selector_kbest],
+            "selector__k": [30],
+            "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
+            "preprocess__num__scaler": ["passthrough"],
+            "model__class_weight": [None],
+            **_param_grid_common(),
+        },
+        {
+            # SelectFromModel (ExtraTrees) seuil médian
+            "sampler": ["passthrough"],
+            "selector": [selector_sfm],
+            "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
+            "preprocess__num__scaler": ["passthrough"],
+            "model__class_weight": [None],
+            **_param_grid_common(),
+        },
+        {
+            # SelectFromModel + ROS
+            "sampler": [RandomOverSampler(random_state=random_state)],
+            "selector": [selector_sfm],
+            "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
+            "preprocess__num__scaler": ["passthrough"],
             "model__class_weight": [None],
             **_param_grid_common(),
         },
@@ -337,6 +424,12 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
         "cv_splits": cv_splits,
         "n_jobs_estimator": N_JOBS_ESTIMATOR,
         "n_jobs_outer": N_JOBS_OUTER,
+        # Métadonnées explicites de la grille
+        "grid_samplers": ["passthrough", "ROS", "SMOTE", "BorderlineSMOTE"],
+        "winsor_ablation": True,
+        "robust_scaler_conditional": True,
+        "selector_options": ["passthrough", "SelectKBest", "SelectFromModel"],
+        "refit_metric": "f1_macro",
     })
 
     return gs
@@ -350,6 +443,8 @@ def _label_approach_from_params(row: pd.Series) -> str:
         return "Undersampling: RUS"
     if "RandomOverSampler" in s:
         return "Oversampling: ROS"
+    if "BorderlineSMOTE" in s:
+        return "Oversampling: Borderline-SMOTE"
     if "SMOTE" in s:
         return "Oversampling: SMOTE"
     if str(cw_val) == "balanced":
@@ -374,6 +469,7 @@ def summarize_and_plot(cv_results_df: pd.DataFrame) -> None:
         s = str(v)
         if "RandomUnderSampler" in s: return "RUS"
         if "RandomOverSampler" in s: return "ROS"
+        if "BorderlineSMOTE" in s: return "BorderlineSMOTE"
         if "SMOTE" in s: return "SMOTE"
         if s == "passthrough": return "passthrough"
         return s
@@ -496,6 +592,42 @@ def evaluate_on_test(best_estimator: ImbPipeline, X_test: pd.DataFrame, y_test: 
         "y_pred": y_pred,
     }
 
+    
+def permutation_importance_analysis(
+    best_estimator: ImbPipeline,
+    X_test: pd.DataFrame,
+    y_test: pd.Series,
+    feature_names_selected: List[str],
+    eval_dir: Path,
+    scoring: str = "f1_macro",
+    n_repeats: int = 10,
+) -> pd.DataFrame:
+    """Calcule et enregistre l'importance par permutation sur les features après preprocess/selector."""
+    preprocess = best_estimator.named_steps["preprocess"]
+    X_tr = preprocess.transform(X_test)
+    selector = best_estimator.named_steps.get("selector", None)
+    if selector is not None and hasattr(selector, "transform"):
+        try:
+            X_tr = selector.transform(X_tr)
+        except Exception:
+            pass
+    model: ExtraTreesClassifier = best_estimator.named_steps["model"]
+    r = permutation_importance(
+        model, X_tr, y_test,
+        scoring=scoring,
+        n_repeats=n_repeats,
+        random_state=RANDOM_STATE,
+        n_jobs=N_JOBS_OUTER,
+    )
+    pi_df = pd.DataFrame({
+        "feature": list(feature_names_selected),
+        "importance_mean": r.importances_mean,
+        "importance_std": r.importances_std,
+    }).sort_values("importance_mean", ascending=False)
+    eval_dir.mkdir(exist_ok=True, parents=True)
+    pi_df.to_csv(eval_dir / "permutation_importances.csv", index=False)
+    return pi_df
+
 
 def analyze_feature_importances(best_estimator: ImbPipeline, feature_names_transformed: List[str], top_k: int = 40) -> pd.DataFrame:
     model: ExtraTreesClassifier = best_estimator.named_steps["model"]
@@ -517,6 +649,13 @@ def shap_analysis(best_estimator: ImbPipeline, X_train: pd.DataFrame, feature_na
         preprocess = best_estimator.named_steps["preprocess"]
         model: ExtraTreesClassifier = best_estimator.named_steps["model"]
         Xtr = preprocess.transform(X_train)
+        # Appliquer aussi le sélecteur s'il existe
+        selector = best_estimator.named_steps.get("selector", None)
+        if selector is not None and hasattr(selector, "transform"):
+            try:
+                Xtr = selector.transform(Xtr)
+            except Exception:
+                pass
         if sample_size and Xtr.shape[0] > sample_size:
             idx = np.random.RandomState(RANDOM_STATE).choice(Xtr.shape[0], size=sample_size, replace=False)
             Xtr_s = Xtr[idx]
@@ -542,6 +681,25 @@ def shap_analysis(best_estimator: ImbPipeline, X_train: pd.DataFrame, feature_na
         print("SHAP summary sauvegardé.")
     except Exception as e:
         print(f"[WARN] SHAP a échoué: {e}")
+
+
+def save_class_distribution(y_train: pd.Series, y_test: pd.Series, out_dir: Path) -> None:
+    """Sauvegarde les distributions de classes pour train/test et un résumé d'imbalance."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    train_counts = y_train.value_counts().sort_values(ascending=False)
+    test_counts = y_test.value_counts().sort_values(ascending=False)
+    train_counts.to_csv(out_dir / "class_distribution_train.csv", header=["count"])
+    test_counts.to_csv(out_dir / "class_distribution_test.csv", header=["count"])
+
+    def _stats(s: pd.Series) -> Dict[str, Any]:
+        mn = int(s.min())
+        mx = int(s.max())
+        ratio = float(mn) / float(mx) if mx > 0 else None
+        return {"min": mn, "max": mx, "ratio_min_max": ratio, "n_classes": int(s.shape[0])}
+
+    with open(out_dir / "imbalance_summary.json", "w") as f:
+        json.dump({"train": _stats(train_counts), "test": _stats(test_counts)}, f, indent=2)
+    print("Distributions de classes sauvegardées dans:", out_dir)
 
 
 # -----------------------------
@@ -574,10 +732,14 @@ def main() -> None:
     t0 = time.time()
 
     # Charger données
+    print(f"CSV utilisé: {CSV_PATH}")
     df, X, y, num_cols, cat_cols = load_clean_dataset(CSV_PATH)
 
     # Split stratifié
     X_train, X_test, y_train, y_test = stratified_split(X, y, test_size=0.2, random_state=RANDOM_STATE)
+
+    # Résumé du déséquilibre (train/test)
+    save_class_distribution(y_train, y_test, RESULTS_DIR)
 
     # Pipeline
     pipe = build_pipeline(num_cols, cat_cols, RANDOM_STATE)
@@ -612,11 +774,24 @@ def main() -> None:
     except Exception:
         feature_names_transformed = [f"f{i}" for i in range(best_pipe.named_steps["model"].n_features_in_)]
 
+    # Si un sélecteur est utilisé, appliquer le masque pour garder les bons noms
+    try:
+        sel = best_pipe.named_steps.get("selector", None)
+        if sel is not None and hasattr(sel, "get_support"):
+            support = sel.get_support()
+            if support is not None and len(support) == len(feature_names_transformed):
+                feature_names_transformed = [n for n, keep in zip(feature_names_transformed, support) if keep]
+    except Exception:
+        pass
+
     # Importances
     _ = analyze_feature_importances(best_pipe, feature_names_transformed, top_k=40)
 
     # SHAP (optionnel)
     shap_analysis(best_pipe, X_train, feature_names_transformed, sample_size=400)
+
+    # Permutation importance (sur test, scoring macro-F1)
+    _ = permutation_importance_analysis(best_pipe, X_test, y_test, feature_names_transformed, eval_dir, scoring="f1_macro", n_repeats=10)
 
     print(f"\nTerminé en {time.time() - t0:.2f}s. Résultats: {RESULTS_DIR}")
 

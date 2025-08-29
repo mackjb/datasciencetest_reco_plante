@@ -25,6 +25,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+# caches
+.kagglehub/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -167,7 +169,7 @@ data/
 dataset/plantvillage/data/**
 dataset/flavia/data/**
 dataset/flavia/Leaves.tar.bz2
-dataset/new_plant_diseases_dataset/data/**
+dataset/New_Plant_Disease/data/**
 dataset/plant_disease/data/**
 
 results/

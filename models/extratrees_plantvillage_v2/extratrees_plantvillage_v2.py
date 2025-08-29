@@ -282,16 +282,16 @@ def cross_validate_baseline(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv
 
 
 def _param_grid_common() -> Dict[str, List[Any]]:
-    # Grille élargie (winsorisation reste optionnelle ailleurs, désactivée par défaut)
+    # Grille v2-lite (rapide; winsorisation reste optionnelle ailleurs, désactivée par défaut)
     return {
-        "model__n_estimators": [200, 400, 800, 1200],
-        "model__max_depth": [None, 20, 40],
-        "model__min_samples_split": [2, 5, 10],
-        "model__min_samples_leaf": [1, 2, 4],
-        "model__max_features": ["sqrt", "log2", 0.5, 0.8],
+        "model__n_estimators": [400, 800],
+        "model__max_depth": [None, 40],
+        "model__min_samples_split": [2, 5],
+        "model__min_samples_leaf": [1, 2],
+        "model__max_features": ["sqrt", 0.8],
         "model__bootstrap": [False],
-        "model__criterion": ["gini", "entropy"],
-        "model__ccp_alpha": [0.0, 0.0005, 0.001],
+        "model__criterion": ["gini"],
+        "model__ccp_alpha": [0.0],
     }
 
 

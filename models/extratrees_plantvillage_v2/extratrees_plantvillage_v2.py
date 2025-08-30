@@ -43,7 +43,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, RobustScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline as SkPipeline
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate, GridSearchCV
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate, GridSearchCV, RandomizedSearchCV, ParameterGrid
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -88,6 +88,43 @@ CPU_COUNT = os.cpu_count() or 2
 N_JOBS_ESTIMATOR = int(os.environ.get("N_JOBS_ESTIMATOR", max(1, CPU_COUNT // 2)))  # threads internes ExtraTrees
 N_JOBS_OUTER = int(os.environ.get("N_JOBS_OUTER", 1))  # parallélisme externe Grid/CV
 ENABLE_SHAP = os.environ.get("ENABLE_SHAP", "0") == "1"
+
+# Configuration de tuning (pilotée par ENV)
+TUNING_MODE = os.environ.get("TUNING_MODE", "lite").lower()  # 'lite', 'lite_plus', 'full'
+TUNING_SEARCH = os.environ.get("TUNING_SEARCH", "grid").lower()  # 'grid' ou 'random'
+PIPELINE_LITE = os.environ.get("PIPELINE_LITE", "1") == "1"  # si True, on restreint fortement samplers/selectors/winsor
+N_ITER_RANDOM = int(os.environ.get("N_ITER_RANDOM", 120))
+LITE_STRICT = os.environ.get("LITE_STRICT", "1") == "1"  # si True, réduit fortement la grille ExtraTrees (lite)
+
+# Sous-échantillonnage des données pour le tuning (stabilité mémoire). 1.0 = pas de sous-échantillonnage.
+try:
+    TUNING_SUBSAMPLE_FRAC = float(os.environ.get("TUNING_SUBSAMPLE_FRAC", "1.0"))
+except Exception:
+    TUNING_SUBSAMPLE_FRAC = 1.0
+
+# Sous-échantillonnage pour le refit final (évaluation test). 1.0 = pas de sous-échantillonnage.
+try:
+    REFIT_SUBSAMPLE_FRAC = float(os.environ.get("REFIT_SUBSAMPLE_FRAC", "1.0"))
+except Exception:
+    REFIT_SUBSAMPLE_FRAC = 1.0
+
+# Override optionnel du nombre d'arbres pour le refit final
+try:
+    _refit_ne = int(os.environ.get("REFIT_N_ESTIMATORS", "0"))
+    REFIT_N_ESTIMATORS: Optional[int] = _refit_ne if _refit_ne > 0 else None
+except Exception:
+    REFIT_N_ESTIMATORS = None
+
+# Nombre de splits pour la CV (tuning et baseline)
+try:
+    CV_SPLITS = int(os.environ.get("CV_SPLITS", "5"))
+except Exception:
+    CV_SPLITS = 5
+
+# Sécurité mémoire/CPU: sauter baseline/plots/permutation par défaut
+SKIP_BASELINE = os.environ.get("SKIP_BASELINE", "1") == "1"
+SKIP_PLOTS = os.environ.get("SKIP_PLOTS", "1") == "1"
+SKIP_PERM_IMPORTANCE = os.environ.get("SKIP_PERM_IMPORTANCE", "1") == "1"
 
 # Colonnes non-features (à exclure des entrées modèle)
 NON_FEATURE_COLS: List[str] = [
@@ -245,7 +282,7 @@ def build_preprocessor(numeric_features: List[str], categorical_features: List[s
 def build_pipeline(numeric_features: List[str], categorical_features: List[str], random_state: int = RANDOM_STATE) -> ImbPipeline:
     pre = build_preprocessor(numeric_features, categorical_features)
     model = ExtraTreesClassifier(
-        n_estimators=400,
+        n_estimators=200,
         max_depth=None,
         max_features="sqrt",
         min_samples_split=2,
@@ -294,18 +331,69 @@ def _param_grid_common() -> Dict[str, List[Any]]:
         "model__ccp_alpha": [0.0],
     }
 
+def _get_extratrees_param_grid(mode: str) -> Dict[str, List[Any]]:
+    """Retourne la grille d'hyperparamètres ExtraTrees selon le mode.
+    - lite: grille compacte (par défaut)
+    - lite_plus: légère extension (ex: n_estimators plus large)
+    - full: par défaut fallback sur lite si non défini
+    """
+    m = (mode or "lite").lower()
+    if m == "lite":
+        if LITE_STRICT:
+            # Ultralite: 1 seule combinaison ExtraTrees pour limiter drastiquement le coût
+            return {
+                "model__n_estimators": [400],
+                "model__max_depth": [40],
+                "model__min_samples_split": [2],
+                "model__min_samples_leaf": [1],
+                "model__max_features": ["sqrt"],
+                "model__bootstrap": [False],
+                "model__criterion": ["gini"],
+                "model__ccp_alpha": [0.0],
+            }
+        return _param_grid_common()
+    if m in ("lite_plus", "plus"):
+        return {
+            "model__n_estimators": [400, 800, 1200],
+            "model__max_depth": [None, 40],
+            "model__min_samples_split": [2, 5],
+            "model__min_samples_leaf": [1, 2],
+            "model__max_features": ["sqrt", 0.8],
+            "model__bootstrap": [False],
+            "model__criterion": ["gini"],
+            "model__ccp_alpha": [0.0],
+        }
+    # Fallback (full non encore étendu): utiliser la lite par défaut
+    return _param_grid_common()
 
-def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits: int = 5, random_state: int = RANDOM_STATE) -> GridSearchCV:
-    skf = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=random_state)
-    scoring = {
-        "bal_acc": make_scorer(balanced_accuracy_score),
-        "f1_macro": "f1_macro",
-        "f1_micro": "f1_micro",
-        "f1_weighted": "f1_weighted",
-    }
+def _build_param_grid(random_state: int, mode: str, pipeline_lite: bool) -> List[Dict[str, Any]]:
+    """Construit la grille de paramètres complète (pipeline + ExtraTrees) selon le mode et la sévérité pipeline_lite.
+    pipeline_lite=True réduit drastiquement les combinaisons pour stabilité mémoire/CPU.
+    """
+    grid_common = _get_extratrees_param_grid(mode)
 
-    # Ne pas cumuler sampler et class_weight="balanced" (évite double correction du déséquilibre)
-    # Sélecteurs de features optionnels
+    if pipeline_lite:
+        # Version très compacte: pas de winsor ablation, pas de sélecteurs, pas de SMOTE/BorderlineSMOTE
+        return [
+            {
+                "sampler": ["passthrough"],
+                "selector": ["passthrough"],
+                "preprocess__num__winsor": ["passthrough"],
+                "preprocess__num__scaler": ["passthrough"],
+                "model__class_weight": [None, "balanced"],
+                **grid_common,
+            },
+            {
+                "sampler": [RandomOverSampler(random_state=random_state)],
+                "selector": ["passthrough"],
+                "preprocess__num__winsor": ["passthrough"],
+                "preprocess__num__scaler": ["passthrough"],
+                "model__class_weight": [None],
+                **grid_common,
+            },
+        ]
+
+    # Mode complet: on reprend les 8 blocs initiaux
     selector_kbest = SelectKBest(score_func=mutual_info_classif)
     selector_sfm = SelectFromModel(
         estimator=ExtraTreesClassifier(
@@ -317,14 +405,15 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
         ),
         threshold="median",
     )
-    param_grid = [
+
+    return [
         {
             "sampler": ["passthrough"],
             "selector": ["passthrough"],
             "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
             "preprocess__num__scaler": ["passthrough"],
             "model__class_weight": [None, "balanced"],
-            **_param_grid_common(),
+            **grid_common,
         },
         {
             # Over-sampling simple (ROS)
@@ -333,7 +422,7 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
             "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
             "preprocess__num__scaler": ["passthrough"],
             "model__class_weight": [None],
-            **_param_grid_common(),
+            **grid_common,
         },
         {
             # SMOTE + scaler robuste sur numériques
@@ -342,7 +431,7 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
             "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
             "preprocess__num__scaler": [RobustScaler()],
             "model__class_weight": [None],
-            **_param_grid_common(),
+            **grid_common,
         },
         {
             # BorderlineSMOTE + scaler robuste sur numériques
@@ -351,7 +440,7 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
             "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
             "preprocess__num__scaler": [RobustScaler()],
             "model__class_weight": [None],
-            **_param_grid_common(),
+            **grid_common,
         },
         {
             # Sélection univariée mutual information
@@ -361,7 +450,7 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
             "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
             "preprocess__num__scaler": ["passthrough"],
             "model__class_weight": [None],
-            **_param_grid_common(),
+            **grid_common,
         },
         {
             # Sélection univariée + ROS
@@ -371,7 +460,7 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
             "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
             "preprocess__num__scaler": ["passthrough"],
             "model__class_weight": [None],
-            **_param_grid_common(),
+            **grid_common,
         },
         {
             # SelectFromModel (ExtraTrees) seuil médian
@@ -380,7 +469,7 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
             "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
             "preprocess__num__scaler": ["passthrough"],
             "model__class_weight": [None],
-            **_param_grid_common(),
+            **grid_common,
         },
         {
             # SelectFromModel + ROS
@@ -389,34 +478,82 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
             "preprocess__num__winsor": ["passthrough", Winsorizer(lower=0.001, upper=0.999)],
             "preprocess__num__scaler": ["passthrough"],
             "model__class_weight": [None],
-            **_param_grid_common(),
+            **grid_common,
         },
     ]
 
-    print("\nGridSearchCV (ExtraTrees hyperparams + équilibrage) ...")
-    gs = GridSearchCV(
-        estimator=pipe,
-        param_grid=param_grid,
-        cv=skf,
-        scoring=scoring,
-        refit="f1_macro",  # privilégier la macro-F1 au refit
-        n_jobs=N_JOBS_OUTER,  # éviter double parallélisme
-        verbose=1,
-        return_train_score=True,
-    )
-    gs.fit(X, y)
-    cv_df = pd.DataFrame(gs.cv_results_)
+
+def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits: int = 5, random_state: int = RANDOM_STATE) -> GridSearchCV:
+    skf = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=random_state)
+    scoring = {
+        "bal_acc": make_scorer(balanced_accuracy_score),
+        "f1_macro": "f1_macro",
+        "f1_micro": "f1_micro",
+        "f1_weighted": "f1_weighted",
+    }
+
+    # Construire la grille selon ENV
+    param_grid = _build_param_grid(random_state=random_state, mode=TUNING_MODE, pipeline_lite=PIPELINE_LITE)
+
+    # Compter les combinaisons (diagnostic)
+    if isinstance(param_grid, list):
+        n_candidates = sum(len(ParameterGrid(g)) for g in param_grid)
+    else:
+        n_candidates = len(ParameterGrid(param_grid))
+
+    # Sous-échantillonnage éventuel pour tuning
+    X_tune, y_tune = X, y
+    if 0.0 < TUNING_SUBSAMPLE_FRAC < 1.0:
+        X_tune, _, y_tune, _ = train_test_split(
+            X, y, train_size=TUNING_SUBSAMPLE_FRAC, random_state=random_state, stratify=y
+        )
+        print(f"[INFO] Sous-échantillonnage tuning: frac={TUNING_SUBSAMPLE_FRAC} -> {len(X_tune)} échantillons")
+
+    print("\nTuning (ExtraTrees hyperparams + équilibrage) ...")
+    print(f"[CFG] PIPELINE_LITE={PIPELINE_LITE} | LITE_STRICT={LITE_STRICT} | TUNING_MODE={TUNING_MODE} | TUNING_SEARCH={TUNING_SEARCH} | candidates={n_candidates}")
+
+    if TUNING_SEARCH == "random":
+        search = RandomizedSearchCV(
+            estimator=pipe,
+            param_distributions=param_grid,  # listes autorisées
+            n_iter=N_ITER_RANDOM,
+            random_state=random_state,
+            cv=skf,
+            scoring=scoring,
+            refit="f1_macro",
+            n_jobs=N_JOBS_OUTER,
+            verbose=1,
+            return_train_score=True,
+        )
+    else:
+        search = GridSearchCV(
+            estimator=pipe,
+            param_grid=param_grid,
+            cv=skf,
+            scoring=scoring,
+            refit="f1_macro",
+            n_jobs=N_JOBS_OUTER,
+            verbose=1,
+            return_train_score=True,
+        )
+
+    search.fit(X_tune, y_tune)
+    cv_df = pd.DataFrame(search.cv_results_)
     cv_df.to_csv(RESULTS_DIR / "gridsearch_results.csv", index=False)
 
     # Best params summary
     with open(RESULTS_DIR / "best_params.json", "w") as f:
         json.dump({
-            "best_params": gs.best_params_,
-            "best_score_f1_macro": float(gs.best_score_),
+            "best_params": search.best_params_,
+            "best_score_f1_macro": float(search.best_score_),
         }, f, indent=2)
-    print(f"Best params: {gs.best_params_} | best f1_macro: {gs.best_score_:.4f}")
+    print(f"Best params: {search.best_params_} | best f1_macro: {search.best_score_:.4f}")
 
     # Dump JSONL registry of all trials
+    grid_samplers = ["passthrough", "ROS"] if PIPELINE_LITE else ["passthrough", "ROS", "SMOTE", "BorderlineSMOTE"]
+    selector_opts = ["passthrough"] if PIPELINE_LITE else ["passthrough", "SelectKBest", "SelectFromModel"]
+    winsor_ablation = False if PIPELINE_LITE else True
+    robust_scaler_conditional = False if PIPELINE_LITE else True
     dump_trials_jsonl(cv_df, RESULTS_DIR / "grid_trials.jsonl", meta={
         "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
         "csv_path": str(CSV_PATH),
@@ -425,15 +562,22 @@ def tune_hyperparams(pipe: ImbPipeline, X: pd.DataFrame, y: pd.Series, cv_splits
         "cv_splits": cv_splits,
         "n_jobs_estimator": N_JOBS_ESTIMATOR,
         "n_jobs_outer": N_JOBS_OUTER,
+        # Config tuning
+        "tuning_mode": TUNING_MODE,
+        "tuning_search": TUNING_SEARCH,
+        "n_iter_random": N_ITER_RANDOM if TUNING_SEARCH == "random" else None,
+        "pipeline_lite": PIPELINE_LITE,
+        "n_param_settings": int(cv_df.shape[0]),
         # Métadonnées explicites de la grille
-        "grid_samplers": ["passthrough", "ROS", "SMOTE", "BorderlineSMOTE"],
-        "winsor_ablation": True,
-        "robust_scaler_conditional": True,
-        "selector_options": ["passthrough", "SelectKBest", "SelectFromModel"],
+        "grid_samplers": grid_samplers,
+        "winsor_ablation": winsor_ablation,
+        "robust_scaler_conditional": robust_scaler_conditional,
+        "selector_options": selector_opts,
         "refit_metric": "f1_macro",
+        "tuning_subsample_frac": TUNING_SUBSAMPLE_FRAC,
     })
 
-    return gs
+    return search
 
 
 def _label_approach_from_params(row: pd.Series) -> str:
@@ -745,23 +889,53 @@ def main() -> None:
     # Pipeline
     pipe = build_pipeline(num_cols, cat_cols, RANDOM_STATE)
 
-    # Baseline CV (pour référence sans tuning)
-    _ = cross_validate_baseline(pipe, X_train, y_train, cv_splits=5, random_state=RANDOM_STATE)
+    # Baseline CV (pour référence sans tuning) — sauté par défaut pour stabilité mémoire
+    if SKIP_BASELINE:
+        print("[INFO] SKIP_BASELINE=1 -> CV baseline sauté.")
+    else:
+        _ = cross_validate_baseline(pipe, X_train, y_train, cv_splits=CV_SPLITS, random_state=RANDOM_STATE)
 
     # Tuning (GridSearchCV avec refit macro-F1)
-    gs = tune_hyperparams(pipe, X_train, y_train, cv_splits=5, random_state=RANDOM_STATE)
+    gs = tune_hyperparams(pipe, X_train, y_train, cv_splits=CV_SPLITS, random_state=RANDOM_STATE)
 
     # Synthèse plots
-    try:
-        cv_df = pd.DataFrame(gs.cv_results_)
-        summarize_and_plot(cv_df)
-    except Exception as e:
-        print(f"[WARN] summarize_and_plot a échoué: {e}")
+    if SKIP_PLOTS:
+        print("[INFO] SKIP_PLOTS=1 -> synthèse plots sautée.")
+    else:
+        try:
+            cv_df = pd.DataFrame(gs.cv_results_)
+            summarize_and_plot(cv_df)
+        except Exception as e:
+            print(f"[WARN] summarize_and_plot a échoué: {e}")
 
     best_pipe: ImbPipeline = gs.best_estimator_
 
-    # Fit final sur train complet
-    best_pipe.fit(X_train, y_train)
+    # Optionnel: override n_estimators pour le refit final
+    if REFIT_N_ESTIMATORS is not None:
+        try:
+            best_pipe.set_params(model__n_estimators=REFIT_N_ESTIMATORS)
+            print(f"[INFO] REFIT_N_ESTIMATORS={REFIT_N_ESTIMATORS} -> override du nombre d'arbres pour le refit")
+        except Exception as e:
+            print(f"[WARN] Impossible d'appliquer REFIT_N_ESTIMATORS: {e}")
+
+    # Optionnel: sous-échantillonnage pour le refit final (stabilité mémoire)
+    X_refit, y_refit = X_train, y_train
+    if REFIT_SUBSAMPLE_FRAC and REFIT_SUBSAMPLE_FRAC < 1.0:
+        rs = np.random.RandomState(RANDOM_STATE)
+        n_refit = max(1, int(len(X_train) * float(REFIT_SUBSAMPLE_FRAC)))
+        try:
+            idx = rs.choice(X_train.index, size=n_refit, replace=False)
+            X_refit = X_train.loc[idx]
+            y_refit = y_train.loc[idx]
+        except Exception:
+            # fallback si les index ne sont pas des Index Pandas standards
+            idx = rs.choice(np.arange(len(X_train)), size=n_refit, replace=False)
+            X_refit = X_train.iloc[idx]
+            y_refit = y_train.iloc[idx]
+        print(f"[INFO] Sous-échantillonnage refit: frac={REFIT_SUBSAMPLE_FRAC} -> {len(idx)} échantillons")
+
+    # Fit final
+    best_pipe.fit(X_refit, y_refit)
 
     # Évaluation test
     eval_dir = RESULTS_DIR / "evaluation"
@@ -792,7 +966,10 @@ def main() -> None:
     shap_analysis(best_pipe, X_train, feature_names_transformed, sample_size=400)
 
     # Permutation importance (sur test, scoring macro-F1)
-    _ = permutation_importance_analysis(best_pipe, X_test, y_test, feature_names_transformed, eval_dir, scoring="f1_macro", n_repeats=10)
+    if SKIP_PERM_IMPORTANCE:
+        print("[INFO] SKIP_PERM_IMPORTANCE=1 -> importance par permutation sautée.")
+    else:
+        _ = permutation_importance_analysis(best_pipe, X_test, y_test, feature_names_transformed, eval_dir, scoring="f1_macro", n_repeats=10)
 
     print(f"\nTerminé en {time.time() - t0:.2f}s. Résultats: {RESULTS_DIR}")
 

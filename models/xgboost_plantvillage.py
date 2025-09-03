@@ -120,42 +120,62 @@ def evaluate_metrics(
 
 
 def save_confusion_and_worst_classes(cm: np.ndarray, classes: list[str], title_prefix: str, out_dir: Path) -> None:
-    """Sauvegarde la matrice de confusion et un barplot des classes les moins bien prédites.
+    """Sauvegarde des matrices de confusion (brute et normalisée) et un barplot des classes les moins bien prédites.
 
-    - La matrice de confusion est exportée en PNG pour une vision globale.
-    - Le barplot classe l'accuracy par classe (diagonale / somme ligne).
-
-    Paramètres
-    ----------
-    cm : np.ndarray
-        Matrice de confusion (shape: n_classes x n_classes).
-    classes : list[str]
-        Noms de classes (dans l'ordre du label encoder).
-    title_prefix : str
-        Préfixe pour les titres et noms de fichiers (pipeline/config).
-    out_dir : Path
-        Dossier de sortie.
+    - confusion_matrix_<title>.png : valeurs brutes (comptes)
+    - confusion_matrix_normalized_<title>.png : normalisée par lignes (rappels) avec annotations en %
+    - worst_classes_<title>.png : tri des classes par accuracy (diagonale / somme ligne)
     """
     out_dir.mkdir(parents=True, exist_ok=True)
-    # Confusion matrix heatmap
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=False, fmt='d', xticklabels=classes, yticklabels=classes, cmap="Blues")
-    plt.title(f"Matrice de confusion - {title_prefix}")
+
+    # 1) Matrice de confusion brute (comptes)
+    plt.figure(figsize=(12, 10))
+    ax = sns.heatmap(cm, annot=True, fmt='d', xticklabels=classes, yticklabels=classes,
+                     cmap="Blues", cbar_kws={"label": "Nombre"})
+    plt.title(f"Matrice de confusion (comptes) - {title_prefix}")
     plt.xlabel("Prédictions")
     plt.ylabel("Vraies classes")
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(rotation=0)
     plt.tight_layout()
-    plt.savefig(out_dir / f"confusion_matrix_{title_prefix.replace(' ', '_')}.png")
+    plt.savefig(out_dir / f"confusion_matrix_{title_prefix.replace(' ', '_')}.png", dpi=150)
     plt.close()
 
-    # Worst classes barplot (accuracy par classe)
+    # 2) Matrice de confusion normalisée par lignes (rappel par classe)
+    with np.errstate(invalid='ignore', divide='ignore'):
+        row_sums = cm.sum(axis=1, keepdims=True)
+        norm_cm = (cm / row_sums).astype(float)
+        norm_cm = np.nan_to_num(norm_cm, nan=0.0)
+
+    plt.figure(figsize=(12, 10))
+    ax = sns.heatmap(norm_cm, annot=True, fmt='.2f', xticklabels=classes, yticklabels=classes,
+                     cmap="YlGnBu", vmin=0, vmax=1, cbar_kws={"label": "Proportion"})
+    # Annoter aussi en pourcentage pour la lisibilité
+    for text in ax.texts:
+        try:
+            val = float(text.get_text())
+            text.set_text(f"{val*100:.0f}%")
+        except Exception:
+            pass
+    plt.title(f"Matrice de confusion normalisée (rappel %) - {title_prefix}")
+    plt.xlabel("Prédictions")
+    plt.ylabel("Vraies classes")
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    plt.savefig(out_dir / f"confusion_matrix_normalized_{title_prefix.replace(' ', '_')}.png", dpi=150)
+    plt.close()
+
+    # 3) Classes les moins bien prédites (accuracy par classe = diagonale / somme ligne)
     class_acc = (cm.diagonal() / cm.sum(axis=1).clip(min=1)).astype(float)
     class_acc_df = pd.DataFrame({"Classe": classes, "Accuracy": class_acc}).sort_values(by="Accuracy")
     plt.figure(figsize=(10, 8))
     sns.barplot(x="Accuracy", y="Classe", data=class_acc_df, palette="Reds_r")
     plt.xlim(0, 1)
+    plt.xlabel("Accuracy par classe")
     plt.title(f"Classes les moins bien prédites - {title_prefix}")
     plt.tight_layout()
-    plt.savefig(out_dir / f"worst_classes_{title_prefix.replace(' ', '_')}.png")
+    plt.savefig(out_dir / f"worst_classes_{title_prefix.replace(' ', '_')}.png", dpi=150)
     plt.close()
 
 

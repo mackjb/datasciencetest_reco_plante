@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import shutil
 
 import pandas as pd
 import seaborn as sns
@@ -142,6 +143,132 @@ def export_top_html(df: pd.DataFrame, outdir: Path, topn: int = 10) -> None:
     top_df.to_html(html_path, index=False)
 
 
+def generate_class_summary(class_results_path: Path, best_pipeline: str, best_config: str, outdir: Path) -> None:
+    """Génère un récapitulatif HTML des performances par classe pour le meilleur modèle.
+    
+    Args:
+        class_results_path: Chemin vers le fichier class_results.csv
+        best_pipeline: Nom du meilleur pipeline (ex: "XGBoost + PCA")
+        best_config: Nom de la meilleure configuration (ex: "Deep Trees")
+        outdir: Dossier de sortie pour le fichier HTML
+    """
+    try:
+        # Charger les résultats par classe
+        class_df = pd.read_csv(class_results_path)
+        
+        # Filtrer pour le meilleur modèle
+        best_df = class_df[
+            (class_df['Pipeline'] == best_pipeline) & 
+            (class_df['Config'] == best_config)
+        ].copy()
+        
+        if best_df.empty:
+            print(f"[WARN] Aucune donnée trouvée pour {best_pipeline} - {best_config}")
+            return
+            
+        # Calculer la variance des prédictions
+        # On utilise le coefficient de variation (écart-type/moyenne) pour normaliser
+        # et permettre la comparaison entre classes
+        metrics = ['Precision', 'Recall', 'F1_score']
+        for metric in metrics:
+            best_df[f'{metric}_cv'] = (best_df[metric].std() / best_df[metric].mean()) * 100
+        
+        # Trier par F1_score décroissant
+        best_df = best_df.sort_values('F1_score', ascending=False)
+        
+        # Formater les valeurs pour l'affichage
+        format_style = {
+            'F1_score': '{:.1%}'.format,
+            'Precision': '{:.1%}'.format,
+            'Recall': '{:.1%}'.format,
+            'Support': '{:,}'.format,
+            'F1_score_cv': '{:.1f}%'.format,
+            'Precision_cv': '{:.1f}%'.format,
+            'Recall_cv': '{:.1f}%'.format
+        }
+        
+        # Générer le HTML
+        html = """
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            <title>Détail par Classe - {pipeline} ({config})</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 24px; }}
+                h1, h2 {{ color: #2c3e50; }}
+                table {{ border-collapse: collapse; margin: 20px 0; width: 100%; }}
+                th, td {{ 
+                    border: 1px solid #ddd; 
+                    padding: 8px 12px;
+                    text-align: left;
+                }}
+                th {{ 
+                    background-color: #3498db; 
+                    color: white;
+                    position: sticky;
+                    top: 0;
+                }}
+                tr:nth-child(even) {{ background-color: #f2f2f2; }}
+                tr:hover {{ background-color: #e6f7ff; }}
+                .good {{ color: #27ae60; }}
+                .medium {{ color: #f39c12; }}
+                .bad {{ color: #e74c3c; }}
+                .summary {{ 
+                    background-color: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                }}
+            </style>
+        </head>
+        <body>
+            <h1>Détail des performances par Classe</h1>
+            <div class='summary'>
+                <h2>{pipeline} - {config}</h2>
+                <p>F1 Score moyen: <b>{mean_f1:.1%}</b> (médiane: {median_f1:.1%})</p>
+                <p>Variation (CV) entre classes: <b>{cv_f1:.1f}%</b> (écart-type/moyenne)</p>
+                <p>Nombre de classes: {num_classes}</p>
+            </div>
+            
+            <h2>Métriques détaillées</h2>
+            <div style='overflow-x:auto;'>
+                {table}
+            </div>
+            
+            <h2>Explications des colonnes</h2>
+            <ul>
+                <li><b>Classe</b>: Nom de la catégorie prédite (maladie/espèce).</li>
+                <li><b>F1_score</b>: Moyenne harmonique entre précision et rappel (entre 0 et 1). Intérêt: équilibre performance globale par classe; plus élevé = mieux.</li>
+                <li><b>Precision</b>: Parmi les images prédites dans cette classe, part de celles qui sont correctes. Intérêt: faible précision = trop de faux positifs.</li>
+                <li><b>Recall</b>: Parmi les images réellement de cette classe, part correctement retrouvée. Intérêt: faible rappel = trop de faux négatifs.</li>
+                <li><b>Support</b>: Nombre d'images de cette classe dans le test. Intérêt: aide à relativiser les scores (petit support = score plus instable).</li>
+                <li><b>F1_score_cv</b>, <b>Precision_cv</b>, <b>Recall_cv</b>: Coefficient de variation (%) des métriques entre classes (écart-type/moyenne × 100). Intérêt: plus petit = résultats plus homogènes; grand = disparités entre classes.</li>
+            </ul>
+            <p>Les lignes sont triées par F1_score décroissant pour mettre en avant les classes les plus performantes.</p>
+        </body>
+        </html>
+        """.format(
+            pipeline=best_pipeline,
+            config=best_config,
+            mean_f1=best_df['F1_score'].mean(),
+            median_f1=best_df['F1_score'].median(),
+            cv_f1=(best_df['F1_score'].std() / best_df['F1_score'].mean()) * 100,
+            num_classes=len(best_df),
+            table=best_df[['Classe', 'F1_score', 'Precision', 'Recall', 'Support', 
+                         'F1_score_cv', 'Precision_cv', 'Recall_cv']]
+                     .to_html(classes='dataframe', index=False, float_format='{:.1%}'.format,
+                             formatters=format_style)
+        )
+        
+        # Écrire le fichier
+        output_path = outdir / f"class_summary_{best_pipeline.lower().replace(' ', '_')}_{best_config.lower().replace(' ', '_')}.html"
+        output_path.write_text(html, encoding='utf-8')
+        print(f"Récapitulatif par classe généré: {output_path}")
+        
+    except Exception as e:
+        print(f"[ERREUR] Impossible de générer le récapitulatif par classe: {e}")
+
+
 def export_full_tables_html(df: pd.DataFrame, outdir: Path) -> None:
     """Exporte le tableau complet en HTML (brut et trié par Test_F1_weighted)."""
     full_path = outdir / "full_results.html"
@@ -203,6 +330,20 @@ def export_full_tables_html(df: pd.DataFrame, outdir: Path) -> None:
         )
 
         sorted_path.write_text(html, encoding="utf-8")
+        
+        # Générer le récapitulatif par classe pour le meilleur modèle
+        if not sorted_df.empty:
+            best_run = sorted_df.iloc[0]
+            class_results_path = outdir.parent / "class_results.csv"
+            if class_results_path.exists():
+                generate_class_summary(
+                    class_results_path=class_results_path,
+                    best_pipeline=best_run['Pipeline'],
+                    best_config=best_run['Config'],
+                    outdir=outdir
+                )
+            else:
+                print(f"[INFO] Fichier des résultats par classe non trouvé: {class_results_path}")
     except Exception as e:
         print(f"[WARN] Export HTML complet échoué: {e}")
 
@@ -237,6 +378,58 @@ def main() -> None:
     export_top_html(df, outdir, topn=topn)
     # Export HTML complet (brut et trié)
     export_full_tables_html(df, outdir)
+
+    # Export matrices de confusion du meilleur modèle si disponibles
+    try:
+        if not df.empty:
+            best = df.sort_values("Test_F1_weighted", ascending=False).iloc[0]
+            pipeline = str(best.get("Pipeline", "")).strip()
+            config = str(best.get("Config", "")).strip()
+            if pipeline and config:
+                parent_dir = outdir.parent  # e.g., results/models/xgboost
+                title_prefix = f"{pipeline} ({config})"
+                safe = title_prefix.replace(" ", "_")
+                src_counts = parent_dir / f"confusion_matrix_{safe}.png"
+                src_norm = parent_dir / f"confusion_matrix_normalized_{safe}.png"
+
+                dst_counts = outdir / "best_confusion_counts.png"
+                dst_norm = outdir / "best_confusion_normalized.png"
+
+                copied_any = False
+                if src_counts.exists():
+                    shutil.copy2(src_counts, dst_counts)
+                    copied_any = True
+                if src_norm.exists():
+                    shutil.copy2(src_norm, dst_norm)
+                    copied_any = True
+
+                # Générer une petite page HTML qui embarque les images si elles existent
+                html_parts = [
+                    "<html><head><meta charset='utf-8'><title>Matrices de confusion - Meilleur modèle</title>",
+                    "<style>body{font-family:Arial,sans-serif;margin:24px} h1,h2{color:#2c3e50} img{max-width:100%;height:auto;border:1px solid #ddd;margin:12px 0}</style>",
+                    "</head><body>",
+                    f"<h1>Matrices de confusion - {title_prefix}</h1>",
+                ]
+                if dst_counts.exists():
+                    html_parts += [
+                        "<h2>Confusion (comptes)</h2>",
+                        "<p>Nombre de prédictions par paire (vraie classe × classe prédite). Diagonale = bonnes prédictions.</p>",
+                        f"<img src='best_confusion_counts.png' alt='Confusion brute - {title_prefix}'>",
+                    ]
+                if dst_norm.exists():
+                    html_parts += [
+                        "<h2>Confusion normalisée (%)</h2>",
+                        "<p>Chaque ligne est normalisée (rappel par classe). Valeurs en %: plus la diagonale est proche de 100%, mieux c'est.</p>",
+                        f"<img src='best_confusion_normalized.png' alt='Confusion normalisée - {title_prefix}'>",
+                    ]
+                if not copied_any:
+                    html_parts += [
+                        "<p style='color:#a00'>Aucune matrice trouvée. Lancez le script d'entraînement pour les générer: <code>python models/xgboost_plantvillage.py --quick</code></p>",
+                    ]
+                html_parts += ["</body></html>"]
+                (outdir / "best_confusion.html").write_text("".join(html_parts), encoding="utf-8")
+    except Exception as e:
+        print(f"[WARN] Export des matrices de confusion ignoré: {e}")
 
     # Résumé console
     print("\nTop résultats (triés par Test_F1_weighted):")

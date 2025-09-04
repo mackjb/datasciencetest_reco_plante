@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-XGBoost multi-classes sur PlantVillage, équivalent au notebook `models/Lio_xgboost.ipynb`.
+
 
 Fonctionnalités:
 - Chargement CSV propre avec features
@@ -17,7 +17,7 @@ Fonctionnalités:
 - Sauvegarde de matrices de confusion et graphiques (PNG)
 
 Notes:
-- Par défaut, les hyperparamètres et la structure suivent le notebook.
+-
 - Ajout d'un flag --quick pour réduire la charge (moins d'arbres et CV à 3 folds) pour un premier run rapide.
 """
 
@@ -67,8 +67,6 @@ XGBConfig: TypeAlias = dict[str, int | float]
 SEED = 42
 DEFAULT_CSV = PROJECT_ROOT / "dataset" / "plantvillage" / "csv" / "clean_data_plantvillage_segmented_all_with_features.csv"
 TARGET_COL_NOTEBOOK = "nom_maladie"  # d'après le notebook
-RESULTS_DIR = PROJECT_ROOT / "results" / "models" / "xgboost"
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Configs XGBoost (comme le notebook)
 XGB_CONFIGS_FULL: Dict[str, XGBConfig] = {
@@ -226,6 +224,10 @@ def run(csv_path: Path, target_col: str, quick: bool = False, test_size: float =
         else:
             raise ValueError(f"Colonne cible '{target_col}' absente du CSV. Colonnes: {list(df.columns)[:30]} ...")
 
+    # Créer un répertoire de résultats spécifique à la cible pour éviter les écrasements
+    results_dir = PROJECT_ROOT / "results" / "models" / "xgboost" / str(target_col)
+    results_dir.mkdir(parents=True, exist_ok=True)
+
     # Encoder labels
     # On encode la cible en entiers [0..K-1] pour XGBoost et LDA.
     le = LabelEncoder()
@@ -373,7 +375,7 @@ def run(csv_path: Path, target_col: str, quick: bool = False, test_size: float =
 
             # Matrice de confusion
             cm = confusion_matrix(y_test, y_test_pred)
-            save_confusion_and_worst_classes(cm, classes, f"{pipe_name} ({config_name})", RESULTS_DIR)
+            save_confusion_and_worst_classes(cm, classes, f"{pipe_name} ({config_name})", results_dir)
 
     # Tableaux globaux
     # Tri des résultats par F1 pondéré sur test, puis export CSV.
@@ -381,10 +383,10 @@ def run(csv_path: Path, target_col: str, quick: bool = False, test_size: float =
     # Trier par F1_weighted test
     results_df_sorted = results_df.sort_values(by="Test_F1_weighted", ascending=False)
     results_df_export = results_df_sorted.drop(columns=["Model", "y_test", "y_pred"], errors="ignore")
-    results_df_export.to_csv(RESULTS_DIR / "global_results.csv", index=False)
+    results_df_export.to_csv(results_dir / "global_results.csv", index=False)
 
     class_results_df = pd.DataFrame(class_results)
-    class_results_df.to_csv(RESULTS_DIR / "class_results.csv", index=False)
+    class_results_df.to_csv(results_dir / "class_results.csv", index=False)
 
     print("\n📊 Résultats globaux (top):")
     print(results_df_export.head(10))
@@ -405,7 +407,7 @@ def run(csv_path: Path, target_col: str, quick: bool = False, test_size: float =
                 sns.barplot(x="Importance", y="Feature", data=feat_df)
                 plt.title(f"Top 20 features - {best_row['Pipeline']} ({best_row['Config']})")
                 plt.tight_layout()
-                plt.savefig(RESULTS_DIR / "top20_features_xgboost.png")
+                plt.savefig(results_dir / "top20_features_xgboost.png")
                 plt.close()
     except Exception as e:
         print(f"[WARN] Plot feature importance ignoré: {e}")
@@ -413,7 +415,7 @@ def run(csv_path: Path, target_col: str, quick: bool = False, test_size: float =
     # Sauvegarde d'un petit récap JSON
     try:
         summary = results_df_export.head(10).to_dict(orient="records")
-        with open(RESULTS_DIR / "summary.json", "w") as f:
+        with open(results_dir / "summary.json", "w") as f:
             json.dump(summary, f, indent=2)
     except Exception:
         pass

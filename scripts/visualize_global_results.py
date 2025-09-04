@@ -11,10 +11,14 @@ Génère plusieurs figures pour faciliter l'analyse:
 - Export d'un top résumé en HTML
 
 Usage:
+    # Mode classique (chemins explicites)
     python scripts/visualize_global_results.py \
         --csv results/models/xgboost/global_results.csv \
         --outdir results/models/xgboost/vis \
         --topn 10
+
+    # Nouveau: cibler automatiquement un sous-dossier par cible (nom_maladie / nom_plante)
+    python scripts/visualize_global_results.py --target nom_plante --topn 10
 """
 from __future__ import annotations
 
@@ -30,16 +34,27 @@ import matplotlib.pyplot as plt
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Visualisation de global_results.csv")
     p.add_argument(
+        "--target",
+        type=str,
+        default=None,
+        help=(
+            "Nom de la colonne cible pour résoudre automatiquement les chemins par défaut. "
+            "Ex: 'nom_maladie' ou 'nom_plante'. Si fourni, et que --csv/--outdir ne sont pas fournis, "
+            "alors les valeurs par défaut deviennent results/models/xgboost/<target>/global_results.csv "
+            "et results/models/xgboost/<target>/vis"
+        ),
+    )
+    p.add_argument(
         "--csv",
         type=str,
-        default="results/models/xgboost/global_results.csv",
-        help="Chemin du CSV des résultats globaux",
+        default=None,
+        help="Chemin du CSV des résultats globaux (si non fourni, résolu via --target)",
     )
     p.add_argument(
         "--outdir",
         type=str,
-        default="results/models/xgboost/vis",
-        help="Dossier de sortie pour les figures",
+        default=None,
+        help="Dossier de sortie pour les figures (si non fourni, résolu via --target)",
     )
     p.add_argument(
         "--topn",
@@ -350,9 +365,15 @@ def export_full_tables_html(df: pd.DataFrame, outdir: Path) -> None:
 
 def main() -> None:
     args = parse_args()
-    csv_path = Path(args.csv)
-    outdir = Path(args.outdir)
     topn = int(args.topn)
+
+    # Résolution des chemins par défaut (compat: si --csv/--outdir fournis, on les respecte)
+    base_dir = Path("results") / "models" / "xgboost"
+    if args.target:
+        base_dir = base_dir / args.target
+
+    csv_path = Path(args.csv) if args.csv else (base_dir / "global_results.csv")
+    outdir = Path(args.outdir) if args.outdir else (base_dir / "vis")
 
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV introuvable: {csv_path}")
@@ -379,7 +400,7 @@ def main() -> None:
     # Export HTML complet (brut et trié)
     export_full_tables_html(df, outdir)
 
-    # Export matrices de confusion du meilleur modèle si disponibles
+    # Export répartition des classes prédites (meilleur modèle)
     try:
         if not df.empty:
             best = df.sort_values("Test_F1_weighted", ascending=False).iloc[0]
@@ -387,47 +408,71 @@ def main() -> None:
             config = str(best.get("Config", "")).strip()
             if pipeline and config:
                 parent_dir = outdir.parent  # e.g., results/models/xgboost
-                title_prefix = f"{pipeline} ({config})"
-                safe = title_prefix.replace(" ", "_")
-                src_counts = parent_dir / f"confusion_matrix_{safe}.png"
-                src_norm = parent_dir / f"confusion_matrix_normalized_{safe}.png"
+                safe = f"{pipeline} ({config})".replace(" ", "_")
+                pred_dist_csv = parent_dir / f"predicted_distribution_{safe}.csv"
+                pred_df = None
+                if pred_dist_csv.exists():
+                    tmp = pd.read_csv(pred_dist_csv)
+                    if {"Classe", "Count"}.issubset(tmp.columns):
+                        pred_df = tmp.copy()
+                else:
+                    # Fallback: estimer via class_results.csv (PredCount ≈ Recall * Support / Precision)
+                    class_csv = parent_dir / "class_results.csv"
+                    if class_csv.exists():
+                        cr = pd.read_csv(class_csv)
+                        mask = (cr["Pipeline"].astype(str).str.strip() == pipeline) & (cr["Config"].astype(str).str.strip() == config)
+                        sub = cr.loc[mask, ["Classe", "Precision", "Recall", "Support"]].copy()
+                        if not sub.empty:
+                            # Eviter divisions par zéro
+                            sub["Precision"] = sub["Precision"].replace(0, pd.NA)
+                            sub["PredCount"] = (sub["Recall"] * sub["Support"]) / sub["Precision"]
+                            sub["PredCount"] = sub["PredCount"].fillna(0).clip(lower=0)
+                            pred_df = sub.rename(columns={"PredCount": "Count"})[["Classe", "Count"]]
+                if pred_df is not None and not pred_df.empty:
+                    pred_df = pred_df.sort_values("Count", ascending=False)
 
-                dst_counts = outdir / "best_confusion_counts.png"
-                dst_norm = outdir / "best_confusion_normalized.png"
+                    # Barplot counts
+                    plt.figure(figsize=(12, max(6, 0.35 * len(pred_df))))
+                    sns.barplot(data=pred_df, x="Count", y="Classe", palette="crest")
+                    plt.xlabel("Nombre de prédictions")
+                    plt.ylabel("Classe prédite")
+                    plt.title(f"Répartition des classes prédites - {pipeline} ({config})")
+                    plt.tight_layout()
+                    counts_png = outdir / "best_predicted_distribution_counts.png"
+                    plt.savefig(counts_png, dpi=150)
+                    plt.close()
 
-                copied_any = False
-                if src_counts.exists():
-                    shutil.copy2(src_counts, dst_counts)
-                    copied_any = True
-                if src_norm.exists():
-                    shutil.copy2(src_norm, dst_norm)
-                    copied_any = True
+                    # Barplot pourcentage
+                    total = pred_df["Count"].sum()
+                    pred_df["Percent"] = pred_df["Count"] / total * 100.0 if total > 0 else 0.0
+                    plt.figure(figsize=(12, max(6, 0.35 * len(pred_df))))
+                    sns.barplot(data=pred_df, x="Percent", y="Classe", palette="viridis")
+                    plt.xlabel("Pourcentage des prédictions (%)")
+                    plt.ylabel("Classe prédite")
+                    plt.title(f"Répartition des classes prédites (%) - {pipeline} ({config})")
+                    plt.tight_layout()
+                    perc_png = outdir / "best_predicted_distribution_percent.png"
+                    plt.savefig(perc_png, dpi=150)
+                    plt.close()
 
-                # Générer une petite page HTML qui embarque les images si elles existent
-                html_parts = [
-                    "<html><head><meta charset='utf-8'><title>Matrices de confusion - Meilleur modèle</title>",
-                    "<style>body{font-family:Arial,sans-serif;margin:24px} h1,h2{color:#2c3e50} img{max-width:100%;height:auto;border:1px solid #ddd;margin:12px 0}</style>",
-                    "</head><body>",
-                    f"<h1>Matrices de confusion - {title_prefix}</h1>",
-                ]
-                if dst_counts.exists():
-                    html_parts += [
-                        "<h2>Confusion (comptes)</h2>",
-                        "<p>Nombre de prédictions par paire (vraie classe × classe prédite). Diagonale = bonnes prédictions.</p>",
-                        f"<img src='best_confusion_counts.png' alt='Confusion brute - {title_prefix}'>",
-                    ]
-                if dst_norm.exists():
-                    html_parts += [
-                        "<h2>Confusion normalisée (%)</h2>",
-                        "<p>Chaque ligne est normalisée (rappel par classe). Valeurs en %: plus la diagonale est proche de 100%, mieux c'est.</p>",
-                        f"<img src='best_confusion_normalized.png' alt='Confusion normalisée - {title_prefix}'>",
-                    ]
-                if not copied_any:
-                    html_parts += [
-                        "<p style='color:#a00'>Aucune matrice trouvée. Lancez le script d'entraînement pour les générer: <code>python models/xgboost_plantvillage.py --quick</code></p>",
-                    ]
-                html_parts += ["</body></html>"]
-                (outdir / "best_confusion.html").write_text("".join(html_parts), encoding="utf-8")
+                    # HTML wrapper
+                    html = (
+                        "<html><head><meta charset='utf-8'><title>Répartition des classes prédites - Meilleur modèle</title>"
+                        "<style>body{font-family:Arial,sans-serif;margin:24px} h1,h2{color:#2c3e50} img{max-width:100%;height:auto;border:1px solid #ddd;margin:12px 0}</style>"
+                        "</head><body>"
+                        f"<h1>Répartition des classes prédites - {pipeline} ({config})</h1>"
+                        "<p style='color:#666'>Source: "
+                        + ("fichier de distribution prédite" if pred_dist_csv.exists() else "estimation via Recall×Support/Precision depuis class_results.csv")
+                        + "</p>"
+                        "<h2>Nombre de prédictions</h2>"
+                        f"<img src='{counts_png.name}' alt='Répartition (comptes)'>"
+                        "<h2>Pourcentage des prédictions</h2>"
+                        f"<img src='{perc_png.name}' alt='Répartition (%)'>"
+                        "</body></html>"
+                    )
+                    (outdir / "best_predicted_distribution.html").write_text(html, encoding="utf-8")
+                else:
+                    print(f"[INFO] Impossible de produire la répartition des classes (aucune donnée trouvée pour {pipeline} / {config}).")
     except Exception as e:
         print(f"[WARN] Export des matrices de confusion ignoré: {e}")
 

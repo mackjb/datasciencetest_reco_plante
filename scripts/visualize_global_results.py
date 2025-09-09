@@ -363,6 +363,137 @@ def export_full_tables_html(df: pd.DataFrame, outdir: Path) -> None:
         print(f"[WARN] Export HTML complet échoué: {e}")
 
 
+def generate_target_index(base_dir: Path, outdir: Path) -> None:
+    """Crée une page index.html dans base_dir listant les artefacts principaux.
+
+    base_dir: results/models/xgboost/<target>/
+    outdir: base_dir / "vis"
+    """
+    try:
+        entries = []
+        # Fichiers clés potentiels
+        files = {
+            "global_results.csv": base_dir / "global_results.csv",
+            "class_results.csv": base_dir / "class_results.csv",
+            "summary.json": base_dir / "summary.json",
+            "top20_features_xgboost.png": base_dir / "top20_features_xgboost.png",
+            "vis/top_results.html": outdir / "top_results.html",
+            "vis/full_results_sorted.html": outdir / "full_results_sorted.html",
+            "vis/full_results.html": outdir / "full_results.html",
+            "vis/scatter_cv_vs_test.png": outdir / "scatter_cv_vs_test.png",
+            "vis/barplot_topN_test_f1_weighted.png": outdir / "barplot_topN_test_f1_weighted.png",
+            "vis/barplot_mean_by_pipeline.png": outdir / "barplot_mean_by_pipeline.png",
+            "vis/best_predicted_distribution.html": outdir / "best_predicted_distribution.html",
+        }
+        for label, path in files.items():
+            if path.exists():
+                rel = path.relative_to(base_dir)
+                entries.append((label, str(rel)))
+
+        # Lister matrices de confusion (png + html)
+        conf_links = []
+        for p in sorted(base_dir.glob("confusion_matrix_*")):
+            if p.suffix.lower() in {".png", ".html"}:
+                conf_links.append(str(p.name))
+
+        # Lister distributions prédites
+        pred_dist_links = [p.name for p in sorted(base_dir.glob("predicted_distribution_*.csv"))]
+
+        # Interprétabilité (SHAP / LIME)
+        xai_dir = base_dir / "interpretability"
+        xai_links = []
+        if xai_dir.exists():
+            # Fichiers typiques
+            for name in [
+                "shap_summary_all_classes.png",
+                "shap_feature_impact_heatmap.png",
+                "xai_summary.json",
+                "lime_examples_index.json",
+            ]:
+                p = xai_dir / name
+                if p.exists():
+                    xai_links.append(str((p).relative_to(base_dir)))
+            # LIME HTML multiples
+            for p in sorted(xai_dir.glob("lime_example_*.html")):
+                xai_links.append(str(p.relative_to(base_dir)))
+
+        # Construire HTML
+        items_html = "".join(
+            f"<li><a href='{href}' target='_blank'>{label}</a></li>" for label, href in entries
+        )
+        conf_html = "".join(
+            f"<li><a href='{name}' target='_blank'>{name}</a></li>" for name in conf_links
+        )
+        pred_html = "".join(
+            f"<li><a href='{name}' target='_blank'>{name}</a></li>" for name in pred_dist_links
+        )
+        xai_html = "".join(
+            f"<li><a href='{href}' target='_blank'>{href}</a></li>" for href in xai_links
+        )
+
+        html = (
+            "<html><head><meta charset='utf-8'><title>Index des résultats</title>"
+            "<style>body{font-family:Arial,sans-serif;margin:24px} h1,h2{color:#2c3e50}"
+            "ul{line-height:1.6} .note{color:#666}</style></head><body>"
+            f"<h1>Index des résultats - {base_dir.name}</h1>"
+            "<p class='note'>Cette page regroupe les liens utiles pour la cible spécifiée (dossier courant).</p>"
+            "<h2>Tables et rapports</h2><ul>"
+            f"{items_html}"
+            "</ul>"
+            "<h2>Matrices de confusion (PNG / HTML interactif)</h2><ul>"
+            f"{conf_html if conf_html else '<li>Aucune matrice trouvée</li>'}"
+            "</ul>"
+            "<h2>Répartition des classes prédites</h2><ul>"
+            f"{pred_html if pred_html else '<li>Aucune distribution trouvée</li>'}"
+            "</ul>"
+            "<h2>Interprétabilité (SHAP / LIME)</h2><ul>"
+            f"{xai_html if xai_links else '<li>Aucun artefact trouvé</li>'}"
+            "</ul>"
+            "</body></html>"
+        )
+
+        (base_dir / "index.html").write_text(html, encoding="utf-8")
+        print(f"Index généré: {base_dir / 'index.html'}")
+    except Exception as e:
+        print(f"[WARN] Génération de l'index échouée: {e}")
+
+
+def generate_global_index(root_dir: Path) -> None:
+    """Crée un index global listant les cibles disponibles et pointant vers leurs index.
+
+    root_dir: results/models/xgboost
+    """
+    try:
+        targets = []
+        if root_dir.exists():
+            for d in sorted(root_dir.iterdir()):
+                if d.is_dir():
+                    idx = d / "index.html"
+                    if idx.exists():
+                        targets.append((d.name, idx.relative_to(root_dir)))
+
+        links_html = "".join(
+            f"<li><a href='{href}' target='_blank'>{name}</a></li>" for name, href in targets
+        )
+        if not links_html:
+            links_html = "<li>Aucune cible avec index trouvée</li>"
+
+        html = (
+            "<html><head><meta charset='utf-8'><title>Index global XGBoost</title>"
+            "<style>body{font-family:Arial,sans-serif;margin:24px} h1,h2{color:#2c3e50} ul{line-height:1.6}</style></head><body>"
+            "<h1>Index global des résultats XGBoost</h1>"
+            "<p>Sélectionnez une cible pour consulter ses rapports et figures.</p>"
+            "<h2>Cibles disponibles</h2><ul>"
+            f"{links_html}"
+            "</ul>"
+            "</body></html>"
+        )
+        (root_dir / "index.html").write_text(html, encoding="utf-8")
+        print(f"Index global généré: {root_dir / 'index.html'}")
+    except Exception as e:
+        print(f"[WARN] Génération de l'index global échouée: {e}")
+
+
 def main() -> None:
     args = parse_args()
     topn = int(args.topn)
@@ -480,6 +611,11 @@ def main() -> None:
     print("\nTop résultats (triés par Test_F1_weighted):")
     print(df.sort_values("Test_F1_weighted", ascending=False).head(topn))
     print(f"\nFigures et tableaux HTML exportés dans: {outdir}")
+
+    # Générer un index dans le dossier cible
+    generate_target_index(base_dir, outdir)
+    # Mettre à jour l'index global
+    generate_global_index(base_dir.parent)
 
 
 if __name__ == "__main__":

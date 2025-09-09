@@ -136,7 +136,8 @@ def save_confusion_and_worst_classes(cm: np.ndarray, classes: list[str], title_p
     plt.xticks(rotation=45, ha='right')
     plt.yticks(rotation=0)
     plt.tight_layout()
-    plt.savefig(out_dir / f"confusion_matrix_{title_prefix.replace(' ', '_')}.png", dpi=150)
+    cm_png = out_dir / f"confusion_matrix_{title_prefix.replace(' ', '_')}.png"
+    plt.savefig(cm_png, dpi=150)
     plt.close()
 
     # 2) Matrice de confusion normalisée par lignes (rappel par classe)
@@ -161,7 +162,8 @@ def save_confusion_and_worst_classes(cm: np.ndarray, classes: list[str], title_p
     plt.xticks(rotation=45, ha='right')
     plt.yticks(rotation=0)
     plt.tight_layout()
-    plt.savefig(out_dir / f"confusion_matrix_normalized_{title_prefix.replace(' ', '_')}.png", dpi=150)
+    cmn_png = out_dir / f"confusion_matrix_normalized_{title_prefix.replace(' ', '_')}.png"
+    plt.savefig(cmn_png, dpi=150)
     plt.close()
 
     # 3) Classes les moins bien prédites (accuracy par classe = diagonale / somme ligne)
@@ -175,6 +177,53 @@ def save_confusion_and_worst_classes(cm: np.ndarray, classes: list[str], title_p
     plt.tight_layout()
     plt.savefig(out_dir / f"worst_classes_{title_prefix.replace(' ', '_')}.png", dpi=150)
     plt.close()
+
+    # 4) Exports des données et HTML interactif (sans dépendance Python à Plotly via CDN)
+    try:
+        # Sauvegarde JSON (classes + matrices)
+        data = {
+            "title": title_prefix,
+            "classes": classes,
+            "cm": cm.tolist(),
+            "cm_normalized": norm_cm.tolist(),
+        }
+        json_path = out_dir / f"confusion_data_{title_prefix.replace(' ', '_')}.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+        # Gabarit HTML pour heatmap interactive via Plotly CDN
+        def make_heatmap_html(matrix_name: str, page_title: str) -> str:
+            return (
+                "<html><head><meta charset='utf-8'>"
+                f"<title>{page_title}</title>"
+                "<script src='https://cdn.plot.ly/plotly-2.27.0.min.js'></script>"
+                "<style>body{font-family:Arial,sans-serif;margin:24px} #plot{max-width:95vw;}</style>"
+                "</head><body>"
+                f"<h1>{page_title}</h1>"
+                "<div id='plot'></div>"
+                "<script>"
+                "const data = " + json.dumps(data) + ";"
+                "const z = data['" + matrix_name + "'];"
+                "const classes = data['classes'];"
+                "const text = z.map((row, i) => row.map((v, j) => `${classes[i]} → ${classes[j]}: ${v}`));"
+                "const layout = {"
+                "  xaxis: {title: 'Prédictions', tickmode: 'array', tickvals: [...Array(classes.length).keys()], ticktext: classes, automargin: true},"
+                "  yaxis: {title: 'Vraies classes', tickmode: 'array', tickvals: [...Array(classes.length).keys()], ticktext: classes, automargin: true},"
+                "  margin: {l: 140, r: 20, t: 40, b: 120},"
+                "  width: 1000, height: 900"
+                "};"
+                "Plotly.newPlot('plot', [{type: 'heatmap', z: z, colorscale: 'Blues', text: text, hoverinfo: 'text', showscale: true}], layout);"
+                "</script></body></html>"
+            )
+
+        html_counts = make_heatmap_html("cm", f"Matrice de confusion (comptes) - {title_prefix}")
+        html_norm = make_heatmap_html("cm_normalized", f"Matrice de confusion normalisée (rappel %) - {title_prefix}")
+
+        # Sauvegarder les HTML interactifs
+        (out_dir / f"confusion_matrix_interactive_{title_prefix.replace(' ', '_')}.html").write_text(html_counts, encoding="utf-8")
+        (out_dir / f"confusion_matrix_normalized_interactive_{title_prefix.replace(' ', '_')}.html").write_text(html_norm, encoding="utf-8")
+    except Exception as e:
+        print(f"[WARN] Export HTML interactif des matrices ignoré: {e}")
 
 
 # -----------------------------
@@ -376,6 +425,19 @@ def run(csv_path: Path, target_col: str, quick: bool = False, test_size: float =
             # Matrice de confusion
             cm = confusion_matrix(y_test, y_test_pred)
             save_confusion_and_worst_classes(cm, classes, f"{pipe_name} ({config_name})", results_dir)
+
+            # Distribution prédite réelle (pour la visualisation)
+            try:
+                # Compter par étiquette prédite (index encodés -> noms de classes)
+                counts = np.bincount(y_test_pred, minlength=len(classes))
+                pred_df = pd.DataFrame({
+                    "Classe": classes,
+                    "Count": counts.astype(int),
+                }).sort_values("Count", ascending=False)
+                safe = f"{pipe_name} ({config_name})".replace(" ", "_")
+                pred_df.to_csv(results_dir / f"predicted_distribution_{safe}.csv", index=False)
+            except Exception as e:
+                print(f"[WARN] Impossible d'enregistrer la distribution prédite: {e}")
 
     # Tableaux globaux
     # Tri des résultats par F1 pondéré sur test, puis export CSV.

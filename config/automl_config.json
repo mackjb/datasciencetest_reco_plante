@@ -1,0 +1,50 @@
+{
+    "data": {
+        "csv_path": "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all_with_features.csv",
+        "target_type": "maladie",
+        "test_size": 0.2
+    },
+    "preprocessing": {
+        "normalize": true,
+        "normalize_method": "robust",
+        "feature_selection": true,
+        "remove_outliers": true,
+        "fix_imbalance": true,
+        "remove_multicollinearity": true,
+        "multicollinearity_threshold": 0.9
+    },
+    "models": {
+        "include": [
+            "lr",
+            "knn",
+            "nb",
+            "dt",
+            "svm",
+            "rbfsvm",
+            "gpc",
+            "mlp",
+            "ridge",
+            "rf",
+            "qda",
+            "ada",
+            "gbc",
+            "lda",
+            "et",
+            "lightgbm"
+        ],
+        "optimize_metric": "F1",
+        "n_best_models": 3,
+        "cv_folds": 5
+    },
+    "optimization": {
+        "n_iter": 20,
+        "search_library": "optuna",
+        "search_algorithm": "tpe",
+        "early_stopping": true
+    },
+    "output": {
+        "directory": "results/automl",
+        "save_model": true,
+        "save_predictions": true
+    }
+}

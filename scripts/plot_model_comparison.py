@@ -1,44 +1,61 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 
 # Données des modèles
-models = ['XGBoost + PCA', 'XGBoost + LDA', 'XGBoost']
-before_opt = [85.54, 85.92, 83.00]  # F1 scores avant optimisation
-after_opt = [86.67, 81.61, 81.07]    # F1 scores après optimisation
+data = {
+    'Tâche': ['Espèces']*5 + ['Maladies']*5,
+    'Modèle': [
+        'LightGBM', 'Random Forest', 'AdaBoost', 'KNN', 'LDA',
+        'LightGBM', 'Random Forest', 'AdaBoost', 'KNN', 'LDA'
+    ],
+    'F1-Score': [
+        0.8997, 0.8718, 0.8420, 0.7680, 0.7421,  # Espèces
+        0.8148, 0.7773, 0.7508, 0.6489, 0.6252   # Maladies
+    ],
+    'AUC': [
+        0.9929, 0.9888, 0.9756, 0.9341, 0.0000,  # Espèces
+        0.9867, 0.9796, 0.9632, 0.8952, 0.0000   # Maladies
+    ]
+}
 
-x = np.arange(len(models))
-width = 0.35
+df = pd.DataFrame(data)
 
-fig, ax = plt.subplots(figsize=(12, 6))
-rects1 = ax.bar(x - width/2, before_opt, width, label='Avant Optimisation', color='#3498db')
-rects2 = ax.bar(x + width/2, after_opt, width, label='Après Optimisation', color='#e74c3c')
+# Configuration du style
+sns.set_theme(style="whitegrid")
+plt.figure(figsize=(14, 8))
 
-# Ajout des étiquettes et du titre
-ax.set_ylabel('Score F1 (%)', fontsize=12)
-ax.set_title('Comparaison des Performances Avant/Après Optimisation', pad=20, fontsize=14)
-ax.set_xticks(x)
-ax.set_xticklabels(models, fontsize=11)
-ax.legend(fontsize=10)
+# Palette de couleurs
+palette = sns.color_palette("husl", 5)
 
-# Ajout des valeurs sur les barres
-def autolabel(rects):
-    for rect in rects:
-        height = rect.get_height()
-        ax.annotate(f'{height:.2f}%',
-                    xy=(rect.get_x() + rect.get_width() / 2, height),
-                    xytext=(0, 3),
-                    textcoords="offset points",
-                    ha='center', va='bottom', fontsize=9)
+# Graphique F1-Score
+plt.subplot(1, 2, 1)
+sns.barplot(x='Tâche', y='F1-Score', hue='Modèle', data=df, palette=palette)
+plt.title('Comparaison des Scores F1 par Modèle', pad=15, fontsize=14)
+plt.ylim(0, 1.0)
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
-autolabel(rects1)
-autolabel(rects2)
+# Graphique AUC
+plt.subplot(1, 2, 2)
+sns.barplot(x='Tâche', y='AUC', hue='Modèle', data=df, palette=palette)
+plt.title('Comparaison des AUC par Modèle', pad=15, fontsize=14)
+plt.ylim(0, 1.1)
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
-plt.ylim(0, 100)
-plt.grid(axis='y', linestyle='--', alpha=0.7)
+# Ajustement et enregistrement
 plt.tight_layout()
-
-# Enregistrement du graphique
-output_path = '/workspaces/datasciencetest_reco_plante/figures/model_comparison_before_after.png'
+output_path = 'figures/comparaison_modeles_performance.png'
 plt.savefig(output_path, dpi=300, bbox_inches='tight')
 print(f"Graphique de comparaison enregistré sous : {output_path}")
+
+# Création d'un graphique séparé pour les meilleurs modèles
+plt.figure(figsize=(10, 6))
+best_models = df[df['Modèle'].isin(['LightGBM', 'Random Forest', 'AdaBoost'])]
+sns.barplot(x='Tâche', y='F1-Score', hue='Modèle', data=best_models, palette=palette[:3])
+plt.title('Comparaison des 3 Meilleurs Modèles (F1-Score)', pad=15, fontsize=14)
+plt.ylim(0.7, 0.95)
+plt.tight_layout()
+output_path_best = 'figures/meilleurs_modeles_comparison.png'
+plt.savefig(output_path_best, dpi=300, bbox_inches='tight')
+print(f"Graphique des meilleurs modèles enregistré sous : {output_path_best}")

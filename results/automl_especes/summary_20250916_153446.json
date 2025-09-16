@@ -1,0 +1,50 @@
+{
+    "date_execution": "20250916_153446",
+    "meilleur_modele": "Light Gradient Boosting Machine",
+    "score_metrique": "F1",
+    "valeur_score": 0.8997,
+    "fichier_resultats": "results/automl_especes/model_comparison_20250916_153446.csv",
+    "fichier_modele": "results/automl_especes/best_model_20250916_153446.pkl",
+    "metriques": [
+        {
+            "Model": "Light Gradient Boosting Machine",
+            "Accuracy": 0.9003,
+            "F1": 0.8997,
+            "AUC": 0.9929,
+            "Recall": 0.9003,
+            "Prec.": 0.8998
+        },
+        {
+            "Model": "Random Forest Classifier",
+            "Accuracy": 0.8725,
+            "F1": 0.8718,
+            "AUC": 0.9888,
+            "Recall": 0.8725,
+            "Prec.": 0.873
+        },
+        {
+            "Model": "Extra Trees Classifier",
+            "Accuracy": 0.87,
+            "F1": 0.8687,
+            "AUC": 0.9881,
+            "Recall": 0.87,
+            "Prec.": 0.8698
+        },
+        {
+            "Model": "K Neighbors Classifier",
+            "Accuracy": 0.7615,
+            "F1": 0.768,
+            "AUC": 0.9341,
+            "Recall": 0.7615,
+            "Prec.": 0.7922
+        },
+        {
+            "Model": "Linear Discriminant Analysis",
+            "Accuracy": 0.7355,
+            "F1": 0.7421,
+            "AUC": 0.0,
+            "Recall": 0.7355,
+            "Prec.": 0.7694
+        }
+    ]
+}

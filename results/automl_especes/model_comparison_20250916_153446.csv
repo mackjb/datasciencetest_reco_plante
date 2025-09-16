@@ -1,0 +1,6 @@
+Model,Accuracy,AUC,Recall,Prec.,F1,Kappa,MCC,TT (Sec)
+Light Gradient Boosting Machine,0.9003,0.9929,0.9003,0.8998,0.8997,0.8818,0.8819,45.2933
+Random Forest Classifier,0.8725,0.9888,0.8725,0.873,0.8718,0.8497,0.8499,64.7733
+Extra Trees Classifier,0.87,0.9881,0.87,0.8698,0.8687,0.8466,0.8468,12.3433
+K Neighbors Classifier,0.7615,0.9341,0.7615,0.7922,0.768,0.7258,0.7294,16.5967
+Linear Discriminant Analysis,0.7355,0.0,0.7355,0.7694,0.7421,0.6963,0.7002,1.07

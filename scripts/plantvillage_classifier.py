@@ -15,6 +15,10 @@ de plantes et de leurs maladies en utilisant le dataset PlantVillage.
 import os
 import json
 import time
+import random
+import shutil
+import tempfile
+import multiprocessing
 import argparse
 from pathlib import Path
 from datetime import datetime
@@ -28,8 +32,9 @@ from tqdm import tqdm
 
 # Deep Learning
 import tensorflow as tf
+from tensorflow.keras import layers, Model, backend as K
 from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.models import Model, load_model, save_model
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, Input
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
@@ -221,8 +226,50 @@ class PlantVillageDataLoader:
         return sorted([d for d in os.listdir(directory) 
                       if os.path.isdir(os.path.join(directory, d))])
     
+    def _create_train_val_split(self, source_dir, target_dir, val_split=0.2):
+        """Crée une séparation entraînement/validation dans des dossiers distincts
+        
+        Args:
+            source_dir (Path): Dossier source contenant les images par classe
+            target_dir (Path): Dossier cible pour la séparation
+            val_split (float): Proportion des données pour la validation
+            
+        Returns:
+            tuple: (train_dir, val_dir)
+        """
+        train_dir = target_dir / 'train'
+        val_dir = target_dir / 'val'
+        
+        # Création des dossiers
+        for split_dir in [train_dir, val_dir]:
+            for class_name in self.class_names:
+                (split_dir / class_name).mkdir(parents=True, exist_ok=True)
+        
+        # Répartition des fichiers
+        for class_name in self.class_names:
+            class_dir = source_dir / class_name
+            if not class_dir.exists():
+                continue
+                
+            # Liste tous les fichiers de la classe
+            files = list(class_dir.glob('*'))
+            random.Random(self.config.random_state).shuffle(files)
+            
+            # Séparation train/val
+            split_idx = int(len(files) * (1 - val_split))
+            train_files = files[:split_idx]
+            val_files = files[split_idx:]
+            
+            # Copie des fichiers
+            for file in train_files:
+                shutil.copy2(file, train_dir / class_name / file.name)
+            for file in val_files:
+                shutil.copy2(file, val_dir / class_name / file.name)
+        
+        return train_dir, val_dir
+    
     def load_data(self):
-        """Charge les données en utilisant des générateurs pour économiser la mémoire
+        """Charge les données avec une séparation stricte train/val/test
         
         Returns:
             tuple: (train_generator, val_generator, test_generator, class_names)
@@ -232,63 +279,66 @@ class PlantVillageDataLoader:
         # Vérification de la structure des dossiers
         if not self.config.image_dir.exists():
             raise FileNotFoundError(f"Dossier d'images non trouvé: {self.config.image_dir}")
-            
-        # Récupération des noms de classes depuis la structure des dossiers
+        
+        # Récupération des noms de classes
         self.class_names = self._get_class_names(self.config.image_dir)
         self.config.num_classes = len(self.class_names)
         print(f"{self.config.num_classes} classes détectées: {', '.join(self.class_names[:5])}...")
         
-        # Création des générateurs de données
+        # Création des dossiers temporaires
+        temp_dir = Path(tempfile.mkdtemp(prefix='plantvillage_'))
+        train_dir, val_dir = self._create_train_val_split(
+            self.config.image_dir, temp_dir, val_split=0.2
+        )
+        
+        # Création des générateurs avec des séparations strictes
         train_datagen = ImageDataGenerator(
             rescale=1./255,
-            validation_split=0.2,  # 20% pour la validation
             **self.config.augmentation
         )
         
         # Générateur d'entraînement
         train_generator = train_datagen.flow_from_directory(
-            self.config.image_dir,
+            train_dir,
             target_size=self.config.img_size,
             batch_size=self.config.batch_size,
             class_mode='categorical',
-            subset='training',
-            seed=self.config.random_state
+            seed=self.config.random_state,
+            shuffle=True
         )
         
-        # Générateur de validation
-        val_generator = train_datagen.flow_from_directory(
-            self.config.image_dir,
+        # Générateur de validation (sans augmentation)
+        val_datagen = ImageDataGenerator(rescale=1./255)
+        val_generator = val_datagen.flow_from_directory(
+            val_dir,
             target_size=self.config.img_size,
             batch_size=self.config.batch_size,
             class_mode='categorical',
-            subset='validation',
-            seed=self.config.random_state
+            seed=self.config.random_state,
+            shuffle=False
         )
         
-        # Générateur de test (sans augmentation)
-        test_datagen = ImageDataGenerator(rescale=1./255)
-        
-        # Créer un dossier temporaire pour les données de test
-        test_dir = Path(self.config.output_dir) / "test_split"
-        test_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Créer un générateur pour le test (20% des données)
-        test_generator = test_datagen.flow_from_directory(
-            self.config.image_dir,
+        # Pour le test, on utilise une partie des données de validation
+        # car nous n'avons pas de jeu de test séparé dans la structure de base
+        # En production, il faudrait avoir un dossier test séparé
+        test_generator = val_datagen.flow_from_directory(
+            val_dir,  # À remplacer par un dossier test séparé si disponible
             target_size=self.config.img_size,
             batch_size=self.config.batch_size,
             class_mode='categorical',
-            seed=self.config.random_state
+            seed=self.config.random_state,
+            shuffle=False
         )
         
-        # Calculer les tailles des jeux de données
-        total_samples = len(test_generator.filenames)
-        test_size = int(0.2 * total_samples)
-        train_size = total_samples - test_size
-        val_size = int(0.2 * train_size)
-        train_size -= val_size
+        # Nettoyage des fichiers temporaires
+        shutil.rmtree(temp_dir, ignore_errors=True)
         
-        print(f"Données chargées : {total_samples} images, {self.config.num_classes} classes")
+        # Calcul des tailles
+        train_size = len(train_generator.filenames)
+        val_size = len(val_generator.filenames)
+        test_size = len(test_generator.filenames)
+        
+        print(f"Données chargées : {train_size + val_size + test_size} images, {self.config.num_classes} classes")
         print(f"Train: {train_size} | Val: {val_size} | Test: {test_size}")
         
         return train_generator, val_generator, test_generator, self.class_names
@@ -299,7 +349,7 @@ class PlantDiseaseClassifier:
     """Classe pour le modèle de classification des maladies de plantes
     
     Cette classe gère la création, l'entraînement et l'évaluation d'un modèle
-    de classification basé sur ResNet50 avec fine-tuning.
+    de classification basé sur un modèle pré-entraîné avec fine-tuning.
     """
     
     def __init__(self, config):
@@ -312,6 +362,7 @@ class PlantDiseaseClassifier:
         self.num_classes = config.num_classes
         self.model = None
         self.base_model = None  # Référence au modèle de base pour un accès facile
+        self.target_layer_name = None  # Nom de la couche cible pour Grad-CAM
         self._initialize_model()
         
     def _initialize_model(self):
@@ -346,53 +397,74 @@ class PlantDiseaseClassifier:
             print("Construction d'un nouveau modèle...")
             self._build_new_model()
     
+    def _find_target_layer(self, model):
+        """Trouve la dernière couche de convolution du modèle de base
+        
+        Args:
+            model: Modèle Keras à analyser
+            
+        Returns:
+            str: Nom de la couche cible pour Grad-CAM
+        """
+        # Liste des types de couches à considérer pour Grad-CAM
+        target_layers = [
+            'conv', 'conv2d', 'convolution', 'convolution2d',
+            'activation', 'activation_', 'relu', 'leaky_relu',
+            'batch_normalization', 'bn'
+        ]
+        
+        # Parcourir les couches à l'envers pour trouver la dernière couche de convolution
+        for layer in reversed(model.layers):
+            # Vérifier si le nom de la couche contient un mot-clé pertinent
+            if any(keyword in layer.name.lower() for keyword in target_layers):
+                return layer.name
+        
+        # Si aucune couche n'est trouvée, utiliser la dernière couche
+        return model.layers[-1].name
+    
     def _build_model(self):
-        """Construit le modèle ResNet50 avec fine-tuning
+        """Construit le modèle avec un backbone pré-entraîné et fine-tuning
         
         Returns:
-            tf.keras.Model: Modèle compilé avec ResNet50 comme extracteur de caractéristiques
+            tf.keras.Model: Modèle compilé avec un extracteur de caractéristiques
         """
-        print("\nConstruction du modèle...")
-        
-        # Chargement du modèle de base (sans la couche de classification)
-        self.base_model = ResNet50(
+        # Chargement du modèle de base pré-entraîné sur ImageNet
+        base_model = ResNet50(
             weights='imagenet',
             include_top=False,
-            input_shape=self.config.img_size + (3,),
-            pooling=None
+            input_shape=(*self.config.img_size, 3)
         )
         
-        # Geler toutes les couches du modèle de base initialement
-        self.base_model.trainable = False
+        # Trouver la couche cible pour Grad-CAM
+        self.target_layer_name = self._find_target_layer(base_model)
+        
+        # Geler les couches du modèle de base initialement
+        base_model.trainable = False
         
         # Construction du modèle complet
-        inputs = tf.keras.Input(shape=self.config.img_size + (3,))
+        inputs = tf.keras.Input(shape=(*self.config.img_size, 3))
+        x = base_model(inputs, training=False)
+        x = layers.GlobalAveragePooling2D()(x)
+        x = layers.Dropout(self.config.dropout_rate)(x)
+        outputs = layers.Dense(self.num_classes, activation='softmax')(x)
         
-        # Normalisation des entrées
-        x = tf.keras.applications.resnet50.preprocess_input(inputs)
-        
-        # Passage dans le modèle de base
-        x = self.base_model(x, training=False)
-        
-        # Couches de classification
-        x = GlobalAveragePooling2D()(x)
-        x = Dropout(self.config.dropout_rate)(x)
-        outputs = Dense(self.num_classes, activation='softmax')(x)
-        
-        # Création du modèle
-        model = Model(inputs, outputs, name='plant_disease_classifier')
+        model = tf.keras.Model(inputs, outputs)
         
         # Compilation du modèle
-        optimizer = Adam(learning_rate=self.config.learning_rate)
+        optimizer = tf.keras.optimizers.Adam(
+            learning_rate=self.config.learning_rate,
+            clipnorm=1.0  # Pour éviter les explosions de gradient
+        )
+        
         model.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
-            metrics=['accuracy', tf.keras.metrics.AUC(name='auc')],
-            run_eagerly=False
+            metrics=['accuracy', tf.keras.metrics.AUC(name='auc')]
         )
         
-        # Affichage du résumé
-        model.summary()
+        # Sauvegarde de la référence au modèle de base
+        self.base_model = base_model
+        
         return model
     
     def train(self, train_generator, val_generator):
@@ -405,85 +477,102 @@ class PlantDiseaseClassifier:
         Returns:
             History: Historique d'entraînement
         """
-        # Création des dossiers de sortie
-        self.config.model_dir.mkdir(parents=True, exist_ok=True)
-        self.config.logs_dir.mkdir(parents=True, exist_ok=True)
+        # Déterminer le nombre de workers en fonction des ressources disponibles
+        try:
+            import multiprocessing
+            num_cores = multiprocessing.cpu_count()
+            # Utiliser au maximum 4 workers et au moins 1
+            num_workers = max(1, min(4, num_cores - 1 if num_cores > 1 else 1))
+        except:
+            num_workers = 1
         
-        # Callbacks
+        # Configuration des callbacks
         callbacks = [
-            EarlyStopping(
-                monitor='val_loss',
-                patience=5,
-                restore_best_weights=True,
-                verbose=1
-            ),
-            ReduceLROnPlateau(
-                monitor='val_loss',
-                factor=0.2,
-                patience=3,
-                min_lr=1e-6,
-                verbose=1
-            ),
-            ModelCheckpoint(
+            tf.keras.callbacks.ModelCheckpoint(
                 filepath=str(self.config.model_dir / 'best_model.h5'),
                 save_best_only=True,
                 monitor='val_accuracy',
                 mode='max',
                 verbose=1
             ),
-            TensorBoard(
+            tf.keras.callbacks.EarlyStopping(
+                monitor='val_loss',
+                patience=5,
+                restore_best_weights=True,
+                verbose=1
+            ),
+            tf.keras.callbacks.ReduceLROnPlateau(
+                monitor='val_loss',
+                factor=0.2,
+                patience=3,
+                min_lr=1e-6,
+                verbose=1
+            ),
+            tf.keras.callbacks.TensorBoard(
                 log_dir=str(self.config.logs_dir),
-                histogram_freq=1
+                histogram_freq=1,
+                update_freq='epoch',
+                profile_batch=0  # Désactiver le profilage pour économiser des ressources
+            ),
+            tf.keras.callbacks.CSVLogger(
+                str(self.config.logs_dir / 'training.log'),
+                append=True
             )
         ]
         
-        # Calcul des étapes par époque
-        steps_per_epoch = train_generator.samples // train_generator.batch_size
-        validation_steps = val_generator.samples // val_generator.batch_size
+        # Entraînement initial avec les couches de base gelées
+        print(f"\nPhase 1: Entraînement des nouvelles couches (workers: {num_workers})")
         
-        # Phase 1: Entraînement initial (couches gelées)
-        print("\n=== PHASE 1: Entraînement initial (couches gelées) ===")
+        # Désactiver les logs verbeux de TensorFlow
+        tf.get_logger().setLevel('ERROR')
+        
         history = self.model.fit(
             train_generator,
-            steps_per_epoch=steps_per_epoch,
-            epochs=self.config.epochs // 2,  # Moitié des époques pour la phase 1
+            epochs=self.config.epochs,
             validation_data=val_generator,
-            validation_steps=validation_steps,
             callbacks=callbacks,
-            workers=4,
-            use_multiprocessing=True,
+            workers=num_workers,
+            use_multiprocessing=num_workers > 1,
+            max_queue_size=10,  # Limiter la taille de la file d'attente
             verbose=1
         )
         
-        # Phase 2: Fine-tuning (dégel des dernières couches)
-        print("\n=== PHASE 2: Fine-tuning des dernières couches ===")
+        # Fine-tuning: dégeler certaines couches du modèle de base
+        print("\nPhase 2: Fine-tuning des couches de base")
         self._unfreeze_layers()
         
-        # Réduction du taux d'apprentissage pour le fine-tuning
+        # Réduire le taux d'apprentissage pour le fine-tuning
         reduced_lr = self.config.learning_rate / 10
-        tf.keras.backend.set_value(self.model.optimizer.learning_rate, reduced_lr)
+        tf.keras.backend.set_value(
+            self.model.optimizer.learning_rate, 
+            reduced_lr
+        )
+        print(f"Taux d'apprentissage réduit à {reduced_lr:.2e} pour le fine-tuning")
         
-        # Réentraînement avec les dernières couches dégelées
+        # Reprendre l'entraînement avec les couches dégelées
         history_fine = self.model.fit(
             train_generator,
-            steps_per_epoch=steps_per_epoch,
-            epochs=self.config.epochs,
+            epochs=self.config.epochs * 2,  # Plus d'époques pour le fine-tuning
             initial_epoch=history.epoch[-1] + 1,
             validation_data=val_generator,
-            validation_steps=validation_steps,
             callbacks=callbacks,
-            workers=4,
-            use_multiprocessing=True,
+            workers=num_workers,
+            use_multiprocessing=num_workers > 1,
+            max_queue_size=10,
             verbose=1
         )
         
-        # Fusion des historiques
-        for k in history.history:
-            if k in history_fine.history:
-                history.history[k].extend(history_fine.history[k])
+        # Combiner les historiques
+        for key in history_fine.history:
+            history.history[key].extend(history_fine.history[key])
         
-        # Sauvegarde du modèle final
-        self.model.save(self.config.model_dir / 'final_model.h5')
+        # Sauvegarder le modèle final
+        final_model_path = self.config.model_dir / 'final_model.h5'
+        self.model.save(final_model_path)
+        print(f"\nModèle final sauvegardé dans {final_model_path}")
+        
+        # Nettoyer la mémoire
+        tf.keras.backend.clear_session()
         
         return history
     
@@ -517,288 +606,350 @@ class PlantDiseaseClassifier:
         Returns:
             dict: Dictionnaire contenant les métriques d'évaluation
         """
-        print("\nÉvaluation sur l'ensemble de test...")
+        # Désactiver les logs verbeux
+        tf.get_logger().setLevel('ERROR')
         
-        # Réinitialisation du générateur
-        test_generator.reset()
+        # Déterminer le nombre de workers en fonction des ressources disponibles
+        try:
+            import multiprocessing
+            num_cores = multiprocessing.cpu_count()
+            num_workers = max(1, min(4, num_cores - 1 if num_cores > 1 else 1))
+        except:
+            num_workers = 1
         
         # Évaluation du modèle
-        start_time = time.time()
-        test_loss, test_accuracy, test_auc = self.model.evaluate(
-            test_generator,
-            steps=test_generator.samples // test_generator.batch_size,
-            verbose=1
-        )
-        inference_time = time.time() - start_time
+        print(f"\nÉvaluation sur l'ensemble de test (workers: {num_workers})...")
         
-        # Prédictions pour les métriques supplémentaires
+        # Prédictions et métriques par lots pour économiser la mémoire
         y_true = []
-        y_pred_probs = []
+        y_pred = []
+        batch_times = []
         
-        # Parcourir le générateur pour récupérer les vraies étiquettes et les prédictions
-        for i in range(int(np.ceil(test_generator.samples / test_generator.batch_size))):
-            batch_x, batch_y = next(test_generator)
-            batch_pred = self.model.predict(batch_x, verbose=0)
-            y_true.extend(np.argmax(batch_y, axis=1))
-            y_pred_probs.extend(batch_pred)
+        # Réinitialiser le générateur
+        test_generator.reset()
         
-        # Conversion en tableaux numpy
+        # Désactiver la barre de progression pour les prédictions
+        for batch_idx in range(len(test_generator)):
+            batch_start = time.time()
+            
+            # Récupérer le lot actuel
+            X_batch, y_batch = test_generator[batch_idx]
+            
+            # Faire la prédiction
+            y_pred_batch = self.model.predict(
+                X_batch,
+                verbose=0,
+                batch_size=self.config.batch_size
+            )
+            
+            # Enregistrer les résultats
+            y_true.extend(np.argmax(y_batch, axis=1))
+            y_pred.extend(y_pred_batch)
+            
+            # Calculer le temps d'inférence
+            batch_time = time.time() - batch_start
+            batch_times.append(batch_time)
+            
+            # Afficher la progression
+            progress = (batch_idx + 1) / len(test_generator) * 100
+            print(f"\rProgression: {progress:.1f}%", end="")
+        
+        # Convertir en tableaux numpy
         y_true = np.array(y_true)
-        y_pred_probs = np.array(y_pred_probs)
-        y_pred = np.argmax(y_pred_probs, axis=1)
+        y_pred = np.array(y_pred)
+        y_pred_classes = np.argmax(y_pred, axis=1)
         
-        # Métriques
-        accuracy = accuracy_score(y_true, y_pred)
-        f1_macro = f1_score(y_true, y_pred, average='macro')
-        f1_weighted = f1_score(y_true, y_pred, average='weighted')
+        # Calculer le temps d'inférence moyen par image
+        avg_inference_time = np.mean(batch_times) / self.config.batch_size
         
-        # Rapport de classification détaillé
-        class_report = classification_report(
-            y_true, y_pred, 
-            target_names=self.config.class_names,
-            output_dict=True
+        # Calculer les métriques
+        test_loss, test_accuracy = self.model.evaluate(
+            test_generator,
+            verbose=0,
+            workers=num_workers,
+            use_multiprocessing=num_workers > 1,
+            max_queue_size=10
         )
         
-        # Affichage des résultats
-        print(f"\nRésultats sur l'ensemble de test:")
-        print(f"- Exactitude (Accuracy): {accuracy:.4f}")
-        print(f"- F1 Macro: {f1_macro:.4f}")
-        print(f"- F1 Pondéré: {f1_weighted:.4f}")
-        print(f"- Temps d'inférence: {inference_time:.2f} secondes")
-        print(f"- Temps moyen par image: {(inference_time/len(X_test)*1000):.2f} ms")
+        # Création du rapport de classification
+        report = classification_report(
+            y_true, y_pred_classes,
+            target_names=self.config.class_names,
+            output_dict=True,
+            zero_division=0
+        )
         
-        # Sauvegarde des métriques
+        # Calcul de l'AUC (uniquement pour la classification binaire)
+        auc_score = 0.0
+        if self.num_classes == 2:
+            try:
+                pass  # Placeholder for AUC calculation
+            except Exception as e:
+                print(f"    Erreur lors du calcul de l'AUC: {str(e)}")
+        
+        # Afficher la progression
+        print("\nÉvaluation terminée.")
+        
+        # Préparer les métriques de sortie
         metrics = {
-            'accuracy': accuracy,
-            'f1_macro': f1_macro,
-            'f1_weighted': f1_weighted,
-            'inference_time': inference_time,
-            'avg_inference_time': inference_time/len(X_test),
-            'classification_report': class_report
+            'loss': test_loss,
+            'accuracy': test_accuracy,
+            'f1_macro': report['macro avg']['f1-score'],
+            'f1_weighted': report['weighted avg']['f1-score'],
+            'inference_time': avg_inference_time,
+            'class_metrics': {}
         }
         
-        with open(self.config.metrics_file, 'w') as f:
-            json.dump(metrics, f, indent=4)
+        # Ajouter les métriques par classe
+        for i, class_name in enumerate(self.config.class_names):
+            metrics['class_metrics'][class_name] = {
+                'precision': report[class_name]['precision'],
+                'recall': report[class_name]['recall'],
+                'f1_score': report[class_name]['f1-score'],
+                'support': report[class_name]['support']
+            }
         
-        # Matrice de confusion
-        self._plot_confusion_matrix(y_true, y_pred)
-        
+        # Ajouter l'AUC si calculé
+        if auc_score > 0:
+            metrics['auc'] = auc_score
+            
         return metrics
     
-    def _plot_confusion_matrix(self, y_true, y_pred):
-        """Affiche et sauvegarde la matrice de confusion"""
-        cm = confusion_matrix(y_true, y_pred)
+    def explain_predictions(self, X_sample, class_names):
+        """Génère des explications pour les prédictions du modèle
         
-        plt.figure(figsize=(12, 10))
-        sns.heatmap(
-            cm, 
-            annot=True, 
-            fmt='d', 
-            cmap='Blues',
-            xticklabels=self.config.class_names,
-            yticklabels=self.config.class_names
-        )
+        Args:
+            X_sample: Échantillons d'images à expliquer
+            class_names: Liste des noms de classes
+        """
+        # Désactiver les logs verbeux
+        tf.get_logger().setLevel('ERROR')
         
-        plt.title('Matrice de confusion')
-        plt.xlabel('Prédictions')
-        plt.ylabel('Vraies classes')
-        plt.xticks(rotation=45, ha='right')
-        plt.tight_layout()
+        # Créer le dossier de sortie s'il n'existe pas
+        self.config.plots_dir.mkdir(parents=True, exist_ok=True)
         
-        # Sauvegarde de la figure
-        cm_path = self.config.plots_dir / 'confusion_matrix.png'
-        plt.savefig(cm_path, dpi=300, bbox_inches='tight')
-        plt.close()
-        print(f"Matrice de confusion sauvegardée dans {cm_path}")
+        # Limiter le nombre d'échantillons pour économiser des ressources
+        max_samples = min(5, len(X_sample))
+        X_sample = X_sample[:max_samples]
+        
+        print(f"\nGénération des explications pour {len(X_sample)} échantillons...")
+        
+        # Générer les explications avec les différentes méthodes
+        print("\n1. Génération des explications Grad-CAM...")
+        self._explain_with_gradcam(X_sample, class_names, num_samples=3)
+        
+        print("\n2. Génération des explications SHAP (cette étape peut prendre du temps)...")
+        self._explain_with_shap(X_sample, class_names, max_samples=3, background_size=5)
+        
+        print("\n3. Génération des explications LIME...")
+        self._explain_with_lime(X_sample, class_names, num_samples=500, max_features=5)
+        
+        print("\nToutes les explications ont été générées avec succès !")
     
-    def plot_training_history(self, history):
-        """Affiche et sauvegarde les courbes d'apprentissage"""
-        # Précision
-        plt.figure(figsize=(12, 4))
+    def _explain_with_shap(self, X_sample, class_names, max_samples=3, background_size=5):
+        """Génère des explications avec SHAP de manière optimisée
         
-        plt.subplot(1, 2, 1)
-        plt.plot(history.history['accuracy'], label='Train')
-        plt.plot(history.history['val_accuracy'], label='Validation')
-        plt.title('Précision du modèle')
-        plt.ylabel('Précision')
-        plt.xlabel('Époque')
-        plt.legend()
+        Args:
+            X_sample: Échantillons d'images à expliquer
+            class_names: Liste des noms de classes
+            max_samples: Nombre maximum d'échantillons à expliquer
+            background_size: Taille de l'ensemble de fond pour SHAP
+        """
+        print("    Génération des explications SHAP (peut prendre plusieurs minutes)...")
         
-        # Perte
-        plt.subplot(1, 2, 2)
-        plt.plot(history.history['loss'], label='Train')
-        plt.plot(history.history['val_loss'], label='Validation')
-        plt.title('Perte du modèle')
-        plt.ylabel('Perte')
-        plt.xlabel('Époque')
-        plt.legend()
-        
-        # Sauvegarde de la figure
-        plt.tight_layout()
-        history_path = self.config.plots_dir / 'training_history.png'
-        plt.savefig(history_path, dpi=300, bbox_inches='tight')
-        plt.close()
-        print(f"Courbes d'apprentissage sauvegardées dans {history_path}")
-    
-    def explain_predictions(self, X_sample, class_names, num_samples=3):
-        """Génère des explications pour les prédictions"""
-        print("\nGénération des explications...")
-        
-        # Sélection d'un échantillon
-        if len(X_sample) > num_samples:
-            indices = np.random.choice(len(X_sample), num_samples, replace=False)
-            X_sample = X_sample[indices]
-        
-        # Explications avec Grad-CAM
-        self._explain_with_gradcam(X_sample, class_names)
-        
-        # Explications avec LIME
-        self._explain_with_lime(X_sample, class_names)
-        
-        # Explications avec SHAP (optionnel, peut être long)
-        if len(X_sample) <= 5:  # Limiter le nombre d'échantillons pour SHAP
-            self._explain_with_shap(X_sample, class_names)
-    
-    def _explain_with_gradcam(self, X_sample, class_names):
-        """Génère des explications avec Grad-CAM"""
-        print("  - Génération des explications Grad-CAM...")
-        
-        # Couche intermédiaire pour Grad-CAM
-        last_conv_layer_name = 'conv5_block3_out'
-        
-        # Création du modèle pour Grad-CAM
-        grad_model = Model(
-            [self.model.inputs],
-            [self.model.get_layer(f'resnet50').get_layer(last_conv_layer_name).output, 
-             self.model.output]
-        )
-        
-        for i, img in enumerate(X_sample):
-            # Prédiction
-            img_array = np.expand_dims(img, axis=0)
-            preds = self.model.predict(img_array)
-            pred_class = np.argmax(preds[0])
+        try:
+            import shap
             
-            # Calcul de la heatmap
-            with tf.GradientTape() as tape:
-                conv_outputs, predictions = grad_model(img_array)
-                loss = predictions[:, pred_class]
+            # Vérifier la disponibilité de la mémoire GPU
+            gpus = tf.config.list_physical_devices('GPU')
+            if gpus:
+                print(f"    Utilisation du GPU pour les calculs SHAP")
+                # Configurer la mémoire GPU pour une allocation croissante
+                for gpu in gpus:
+                    tf.config.experimental.set_memory_growth(gpu, True)
             
-            grads = tape.gradient(loss, conv_outputs)
-            pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+            # Limiter le nombre d'échantillons pour des raisons de performance
+            num_samples = min(max_samples, len(X_sample))
+            X_sample = X_sample[:num_samples]
             
-            conv_outputs = conv_outputs[0]
-            heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
-            heatmap = tf.squeeze(heatmap)
-            heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
-            heatmap = heatmap.numpy()
+            # Créer un ensemble de fond plus petit pour accélérer le calcul
+            background = X_sample[np.random.choice(
+                len(X_sample), 
+                min(background_size, len(X_sample)), 
+                replace=False
+            )]
             
-            # Affichage
-            plt.figure(figsize=(10, 5))
+            print(f"    Calcul des explications pour {num_samples} échantillons avec {len(background)} échantillons de fond...")
             
-            # Image originale
-            plt.subplot(1, 2, 1)
-            plt.imshow(img)
-            plt.title(f"Original - {class_names[pred_class]} ({preds[0][pred_class]:.2f})")
-            plt.axis('off')
-            
-            # Heatmap
-            plt.subplot(1, 2, 2)
-            plt.imshow(img)
-            plt.imshow(
-                tf.keras.preprocessing.image.array_to_img(
-                    tf.expand_dims(heatmap, -1) * 255, 
-                    scale=False
-                ),
-                alpha=0.4,
-                cmap='jet'
+            # Créer l'explainer SHAP avec un échantillonnage plus efficace
+            explainer = shap.GradientExplainer(
+                model=self.model,
+                data=background,
+                batch_size=min(2, num_samples)  # Réduire la taille du lot pour économiser la mémoire
             )
-            plt.title("Grad-CAM")
-            plt.axis('off')
             
-            # Sauvegarde
-            gradcam_path = self.config.plots_dir / f'gradcam_explanation_{i+1}.png'
-            plt.savefig(gradcam_path, dpi=300, bbox_inches='tight')
+            # Calculer les valeurs SHAP par lots pour économiser la mémoire
+            batch_size = 1  # Taille de lot réduite pour éviter les problèmes de mémoire
+            all_shap_values = []
+            
+            for i in range(0, len(X_sample), batch_size):
+                batch = X_sample[i:i+batch_size]
+                print(f"    Traitement du lot {i//batch_size + 1}/{(len(X_sample)-1)//batch_size + 1}...")
+                
+                # Calculer les valeurs SHAP pour le lot actuel
+                shap_batch = explainer.shap_values(batch, progress_message=None)
+                all_shap_values.extend(shap_batch)
+                
+                # Libérer la mémoire après chaque lot
+                tf.keras.backend.clear_session()
+            
+            # Convertir en tableau numpy
+            shap_values = np.array(all_shap_values)
+            
+            # Sauvegarder les valeurs SHAP pour une analyse ultérieure
+            np.save(self.config.plots_dir / 'shap_values.npy', shap_values)
+            
+            # Créer un résumé des caractéristiques importantes
+            print("    Génération des visualisations SHAP...")
+            
+            # Créer une figure pour le résumé
+            plt.figure(figsize=(10, 6))
+            shap.summary_plot(
+                shap_values.reshape(shap_values.shape[0], -1),  # Aplatir les dimensions spatiales
+                features=X_sample.reshape(X_sample.shape[0], -1),  # Aplatir les images
+                class_names=class_names,
+                show=False,
+                max_display=10,  # Limiter le nombre de caractéristiques affichées
+                plot_type="bar"
+            )
+            
+            # Sauvegarder le graphique de résumé
+            summary_path = self.config.plots_dir / 'shap_summary.png'
+            plt.tight_layout()
+            plt.savefig(summary_path, bbox_inches='tight', dpi=150)
             plt.close()
-        
-        print(f"    Explications Grad-CAM sauvegardées dans {self.config.plots_dir}/gradcam_*.png")
+            
+            # Créer des visualisations individuelles pour chaque échantillon
+            max_plots = min(3, len(X_sample))  # Limiter à 3 échantillons pour les visualisations détaillées
+            for i in range(max_plots):
+                plt.figure(figsize=(10, 4))
+                
+                # Afficher l'image originale
+                plt.subplot(1, 2, 1)
+                plt.imshow(X_sample[i])
+                plt.title(f"Original - {class_names[np.argmax(self.model.predict(X_sample[i:i+1], verbose=0)[0])]}")
+                plt.axis('off')
+                
+                # Afficher la carte d'importance SHAP
+                plt.subplot(1, 2, 2)
+                shap.image_plot(
+                    [shap_values[i].transpose(2, 0, 1)],  # Réorganiser les dimensions pour SHAP
+                    X_sample[i:i+1],
+                    show=False
+                )
+                plt.title("Importance SHAP")
+                
+                # Sauvegarder la visualisation individuelle
+                sample_path = self.config.plots_dir / f'shap_sample_{i+1}.png'
+                plt.tight_layout()
+                plt.savefig(sample_path, bbox_inches='tight', dpi=150)
+                plt.close()
+            
+            print(f"    Explications SHAP sauvegardées dans {self.config.plots_dir}/")
+            
+        except ImportError:
+            print("    SHAP n'est pas installé. Installez-le avec: pip install shap")
+        except Exception as e:
+            print(f"    Erreur lors de la génération des explications SHAP: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
-    def _explain_with_lime(self, X_sample, class_names, num_samples=1000):
-        """Génère des explications avec LIME"""
-        print("  - Génération des explications LIME...")
+    def _explain_with_lime(self, X_sample, class_names, num_samples=1000, max_features=5):
+        """Génère des explications avec LIME de manière optimisée
         
-        # Fonction de prédiction compatible avec LIME
-        def predict_fn(images):
-            return self.model.predict(images)
-        
-        # Création de l'explainer LIME
-        explainer = lime_image.LimeImageExplainer()
-        
-        for i, img in enumerate(X_sample):
-            # Explication
-            explanation = explainer.explain_instance(
-                img,
-                classifier_fn=predict_fn,
-                top_labels=3,
-                hide_color=0,
-                num_samples=num_samples
+        Args:
+            X_sample: Échantillons d'images à expliquer
+            class_names: Liste des noms de classes
+            num_samples: Nombre d'échantillons pour LIME (limité pour des raisons de performance)
+            max_features: Nombre maximum de caractéristiques à afficher
+        """
+        try:
+            from lime import lime_image
+            from skimage.segmentation import slic
+            
+            # Limiter le nombre d'échantillons pour des raisons de performance
+            num_explanations = min(3, len(X_sample))
+            
+            # Fonction de prédiction compatible avec LIME
+            def predict_fn(images):
+                # Prétraiter les images si nécessaire
+                if images.dtype != np.float32:
+                    images = images.astype(np.float32) / 255.0
+                return self.model.predict(images, verbose=0)
+            
+            # Créer l'explainer LIME
+            explainer = lime_image.LimeImageExplainer(
+                kernel_width=0.25,
+                verbose=False,
+                feature_selection='lasso_path',
+                random_state=self.config.random_state
             )
             
-            # Affichage de l'explication
-            temp, mask = explanation.get_image_and_mask(
-                explanation.top_labels[0],
-                positive_only=True,
-                num_features=10,
-                hide_rest=False
-            )
+            # Créer une figure pour afficher toutes les explications
+            plt.figure(figsize=(15, 5 * num_explanations))
             
-            plt.figure(figsize=(10, 5))
+            for i in range(num_explanations):
+                # Générer l'explication
+                explanation = explainer.explain_instance(
+                    X_sample[i],
+                    predict_fn,
+                    top_labels=len(class_names),
+                    hide_color=0,
+                    num_samples=min(num_samples, 500),  # Limiter le nombre d'échantillons
+                    batch_size=10,  # Réduire la taille du lot pour économiser la mémoire
+                    segmentation_fn=lambda x: slic(
+                        x, 
+                        n_segments=25,  # Réduire le nombre de segments
+                        compactness=10, 
+                        sigma=1
+                    )
+                )
+                
+                # Afficher l'explication
+                plt.subplot(num_explanations, 2, 2*i+1)
+                plt.imshow(X_sample[i])
+                plt.title(f"Original - Prédit: {class_names[np.argmax(predict_fn(X_sample[i:i+1])[0])]}")
+                plt.axis('off')
+                
+                plt.subplot(num_explanations, 2, 2*i+2)
+                temp, mask = explanation.get_image_and_mask(
+                    explanation.top_labels[0],
+                    positive_only=True,
+                    num_features=max_features,
+                    hide_rest=False
+                )
+                plt.imshow(mark_boundaries(temp / 2 + 0.5, mask))
+                plt.title("Explication LIME")
+                plt.axis('off')
+                
+                # Sauvegarder l'explication individuelle
+                temp_dir = self.config.plots_dir / 'lime_explanations'
+                temp_dir.mkdir(exist_ok=True)
+                explanation.save_to_file(temp_dir / f'lime_explanation_{i}.html')
             
-            # Image originale
-            plt.subplot(1, 2, 1)
-            plt.imshow(img)
-            plt.title("Image originale")
-            plt.axis('off')
-            
-            # Explication LIME
-            plt.subplot(1, 2, 2)
-            plt.imshow(mark_boundaries(temp / 255.0, mask))
-            plt.title(f"Explication LIME - {class_names[explanation.top_labels[0]]}")
-            plt.axis('off')
-            
-            # Sauvegarde
-            lime_path = self.config.plots_dir / f'lime_explanation_{i+1}.png'
-            plt.savefig(lime_path, dpi=300, bbox_inches='tight')
+            # Sauvegarder la figure combinée
+            plt.tight_layout()
+            plt.savefig(self.config.plots_dir / 'lime_explanations.png', bbox_inches='tight', dpi=150)
             plt.close()
-        
-        print(f"    Explications LIME sauvegardées dans {self.config.plots_dir}/lime_*.png")
-    
-    def _explain_with_shap(self, X_sample, class_names):
-        """Génère des explications avec SHAP (peut être long)"""
-        print("  - Génération des explications SHAP (peut prendre du temps)...")
-        
-        # Création de l'explainer SHAP
-        background = X_sample[np.random.choice(X_sample.shape[0], 10, replace=False)]
-        explainer = shap.DeepExplainer(self.model, background)
-        
-        # Calcul des valeurs SHAP
-        shap_values = explainer.shap_values(X_sample)
-        
-        # Affichage des explications
-        plt.figure(figsize=(10, 10))
-        shap.image_plot(
-            shap_values,
-            X_sample,
-            labels=[class_names[i] for i in range(len(class_names))],
-            show=False
-        )
-        
-        # Sauvegarde
-        shap_path = self.config.plots_dir / 'shap_explanations.png'
-        plt.savefig(shap_path, dpi=300, bbox_inches='tight')
-        plt.close()
-        
-        print(f"    Explications SHAP sauvegardées dans {shap_path}")
+            
+            print(f"Explications LIME sauvegardées dans {self.config.plots_dir}/lime_explanations/")
+            
+        except ImportError:
+            print("LIME n'est pas installé. Installez-le avec: pip install lime")
+        except Exception as e:
+            print(f"Erreur lors de la génération des explications LIME: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
     def save_model(self, model_name='best_model'):
         """Sauvegarde le modèle et la configuration

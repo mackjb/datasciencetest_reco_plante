@@ -1,0 +1,192 @@
+# ------------------------------------------------------
+# IMPORTS
+# ------------------------------------------------------
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
+import tensorflow as tf
+from tensorflow.keras.applications import ResNet50
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+import matplotlib.pyplot as plt
+import seaborn as sns
+import shap
+from lime import lime_image
+from skimage.segmentation import mark_boundaries
+
+# ------------------------------------------------------
+# CONFIGURATION
+# ------------------------------------------------------
+IMG_SIZE = (224, 224)
+BATCH_SIZE = 32
+EPOCHS = 20
+LEARNING_RATE = 1e-3
+FINE_TUNE_LAYERS = 50
+DATA_PATH = Path("dataset/plantvillage/images/")
+LABEL_CSV = Path("dataset/plantvillage/labels.csv")
+MODEL_PATH = Path("plant_disease_model.h5")
+
+# ------------------------------------------------------
+# CHARGEMENT DES DONNÉES
+# ------------------------------------------------------
+df = pd.read_csv(LABEL_CSV)
+le = LabelEncoder()
+df['label_enc'] = le.fit_transform(df['label'])
+NUM_CLASSES = len(le.classes_)
+
+def load_image(path: str, img_size=IMG_SIZE):
+    img = tf.keras.utils.load_img(path, target_size=img_size)
+    img = tf.keras.utils.img_to_array(img)
+    img = img / 255.0
+    return img
+
+X = np.array([load_image(str(DATA_PATH / p)) for p in df['image_path']])
+y = tf.keras.utils.to_categorical(df['label_enc'], NUM_CLASSES)
+
+X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42)
+
+# ------------------------------------------------------
+# CONSTRUCTION DU MODÈLE
+# ------------------------------------------------------
+base_model = ResNet50(weights='imagenet', include_top=False, input_shape=IMG_SIZE+(3,))
+base_model.trainable = False
+
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+x = Dropout(0.3)(x)
+preds = Dense(NUM_CLASSES, activation='softmax')(x)
+model = Model(inputs=base_model.input, outputs=preds)
+
+optimizer = Adam(learning_rate=LEARNING_RATE)
+model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+
+# ------------------------------------------------------
+# CALLBACKS
+# ------------------------------------------------------
+callbacks = [
+    EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
+    ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
+]
+
+# ------------------------------------------------------
+# ENTRAÎNEMENT INITIAL (couches gelées)
+# ------------------------------------------------------
+history = model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=EPOCHS,
+    batch_size=BATCH_SIZE,
+    callbacks=callbacks
+)
+
+# ------------------------------------------------------
+# FINE-TUNING DES DERNIÈRES COUCHES
+# ------------------------------------------------------
+for layer in base_model.layers[-FINE_TUNE_LAYERS:]:
+    layer.trainable = True
+
+optimizer_fine = Adam(learning_rate=LEARNING_RATE/10)
+model.compile(optimizer=optimizer_fine, loss='categorical_crossentropy', metrics=['accuracy'])
+
+history_fine = model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=EPOCHS,
+    batch_size=BATCH_SIZE,
+    callbacks=callbacks
+)
+
+# ------------------------------------------------------
+# ÉVALUATION
+# ------------------------------------------------------
+y_pred_probs = model.predict(X_test)
+y_pred = np.argmax(y_pred_probs, axis=1)
+y_true = np.argmax(y_test, axis=1)
+
+acc = accuracy_score(y_true, y_pred)
+f1_macro = f1_score(y_true, y_pred, average='macro')
+f1_weighted = f1_score(y_true, y_pred, average='weighted')
+print(f"Test Accuracy: {acc:.4f} | F1 Macro: {f1_macro:.4f} | F1 Weighted: {f1_weighted:.4f}")
+
+cm = confusion_matrix(y_true, y_pred)
+plt.figure(figsize=(10,8))
+sns.heatmap(cm, annot=True, fmt='d', xticklabels=le.classes_, yticklabels=le.classes_, cmap='Blues')
+plt.title("Matrice de confusion - Test set")
+plt.xlabel("Prédictions")
+plt.ylabel("Vraies classes")
+plt.show()
+
+# ------------------------------------------------------
+# SAUVEGARDE DU MODÈLE
+# ------------------------------------------------------
+model.save(MODEL_PATH)
+print(f"Modèle sauvegardé dans {MODEL_PATH}")
+
+# ------------------------------------------------------
+# INTERPRÉTABILITÉ - Grad-CAM
+# ------------------------------------------------------
+def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index=None):
+    grad_model = Model(
+        [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
+    )
+    with tf.GradientTape() as tape:
+        conv_outputs, predictions = grad_model(img_array)
+        if pred_index is None:
+            pred_index = tf.argmax(predictions[0])
+        class_channel = predictions[:, pred_index]
+
+    grads = tape.gradient(class_channel, conv_outputs)
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    conv_outputs = conv_outputs[0]
+    heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
+    heatmap = tf.squeeze(heatmap)
+    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    return heatmap.numpy()
+
+last_conv_layer_name = "conv5_block3_out"
+idx = 0  # première image du test
+img = X_test[idx:idx+1]
+heatmap = make_gradcam_heatmap(img, model, last_conv_layer_name)
+
+plt.imshow(X_test[idx])
+plt.imshow(heatmap, cmap='jet', alpha=0.4)
+plt.title(f"Grad-CAM: {le.classes_[y_true[idx]]}")
+plt.show()
+
+# ------------------------------------------------------
+# INTERPRÉTABILITÉ - SHAP
+# ------------------------------------------------------
+explainer = shap.GradientExplainer(model, X_train[:100])
+shap_values = explainer.shap_values(X_test[:10])
+
+shap.image_plot([shap_values[c][0] for c in range(NUM_CLASSES)], X_test[:1])
+
+# ------------------------------------------------------
+# INTERPRÉTABILITÉ - LIME
+# ------------------------------------------------------
+explainer_lime = lime_image.LimeImageExplainer()
+
+idx = 0
+explanation = explainer_lime.explain_instance(
+    X_test[idx],
+    classifier_fn=model.predict,
+    top_labels=5,
+    hide_color=0,
+    num_samples=1000
+)
+
+temp, mask = explanation.get_image_and_mask(
+    explanation.top_labels[0],
+    positive_only=True,
+    num_features=10,
+    hide_rest=False
+)
+plt.imshow(mark_boundaries(temp / 255.0, mask))
+plt.title(f"LIME: {le.classes_[y_true[idx]]}")
+plt.show()

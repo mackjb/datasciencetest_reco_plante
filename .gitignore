@@ -18,6 +18,55 @@ lib/
 lib64/
 parts/
 sdist/
+
+# Environnements virtuels
+venv/
+env/
+ENV/
+
+# Données
+*.h5
+*.hdf5
+data/
+dataset/
+results/
+
+# Logs et fichiers temporaires
+*.log
+*.sql
+*.sqlite
+.ipynb_checkpoints
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Fichiers de configuration locaux
+.env
+.env.local
+
+# Fichiers de cache
+.cache/
+.pytest_cache/
+.mypy_cache/
+
+# Fichiers de modèle entraînés
+*.h5
+*.hdf5
+*.pth
+*.pkl
+*.joblib
+
+# Fichiers SHAP
+shap_*.npy
+shap_*.csv
+
+# Fichiers LIME
+lime_*.npy
+lime_*.csv
 var/
 wheels/
 share/python-wheels/

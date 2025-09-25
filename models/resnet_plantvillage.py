@@ -112,7 +112,7 @@ class PlantDiseaseClassifier:
         """
         # Callbacks
         callbacks = [
-            EarlyStopping(patience=5, restore_best_weights=True),
+            EarlyStopping(patience=7, restore_best_weights=True),
             ReduceLROnPlateau(factor=0.2, patience=3, min_lr=1e-6),
             ModelCheckpoint(
                 filepath=str(MODEL_DIR / 'best_model.h5'),
@@ -282,7 +282,7 @@ def main():
                       help='Chemin vers le dossier contenant les images')
     parser.add_argument('--batch-size', type=int, default=32,
                       help='Taille des lots pour l\'entraînement')
-    parser.add_argument('--epochs', type=int, default=20,
+    parser.add_argument('--epochs', type=int, default=50,
                       help='Nombre d\'époques d\'entraînement')
     parser.add_argument('--learning-rate', type=float, default=1e-4,
                       help='Taux d\'apprentissage initial')

@@ -141,3 +141,25 @@ ssh-remote:
 	IdentityFile ~/.ssh/codespaces-$(CODESPACE)
 	" $(CODESPACE) >> ~/.ssh/config
 	@echo "✅  SSH config pour '$(CODESPACE)' ajouté dans ~/.ssh/config"
+
+# === Pipelines modèles ===
+.PHONY: train-yolo predict-yolo export-yolo-onnx automl-train automl-eval xgb-train
+
+train-yolo:
+	python models/yolov8/train/yolov8_train.py
+
+predict-yolo:
+	@if [ -z "$(INPUT)" ]; then echo "Usage: make predict-yolo INPUT=path/to/image_or_dir [TOPK=5]"; exit 1; fi
+	python models/yolov8/predict/predict_yolov8.py $(INPUT) --topk $${TOPK:-5}
+
+export-yolo-onnx:
+	python models/yolov8/export/export_yolov8_onnx.py
+
+automl-train:
+	python models/automl/train/automl_pipeline.py
+
+automl-eval:
+	python models/automl/eval/compare_automl_results.py
+
+xgb-train:
+	python models/xgboost/train/finetune_xgboost.py

@@ -1,0 +1,28 @@
+# Configuration centrale du projet
+
+paths:
+  dataset_dir: "/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/plantvillage dataset/segmented"
+  processed_dir: "/workspaces/datasciencetest_reco_plante/data/PlantVillage_Processed"
+  results_dir: "/workspaces/datasciencetest_reco_plante/results"
+
+yolov8:
+  epochs: 30
+  batch: 16
+  imgsz: 224
+  patience: 5
+  seed: 42
+  project_name: "yolov8_segmented_finetune"
+
+automl:
+  # Exemples de paramètres par défaut (à adapter selon les scripts)
+  time_budget_minutes: 120
+  metric: "f1_macro"
+  n_splits: 5
+
+xgboost:
+  # Hyperparamètres de base (placeholder)
+  n_estimators: 500
+  learning_rate: 0.05
+  max_depth: 6
+  subsample: 0.8
+  colsample_bytree: 0.8

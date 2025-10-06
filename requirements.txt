@@ -5,8 +5,11 @@ matplotlib>=3.4.0
 seaborn>=0.11.0
 scikit-learn>=1.0.0
 
-# Deep Learning
-tensorflow>=2.8.0
+# Deep Learning (YOLOv8)
+# Remarque: installez PyTorch selon votre environnement (CPU/GPU). Exemple CPU:
+# torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# Et YOLOv8:
+# ultralytics>=8.0.0
 
 # Computer Vision
 opencv-python>=4.5.0

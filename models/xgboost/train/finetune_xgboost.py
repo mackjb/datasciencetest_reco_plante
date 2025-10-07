@@ -35,10 +35,21 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from xgboost import XGBClassifier
 
 from src.helpers.helpers import PROJECT_ROOT
+from src.config import load_config
 
 
 SEED = 42
-DEFAULT_CSV = PROJECT_ROOT / "dataset" / "plantvillage" / "csv" / "clean_data_plantvillage_segmented_all_with_features.csv"
+# Central config (optional)
+_CFG = load_config()
+_paths = _CFG.get("paths", {}) if isinstance(_CFG, dict) else {}
+
+# Prefer YAML paths if present; fallback to previous default
+DEFAULT_CSV = Path(
+    _paths.get(
+        "csv_clean_features",
+        str(PROJECT_ROOT / "dataset" / "plantvillage" / "csv" / "clean_data_plantvillage_segmented_all_with_features.csv"),
+    )
+)
 DEFAULT_TARGET = "nom_maladie"
 
 
@@ -152,8 +163,9 @@ def main() -> None:
     if target not in df.columns:
         raise ValueError(f"Colonne cible '{target}' absente. Colonnes: {list(df.columns)[:30]} ...")
 
-    # Résolution dossier résultats
-    base_dir = PROJECT_ROOT / "results" / "models" / "xgboost" / str(target) / "tuning"
+    # Résolution dossier résultats (YAML paths.results_dir if available)
+    results_root = Path(_paths.get("results_dir", PROJECT_ROOT / "results"))
+    base_dir = results_root / "models" / "xgboost" / str(target) / "tuning"
     ensure_dir(base_dir)
 
     # Préparation données

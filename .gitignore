@@ -27,9 +27,33 @@ ENV/
 # Données
 *.h5
 *.hdf5
+*.npy
+*.npz
+*.csv
+*.parquet
+*.feather
+
+# Dossiers de données
 data/
-dataset/
+!data/README.md  # Garder le README
+
+# Dossiers de modèles et résultats
+models/
+!models/README.md  # Garder le README
 results/
+reports/figures/
+
+# Fichiers temporaires et cache
+.cache/
+.temp/
+temp/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Fichiers de logs
+logs/
+*.log
 
 # Logs et fichiers temporaires
 *.log

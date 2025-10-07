@@ -13,25 +13,31 @@ from pycaret.classification import *
 import numpy as np
 import warnings
 from datetime import datetime
+from src.config import load_config
 
-# Configuration du logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('automl_pipeline.log'),
-        logging.StreamHandler()
-    ]
-)
+# Chargement config centrale YAML (optionnelle)
+YAML_CFG = load_config()
 
 # Chargement de la configuration
 CONFIG_PATH = Path(__file__).parent.parent / 'config' / 'automl_config.json'
 with open(CONFIG_PATH, 'r') as f:
     CONFIG = json.load(f)
 
-# Configuration des chemins
-OUTPUT_DIR = Path(CONFIG['output']['directory'])
+# Configuration des chemins (priorité au JSON, sinon YAML, sinon défaut)
+yaml_results = Path(YAML_CFG.get('paths', {}).get('results_dir', 'results'))
+default_output = yaml_results / 'automl'
+OUTPUT_DIR = Path(CONFIG.get('output', {}).get('directory', str(default_output)))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Configuration du logging (log dans OUTPUT_DIR)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(OUTPUT_DIR / 'automl_pipeline.log'),
+        logging.StreamHandler()
+    ]
+)
 
 # Désactivation des warnings
 warnings.filterwarnings('ignore')

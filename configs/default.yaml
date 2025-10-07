@@ -1,28 +1,46 @@
 # Configuration centrale du projet
+# Tous les chemins sont relatifs à la racine du projet
 
-paths:
-  dataset_dir: "/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/plantvillage dataset/segmented"
-  processed_dir: "/workspaces/datasciencetest_reco_plante/data/PlantVillage_Processed"
-  results_dir: "/workspaces/datasciencetest_reco_plante/results"
+# Chemins des répertoires
+data:
+  raw: "data/raw"
+  processed: "data/processed"
+  external: "data/external"
 
-yolov8:
-  epochs: 30
-  batch: 16
-  imgsz: 224
-  patience: 5
-  seed: 42
-  project_name: "yolov8_segmented_finetune"
+# Paramètres des modèles
+models:
+  yolov8:
+    epochs: 30
+    batch: 16
+    imgsz: 224
+    patience: 5
+    seed: 42
+    project_name: "yolov8_segmented_finetune"
+    output_dir: "models/yolov8"
+  
+  automl:
+    time_budget_minutes: 120
+    metric: "f1_macro"
+    n_splits: 5
+    output_dir: "models/automl"
+  
+  xgboost:
+    n_estimators: 500
+    learning_rate: 0.05
+    max_depth: 6
+    subsample: 0.8
+    colsample_bytree: 0.8
+    output_dir: "models/xgboost"
 
-automl:
-  # Exemples de paramètres par défaut (à adapter selon les scripts)
-  time_budget_minutes: 120
-  metric: "f1_macro"
-  n_splits: 5
+# Paramètres d'entraînement
+training:
+  test_size: 0.2
+  random_state: 42
+  n_jobs: -1  # Utiliser tous les cœurs disponibles
 
-xgboost:
-  # Hyperparamètres de base (placeholder)
-  n_estimators: 500
-  learning_rate: 0.05
-  max_depth: 6
-  subsample: 0.8
-  colsample_bytree: 0.8
+# Chemins de sortie
+output:
+  logs: "logs"
+  models: "models"
+  results: "results"
+  reports: "reports"

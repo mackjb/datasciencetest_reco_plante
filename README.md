@@ -1,19 +1,30 @@
-# Plant Disease Classifier
+# 🌿 Plant Disease Classifier
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python Version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
+[![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](docs/)
 
-Un outil de classification des maladies des plantes utilisant le Deep Learning, basé sur le dataset PlantVillage.
+Un outil avancé de classification des maladies des plantes utilisant le Deep Learning, basé sur les datasets PlantVillage et Flavia.
 
-## Fonctionnalités
+## 🌟 Fonctionnalités
 
-- **Classification d'images** de plantes avec leur état de santé
+- **Classification d'images** de plantes avec détection de maladies
+- **Modèles supportés** :
+  - YOLOv8 pour la classification
+  - Modèles AutoML pour l'optimisation automatique
 - **Explications des prédictions** avec Grad-CAM, SHAP et LIME
-- **Séparation stricte** des données d'entraînement, de validation et de test
-- **Gestion de la mémoire** optimisée pour les opérations intensives
-- **Logs détaillés** et suivi des expériences
+- **API RESTful** pour l'intégration facile
+- **Déploiement conteneurisé** avec Docker
 
-## Installation
+## 🚀 Démarrage Rapide
+
+### Prérequis
+
+- Python 3.8+
+- pip
+- (Optionnel) Docker pour le déploiement
+
+### Installation
 
 1. Cloner le dépôt :
    ```bash
@@ -21,33 +32,62 @@ Un outil de classification des maladies des plantes utilisant le Deep Learning, 
    cd plant-disease-classifier
    ```
 
-2. Créer un environnement virtuel (recommandé) :
+2. Créer et activer un environnement virtuel :
    ```bash
    python -m venv venv
-   source venv/bin/activate  # Sur Linux/Mac
+   source venv/bin/activate  # Linux/Mac
    # OU
-   .\venv\Scripts\activate  # Sur Windows
+   .\venv\Scripts\activate  # Windows
    ```
-## Structure du projet
 
-datasciencetest_reco_plante/
-├── dataset/                         # Données brutes (non versionnées)
-├── data/                            # Données dérivées (split train/valid, features)
-├── results/                         # Sorties et logs
-├── models/
-│   ├── yolov8/
-│   │   ├── train/                   # Entraînement YOLOv8
-│   │   │   └── yolov8_train.py
-│   │   ├── predict/                 # Inférence YOLOv8
-│   │   │   └── predict_yolov8.py
-│   │   ├── export/                  # Export YOLOv8 (ONNX)
-│   │   │   └── export_yolov8_onnx.py
-│   │   └── eval/                    # Évaluations/plots (si besoin)
-│   ├── automl/
-│   │   ├── train/
-│   │   │   ├── automl_pipeline.py
-│   │   │   ├── run_simple_automl.py
-│   │   │   └── save_model_simple.py
+3. Installer les dépendances :
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## 🏗️ Structure du Projet
+
+```
+plant-disease-classifier/
+├── api/                   # API FastAPI
+│   ├── app.py            # Point d'entrée de l'API
+│   ├── models/           # Modèles pour l'API
+│   └── routes/           # Routes de l'API
+├── configs/              # Fichiers de configuration
+│   └── default.yaml      # Configuration principale
+├── data/                 # Données traitées (non versionnées)
+│   ├── train/            # Données d'entraînement
+│   ├── val/              # Données de validation
+│   └── test/             # Données de test
+├── dataset/              # Scripts de téléchargement
+│   ├── plantvillage/     # Téléchargement PlantVillage
+│   └── flavia/           # Téléchargement Flavia
+├── docs/                 # Documentation
+│   ├── API.md           # Documentation de l'API
+│   ├── DATA.md          # Documentation des données
+│   ├── DEPLOYMENT.md    # Guide de déploiement
+│   └── DEVELOPMENT.md   # Guide de développement
+├── models/               # Modèles et entraînements
+│   ├── yolov8/          # Modèle YOLOv8
+│   └── automl/          # Modèles AutoML
+├── notebooks/            # Notebooks Jupyter
+├── scripts/             # Scripts utilitaires
+│   ├── preprocess.py    # Prétraitement des données
+│   └── train.py         # Script d'entraînement
+├── tests/               # Tests unitaires
+├── .gitignore
+├── docker-compose.yml   # Configuration Docker
+├── Dockerfile           # Fichier de build Docker
+└── requirements.txt     # Dépendances Python
+```
+
+## 📚 Documentation Complète
+
+- [Guide de Développement](docs/DEVELOPMENT.md) - Comment contribuer au projet
+- [Guide de Déploiement](docs/DEPLOYMENT.md) - Comment déployer en production
+- [Documentation de l'API](docs/API.md) - Documentation complète des endpoints
+- [Documentation des Données](docs/DATA.md) - Structure et gestion des données
+- [Guide des Modèles](docs/MODELS.md) - Documentation des modèles disponibles et leur utilisation
 │   │   ├── eval/
 │   │   │   ├── compare_automl_results.py
 │   │   │   ├── list_models.py

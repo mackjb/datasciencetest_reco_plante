@@ -76,11 +76,8 @@ flavia:
 	python dataset/flavia/download_flavia.py
 
 plantvillage:
-	# Charger et activer l'environnement Conda
-	source $(CONDA_PREFIX)/etc/profile.d/conda.sh
-	conda activate $(ENV_NAME)
-	# Télécharger le dataset PlantVillage
-	python dataset/plantvillage/download_plantvillage.py
+	# Exécuter via conda run pour éviter le besoin de 'source' et 'conda activate'
+	conda run -n $(ENV_NAME) python dataset/plantvillage/download_plantvillage.py
 
 new_plant_diseases_dataset:
 	# Charger et activer l'environnement Conda

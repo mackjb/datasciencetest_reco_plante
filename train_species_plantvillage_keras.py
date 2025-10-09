@@ -111,16 +111,24 @@ def default_color_data_root() -> str:
     return candidates[0]
 
 
-def species_from_path(path: str) -> str:
+def label_from_path(path: str, mode: str = 'species') -> str:
+    """Return label string from image path.
+    mode:
+      - 'species': tomato__Late_blight -> 'Tomato'
+      - 'species_disease': returns full folder name (e.g. 'Tomato___Late_blight')
+    """
     parent = os.path.basename(os.path.dirname(path))
-    return parent.split("___")[0] if "___" in parent else parent
+    if mode == 'species':
+        return parent.split("___")[0] if "___" in parent else parent
+    else:
+        return parent
 
 
-def build_class_index(files):
-    species = sorted({species_from_path(fp) for fp in files})
-    s2i = {s: i for i, s in enumerate(species)}
+def build_class_index(files, label_mode='species'):
+    all_labels = sorted({label_from_path(fp, label_mode) for fp in files})
+    s2i = {s: i for i, s in enumerate(all_labels)}
     i2s = {i: s for s, i in s2i.items()}
-    return species, s2i, i2s
+    return all_labels, s2i, i2s
 
 
 def stratified_split(paths, labels, seed=42, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15):
@@ -434,6 +442,7 @@ def main():
     parser.add_argument('--label_smoothing', type=float, default=0.1)
     parser.add_argument('--fine_tune_at', type=int, default=50)
     parser.add_argument('--arch', type=str, default='densenet121', choices=['densenet121','resnet50','efficientnetv2s'], help='Backbone architecture for Keras training')
+    parser.add_argument('--label_mode', type=str, default='species', choices=['species','species_disease'], help='Target label granularity')
     parser.add_argument('--mlflow', action='store_true', help='Enable MLflow logging for this run')
     parser.add_argument('--mlflow_experiment', type=str, default='plantvillage_clean_cls', help='MLflow experiment name')
     parser.add_argument('--mlflow_run_name', type=str, default=None, help='Optional MLflow run name (defaults from arch/output_dir)')
@@ -477,7 +486,7 @@ def main():
                 raise RuntimeError('After applying keep-list, no files remain to train on.')
         except Exception as e:
             print(f"[WARN] Failed to apply keep-list CSV ({e}); proceeding without filtering.")
-    species_names, s2i, i2s = build_class_index(all_files)
+    species_names, s2i, i2s = build_class_index(all_files, label_mode=args.label_mode)
     print(f"[INFO] Detected {len(species_names)} species.")
 
     # Save index->species
@@ -485,7 +494,7 @@ def main():
         json.dump(i2s, f, indent=2, ensure_ascii=False)
 
     # Counts per species
-    labels_species = [species_from_path(fp) for fp in all_files]
+    labels_species = [label_from_path(fp, args.label_mode) for fp in all_files]
     counts = Counter(labels_species)
     class_counts_df = pd.DataFrame({'species': list(counts.keys()), 'count': list(counts.values())}).sort_values('species')
     class_counts_df.to_csv(os.path.join(args.output_dir, 'class_counts.csv'), index=False)

@@ -171,3 +171,4 @@ dataset/new_plant_diseases_dataset/data/**
 dataset/plant_disease/data/**
 
 results/models/**
+dataset/plantvillage/clean_split/**

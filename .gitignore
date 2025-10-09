@@ -174,4 +174,3 @@ results/models/**
 dataset/plantvillage/clean_split/**
 outputs/**/*.keras
 
-outputs/**

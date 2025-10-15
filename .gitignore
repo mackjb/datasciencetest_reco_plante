@@ -173,4 +173,3 @@ dataset/plant_disease/data/**
 results/models/**
 dataset/plantvillage/clean_split/**
 outputs/**/*.keras
-outputs/**/*.keras

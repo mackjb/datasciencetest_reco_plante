@@ -1,25 +1,49 @@
 {
-  "name": "Python & Conda + SSH",
-  "image": "mcr.microsoft.com/vscode/devcontainers/python:3.10-bullseye",
-  "workspaceFolder": "/workspaces/datasciencetest_reco_plante",
-  "features": {
-    "ghcr.io/rocker-org/devcontainer-features/miniforge:2": {
-      "version": "latest",
-      "variant": "Miniforge3"
-    },
-    "ghcr.io/devcontainers/features/sshd:1": {}
+  "name": "GPU RTX 5070 - CUDA 12.8",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
   },
-  "remoteUser": "vscode",
-  "postStartCommand": "sudo service ssh start",
+  
+  "runArgs": [
+    "--gpus=all",
+    "--shm-size=4g",
+    "--ipc=host"
+  ],
+  
+  "mounts": [
+    "source=${localEnv:USERPROFILE}${localEnv:HOME}/.nv,target=/root/.nv,type=bind,consistency=cached"
+  ],
+  
+  "containerEnv": {
+  "NVIDIA_VISIBLE_DEVICES": "all",
+  "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
+  "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+  "CUDA_CACHE_MAXSIZE": "2147483648",
+  "CUDA_FORCE_PTX_JIT": "1",
+  "CUDA_MODULE_LOADING": "LAZY"
+  },
+  
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/datasciencetest_reco_plante,type=bind,consistency=cached",
+  "workspaceFolder": "/workspaces/datasciencetest_reco_plante",
+  
   "customizations": {
     "vscode": {
-      "settings": {
-        "python.pythonPath": "/usr/local/miniconda/bin/python",
-        "terminal.integrated.shell.linux": "/bin/bash"
-      },
       "extensions": [
-        "ms-python.python"
-      ]
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/conda/envs/gpu-env/bin/python",
+        "python.terminal.activateEnvironment": true
+      }
     }
-  }
+  },
+  
+  "postCreateCommand": "python /workspaces/datasciencetest_reco_plante/.devcontainer/test_gpu.py",
+  
+  "remoteUser": "root",
+  
+  "forwardPorts": [8888, 6006]
 }

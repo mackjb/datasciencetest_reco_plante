@@ -1,0 +1,12 @@
+# Fichiers de validation générés automatiquement
+validation-report-*.txt
+environment-gpu-export.yml
+
+# Ignorer les fichiers de cache
+*.pyc
+__pycache__/
+.pytest_cache/
+
+# Fichiers temporaires
+*.tmp
+*.log

@@ -1,0 +1,102 @@
+================================================================================
+  COMMANDES GIT POUR VERSIONNER LA CONFIGURATION GPU
+================================================================================
+
+# 1. Ajouter tous les fichiers de configuration GPU
+git add .devcontainer/
+
+# 2. Commiter avec un message descriptif
+git commit -m "feat: config GPU validée RTX 5070 (TF 2.21.0-dev20251013, CUDA 12.9)
+
+Configuration GPU testée et validée:
+- GPU: NVIDIA GeForce RTX 5070 Laptop (8GB VRAM)
+- Driver: 581.42, CUDA: 13.0
+- TensorFlow: 2.21.0-dev20251013 (tf-nightly)
+- CUDA packages: 12.9.x
+- Test réussi: PlantVillage 1 epoch ~5min, 99.3% val accuracy
+
+Fichiers ajoutés:
+- Dockerfile.gpu: Image CUDA 12.8 + conda
+- devcontainer-gpu.json: Config devcontainer avec GPU flags
+- environment-gpu.yml: Définition conda env
+- requirements-gpu-frozen.txt: Versions pip exactes
+- test_gpu.py: Script de validation GPU
+- README-GPU.md: Documentation complète
+- QUICKSTART-GPU.md: Guide rapide
+- save-gpu-config.sh: Script de sauvegarde/versioning
+"
+
+# 3. Créer un tag pour marquer cette version stable
+git tag -a gpu-ok-rtx5070-20251017 -m "GPU validé: RTX 5070, Driver 581.42, TF 2.21.0-dev
+
+Configuration testée avec succès:
+- Entraînement PlantVillage: 54k images, 13 classes
+- Performance: ~5 min/epoch
+- Val accuracy: 97.8% (stage 1), 99.3% (stage 2)
+- VRAM: 1.7GB / 8GB
+- GPU Util: 20-80%
+"
+
+# 4. Pousser sur le repo distant avec les tags (sur VOTRE branche)
+git push origin mpe_20251015 --tags
+
+# 5. (Optionnel) Créer une branche stable depuis ce tag
+git checkout -b gpu-stable-rtx5070 gpu-ok-rtx5070-20251017
+
+# Note: Vous êtes sur la branche 'mpe_20251015'
+# Pour merger dans main plus tard (si nécessaire):
+#   git checkout main
+#   git merge mpe_20251015
+#   git push origin main
+
+================================================================================
+  POUR REPRODUIRE CETTE CONFIG PLUS TARD
+================================================================================
+
+# Sur une nouvelle machine:
+git clone <votre-repo-url>
+cd datasciencetest_reco_plante
+
+# Retrouver la config validée:
+git checkout gpu-ok-rtx5070-20251017
+
+# Recréer l'environnement:
+conda env create -f .devcontainer/environment-gpu.yml
+conda activate gpu-env
+
+# Tester:
+python .devcontainer/test_gpu.py
+
+================================================================================
+  FICHIERS VERSIONNÉS (À GARDER)
+================================================================================
+
+À VERSIONNER (déjà dans git add):
+✅ .devcontainer/Dockerfile.gpu
+✅ .devcontainer/devcontainer-gpu.json
+✅ .devcontainer/environment-gpu.yml
+✅ .devcontainer/requirements-gpu-frozen.txt
+✅ .devcontainer/test_gpu.py
+✅ .devcontainer/save-gpu-config.sh
+✅ .devcontainer/README-GPU.md
+✅ .devcontainer/QUICKSTART-GPU.md
+✅ .devcontainer/.gitignore
+
+À NE PAS VERSIONNER (auto-générés, dans .gitignore):
+❌ .devcontainer/validation-report-*.txt (rapport de test, auto-généré)
+❌ .devcontainer/environment-gpu-export.yml (export conda complet, trop verbeux)
+
+================================================================================
+  VÉRIFICATION AVANT COMMIT
+================================================================================
+
+# Vérifier les fichiers qui seront commitées:
+git status
+
+# Vérifier le diff:
+git diff --cached
+
+# Liste des fichiers ajoutés:
+git diff --cached --name-only
+
+================================================================================

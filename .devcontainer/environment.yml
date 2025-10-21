@@ -1,0 +1,26 @@
+name: gpu-env
+channels: [conda-forge]
+dependencies:
+  - python=3.12
+  - pip
+  - numpy
+  - pandas
+  - scikit-learn
+  - scipy
+  - matplotlib
+  - seaborn
+  - jupyterlab
+  - ipykernel
+  - ipywidgets
+  - opencv
+  - pillow
+  - h5py
+  - tensorboard
+  - tqdm
+  - pip:
+      - tf-nightly
+      - keras>=3.0
+      - nvidia-cuda-runtime-cu12
+      - nvidia-cublas-cu12
+      - nvidia-cudnn-cu12
+

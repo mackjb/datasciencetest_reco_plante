@@ -170,3 +170,8 @@ dataset/flavia/Leaves.tar.bz2
 dataset/new_plant_diseases_dataset/data/**
 dataset/plant_disease/data/**
 
+dataset/plantvillage/clean_split/**# Modèles entraînés (trop volumineux pour Git)
+*.keras
+outputs/*/best_model.keras
+outputs/cascade/*.keras
+outputs/cascade_improved/*.keras

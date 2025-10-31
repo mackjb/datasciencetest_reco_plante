@@ -6,6 +6,7 @@ Approche DIRECTE avec UN SEUL modèle EfficientNetV2:
 - 'healthy' est une classe normale (pas séparée)
 - Fine-tuning en 2 phases
 - Génère heatmaps confusion + graphiques d'entraînement
+- Utilise les splits de pv_color_splits.json (SEED=42)
 """
 import argparse
 import json
@@ -51,16 +52,6 @@ keras.mixed_precision.set_global_policy(policy)
 print(f"[INFO] Mixed precision enabled: {policy.name}")
 
 
-def list_image_files(data_root):
-    """Liste tous les fichiers image."""
-    files = []
-    for root, _, filenames in os.walk(data_root):
-        for f in filenames:
-            if f.lower().endswith(('.jpg', '.jpeg', '.png')):
-                files.append(os.path.join(root, f))
-    return sorted(files)
-
-
 def parse_final_class_from_path(filepath):
     """
     Extrait la classe finale directement du chemin.
@@ -73,38 +64,67 @@ def parse_final_class_from_path(filepath):
     return None
 
 
-def stratified_split(paths, labels, test_ratio=0.15, val_ratio=0.15, seed=42):
-    """Split stratifié train/val/test."""
-    try:
-        sss1 = StratifiedShuffleSplit(n_splits=1, test_size=test_ratio, random_state=seed)
-        train_val_idx, test_idx = next(sss1.split(paths, labels))
-        
-        train_val_paths = np.array(paths)[train_val_idx]
-        train_val_labels = np.array(labels)[train_val_idx]
-        test_paths = np.array(paths)[test_idx]
-        test_labels = np.array(labels)[test_idx]
-        
-        adjusted_val_ratio = val_ratio / (1 - test_ratio)
-        sss2 = StratifiedShuffleSplit(n_splits=1, test_size=adjusted_val_ratio, random_state=seed)
-        train_idx, val_idx = next(sss2.split(train_val_paths, train_val_labels))
-        
-        return (train_val_paths[train_idx].tolist(), train_val_labels[train_idx].tolist(),
-                train_val_paths[val_idx].tolist(), train_val_labels[val_idx].tolist(),
-                test_paths.tolist(), test_labels.tolist())
-    except Exception as e:
-        print(f"[WARN] Stratified split failed ({e}); using random split.")
-        rng = np.random.default_rng(seed)
-        idx = np.arange(len(paths))
-        rng.shuffle(idx)
-        n = len(idx)
-        n_test = int(round(test_ratio * n))
-        n_val = int(round(val_ratio * n))
-        te_idx = idx[:n_test]
-        va_idx = idx[n_test:n_test + n_val]
-        tr_idx = idx[n_test + n_val:]
-        return (np.array(paths)[tr_idx].tolist(), np.array(labels)[tr_idx].tolist(),
-                np.array(paths)[va_idx].tolist(), np.array(labels)[va_idx].tolist(),
-                np.array(paths)[te_idx].tolist(), np.array(labels)[te_idx].tolist())
+def load_splits_from_json(json_path, data_root):
+    """
+    Utilise le SEED du JSON pour créer des splits stratifiés sur les fichiers segmented.
+    Ratios: ~70% train, 15% val, 15% test (comme dans le JSON).
+    """
+    print(f"[INFO] Chargement du SEED depuis: {json_path}")
+    
+    with open(json_path, 'r') as f:
+        splits = json.load(f)
+    
+    seed = splits.get('seed', 42)
+    print(f"[INFO] SEED du JSON: {seed}")
+    print(f"[INFO] Les fichiers segmented seront splités stratifiquement avec ce SEED")
+    
+    # Calculer les ratios du JSON
+    total = len(splits['train']) + len(splits['val']) + len(splits['test'])
+    test_ratio = len(splits['test']) / total
+    val_ratio = len(splits['val']) / total
+    
+    print(f"[INFO] Ratios du JSON: train={1-test_ratio-val_ratio:.2%}, val={val_ratio:.2%}, test={test_ratio:.2%}")
+    
+    # Lister tous les fichiers segmented disponibles
+    all_paths = []
+    all_labels = []
+    
+    for class_name in sorted(os.listdir(data_root)):
+        class_dir = os.path.join(data_root, class_name)
+        if os.path.isdir(class_dir) and '___' in class_name:
+            files = [os.path.join(class_dir, f) for f in os.listdir(class_dir) 
+                    if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+            all_paths.extend(files)
+            all_labels.extend([class_name] * len(files))
+    
+    print(f"[INFO] {len(all_paths)} fichiers segmented trouvés dans {len(set(all_labels))} classes")
+    
+    # Split stratifié avec le SEED du JSON
+    all_paths = np.array(all_paths)
+    all_labels = np.array(all_labels)
+    
+    # Split 1: train+val vs test
+    sss1 = StratifiedShuffleSplit(n_splits=1, test_size=test_ratio, random_state=seed)
+    train_val_idx, test_idx = next(sss1.split(all_paths, all_labels))
+    
+    train_val_paths = all_paths[train_val_idx]
+    train_val_labels = all_labels[train_val_idx]
+    test_paths = all_paths[test_idx]
+    
+    # Split 2: train vs val
+    adjusted_val_ratio = val_ratio / (1 - test_ratio)
+    sss2 = StratifiedShuffleSplit(n_splits=1, test_size=adjusted_val_ratio, random_state=seed)
+    train_idx, val_idx = next(sss2.split(train_val_paths, train_val_labels))
+    
+    train_paths = train_val_paths[train_idx]
+    val_paths = train_val_paths[val_idx]
+    
+    print(f"\n[INFO] Splits créés avec SEED={seed}:")
+    print(f"  - Train: {len(train_paths)} fichiers")
+    print(f"  - Val:   {len(val_paths)} fichiers")
+    print(f"  - Test:  {len(test_paths)} fichiers")
+    
+    return train_paths.tolist(), val_paths.tolist(), test_paths.tolist()
 
 
 def make_dataset(paths, labels, img_size=(256, 256), batch_size=32, 
@@ -452,36 +472,46 @@ def main():
     
     os.makedirs(args.output_dir, exist_ok=True)
     
-    # Chargement données
-    print(f"[INFO] Chargement des images depuis: {args.data_root}")
-    files = list_image_files(args.data_root)
-    print(f"[INFO] {len(files)} images trouvées")
+    # Charger les splits depuis le JSON (SEED=42)
+    splits_json = 'dataset/plantvillage/csv/pv_color_splits.json'
+    train_paths, val_paths, test_paths = load_splits_from_json(splits_json, args.data_root)
     
-    # Extraire les classes finales
-    final_classes = []
-    valid_files = []
-    for f in files:
-        final_class = parse_final_class_from_path(f)
+    # Extraire les classes finales de tous les fichiers
+    all_paths = train_paths + val_paths + test_paths
+    all_final_classes = []
+    for path in all_paths:
+        final_class = parse_final_class_from_path(path)
         if final_class:
-            final_classes.append(final_class)
-            valid_files.append(f)
+            all_final_classes.append(final_class)
     
-    # Mapping classe → index
-    unique_classes = sorted(set(final_classes))
+    # Créer mapping classe → index
+    unique_classes = sorted(set(all_final_classes))
     class_to_idx = {c: i for i, c in enumerate(unique_classes)}
     idx_to_class = {i: c for c, i in class_to_idx.items()}
     
-    labels = [class_to_idx[c] for c in final_classes]
+    print(f"\n[INFO] {len(unique_classes)} classes finales détectées")
     
-    print(f"[INFO] {len(unique_classes)} classes finales")
-    print(f"[INFO] Distribution: {Counter(final_classes).most_common(5)}")
+    # Convertir les chemins en labels
+    def paths_to_labels(paths):
+        labels = []
+        for path in paths:
+            final_class = parse_final_class_from_path(path)
+            if final_class and final_class in class_to_idx:
+                labels.append(class_to_idx[final_class])
+            else:
+                print(f"[WARN] Classe non reconnue pour: {path}")
+        return labels
     
-    # Split stratifié (SEED=42)
-    train_paths, train_labels, val_paths, val_labels, test_paths, test_labels = stratified_split(
-        valid_files, labels, seed=SEED
-    )
+    train_labels = paths_to_labels(train_paths)
+    val_labels = paths_to_labels(val_paths)
+    test_labels = paths_to_labels(test_paths)
     
-    print(f"[INFO] Train: {len(train_paths)}, Val: {len(val_paths)}, Test: {len(test_paths)}")
+    print(f"[INFO] Train: {len(train_paths)} images, {len(train_labels)} labels")
+    print(f"[INFO] Val:   {len(val_paths)} images, {len(val_labels)} labels")
+    print(f"[INFO] Test:  {len(test_paths)} images, {len(test_labels)} labels")
+    print(f"[INFO] Distribution (5 classes les plus fréquentes):")
+    for cls, count in Counter([idx_to_class[l] for l in train_labels]).most_common(5):
+        print(f"  - {cls}: {count}")
     
     # Sauvegarder les mappings
     with open(os.path.join(args.output_dir, 'class_mapping.json'), 'w') as f:

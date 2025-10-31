@@ -172,3 +172,20 @@ dataset/plant_disease/data/**
 
 results/models/**
 dataset/plantvillage/clean_split/**
+
+# Modèles entraînés (fichiers lourds)
+*.keras
+*.h5
+*.weights.h5
+
+# Dossiers de sortie d'entraînement
+outputs_*/
+outputs/
+
+# Archives
+*.zip
+*.tar.gz
+
+# Fichiers temporaires d'entraînement
+training_state.json
+*.ckpt

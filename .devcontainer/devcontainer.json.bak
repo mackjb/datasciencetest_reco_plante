@@ -1,0 +1,27 @@
+﻿{
+    "name":  "Python \u0026 Conda + SSH",
+    "image":  "mcr.microsoft.com/vscode/devcontainers/python:3.10-bullseye",
+    "workspaceFolder":  "/workspaces/datasciencetest_reco_plante",
+    "features":  {
+                     "ghcr.io/rocker-org/devcontainer-features/miniforge:2":  {
+                                                                                  "version":  "latest",
+                                                                                  "variant":  "Miniforge3"
+                                                                              },
+                     "ghcr.io/devcontainers/features/sshd:1":  {
+
+                                                               }
+                 },
+    "remoteUser":  "root",
+    "postStartCommand":  "sudo service ssh start",
+    "customizations":  {
+                           "vscode":  {
+                                          "settings":  {
+                                                           "python.pythonPath":  "/usr/local/miniconda/bin/python",
+                                                           "terminal.integrated.shell.linux":  "/bin/bash"
+                                                       },
+                                          "extensions":  [
+                                                             "ms-python.python"
+                                                         ]
+                                      }
+                       }
+}

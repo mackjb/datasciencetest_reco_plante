@@ -471,6 +471,12 @@ def evaluate_cascade(species_model, disease_model, test_paths, test_species_labe
     cascade_f1_macro = f1_score(true_final_classes, pred_final_classes, average='macro', zero_division=0)
     cascade_f1_weighted = f1_score(true_final_classes, pred_final_classes, average='weighted', zero_division=0)
     
+    # Rapport détaillé par classe finale
+    cascade_report = classification_report(true_final_classes, pred_final_classes, 
+                                          output_dict=True, zero_division=0)
+    cascade_report_df = pd.DataFrame(cascade_report).T
+    cascade_report_df.to_csv(os.path.join(output_dir, 'cascade_final_classes_report.csv'))
+    
     print(f"\n{'='*60}")
     print("RÉSULTATS")
     print(f"{'='*60}")
@@ -479,6 +485,7 @@ def evaluate_cascade(species_model, disease_model, test_paths, test_species_labe
     print(f"CASCADE (finale)   - Accuracy: {cascade_acc:.4f}")
     print(f"                   - Macro-F1: {cascade_f1_macro:.4f} (toutes classes égales)")
     print(f"                   - Weighted-F1: {cascade_f1_weighted:.4f} (pondéré par support)")
+    print(f"\n[INFO] Rapport détaillé par classe: cascade_final_classes_report.csv")
     
     # Sauvegarder
     results = {

@@ -461,17 +461,24 @@ def evaluate_cascade(species_model, disease_model, test_paths, test_species_labe
     cascade_correct = (species_pred == np.array(test_species_labels)) & (disease_pred == np.array(test_disease_labels))
     cascade_acc = cascade_correct.mean()
     
-    # F1 cascade: classe combinée
-    true_combined = np.array(test_species_labels) * 1000 + np.array(test_disease_labels)
-    pred_combined = species_pred * 1000 + disease_pred
-    cascade_f1 = f1_score(true_combined, pred_combined, average='macro')
+    # F1 cascade: sur les VRAIES classes finales (espèce___maladie)
+    # Ceci pénalise correctement quand l'espèce est fausse (→ classe finale fausse)
+    true_final_classes = [f"{idx_to_species[sp]}___{idx_to_disease[dis]}" 
+                         for sp, dis in zip(test_species_labels, test_disease_labels)]
+    pred_final_classes = [f"{idx_to_species[sp]}___{idx_to_disease[dis]}" 
+                         for sp, dis in zip(species_pred, disease_pred)]
+    
+    cascade_f1_macro = f1_score(true_final_classes, pred_final_classes, average='macro', zero_division=0)
+    cascade_f1_weighted = f1_score(true_final_classes, pred_final_classes, average='weighted', zero_division=0)
     
     print(f"\n{'='*60}")
     print("RÉSULTATS")
     print(f"{'='*60}")
-    print(f"Espèce seule    - Accuracy: {species_acc:.4f}, Macro-F1: {species_f1:.4f}")
-    print(f"Maladie seule   - Accuracy: {disease_acc:.4f}, Macro-F1: {disease_f1:.4f}")
-    print(f"CASCADE (& log) - Accuracy: {cascade_acc:.4f}, Macro-F1: {cascade_f1:.4f}")
+    print(f"Espèce seule       - Accuracy: {species_acc:.4f}, Macro-F1: {species_f1:.4f}")
+    print(f"Maladie seule      - Accuracy: {disease_acc:.4f}, Macro-F1: {disease_f1:.4f}")
+    print(f"CASCADE (finale)   - Accuracy: {cascade_acc:.4f}")
+    print(f"                   - Macro-F1: {cascade_f1_macro:.4f} (toutes classes égales)")
+    print(f"                   - Weighted-F1: {cascade_f1_weighted:.4f} (pondéré par support)")
     
     # Sauvegarder
     results = {
@@ -480,7 +487,8 @@ def evaluate_cascade(species_model, disease_model, test_paths, test_species_labe
         'disease_accuracy': float(disease_acc),
         'disease_f1': float(disease_f1),
         'cascade_accuracy': float(cascade_acc),
-        'cascade_f1': float(cascade_f1),
+        'cascade_f1_macro': float(cascade_f1_macro),
+        'cascade_f1_weighted': float(cascade_f1_weighted),
     }
     
     with open(os.path.join(output_dir, 'cascade_results.json'), 'w') as f:

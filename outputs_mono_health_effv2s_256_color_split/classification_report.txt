@@ -1,0 +1,12 @@
+Classification Report - Test Set
+Task: health
+Date: 2025-10-23T09:27:06.765546
+
+              precision    recall  f1-score   support
+
+     healthy     0.9982    1.0000    0.9991      2263
+    diseased     1.0000    0.9993    0.9997      5883
+
+    accuracy                         0.9995      8146
+   macro avg     0.9991    0.9997    0.9994      8146
+weighted avg     0.9995    0.9995    0.9995      8146

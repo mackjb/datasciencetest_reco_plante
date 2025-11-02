@@ -411,7 +411,7 @@ def stratified_split_by_class(paths: List[str], seed=42, train_ratio=0.7, val_ra
 def main():
     parser = argparse.ArgumentParser(description="Multi‑tâche PlantVillage (species/health/disease)")
     parser.add_argument('--data_root', type=str, required=True)
-    parser.add_argument('--output_dir', type=str, default='outputs_multi')
+    parser.add_argument('--output_dir', type=str, default='outputs_multi_effv2s_256_color_split_no_finetuning')
     parser.add_argument('--epochs', type=int, default=60)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--img_size', type=int, nargs=2, default=(256,256))
@@ -422,6 +422,7 @@ def main():
     parser.add_argument('--label_smoothing_species', type=float, default=0.1)
     parser.add_argument('--label_smoothing_disease', type=float, default=0.1)
     parser.add_argument('--fine_tune_at', type=int, default=50)
+    parser.add_argument('--gradient_clip', type=float, default=1.0, help='Gradient clipping norm (0=disabled, recommended: 0.5-1.0)')
     parser.add_argument('--loss_w_species', type=float, default=1.0)
     parser.add_argument('--loss_w_health', type=float, default=0.5)
     parser.add_argument('--loss_w_disease', type=float, default=1.5)
@@ -539,27 +540,16 @@ def main():
             keras.callbacks.ReduceLROnPlateau(monitor='val_species_macro_f1', mode='max', patience=5, factor=0.5, min_lr=5e-5, verbose=1),
             keras.callbacks.ModelCheckpoint(ckpt_path, monitor='val_species_macro_f1', mode='max', save_best_only=True, verbose=1)
         ]
-        # Phase 1: têtes seules
-        print("[INFO] Stage 1: Train heads (backbone frozen)")
+        # Phase unique: têtes seules (backbone gelé, SANS fine-tuning)
+        print("[INFO] Training heads only (backbone frozen, NO fine-tuning)")
         h1 = model.fit(train_ds,
                        validation_data=val_ds,
                        epochs=args.epochs,
                        callbacks=callbacks,
                        verbose=1)
-        # Phase 2: fine‑tune top layers
-        print("[INFO] Stage 2: Fine-tune top layers")
-        unfreeze_top_layers(base, fine_tune_at=args.fine_tune_at)
-        try:
-            opt_ft = keras.optimizers.AdamW(learning_rate=args.ft_lr, weight_decay=args.weight_decay)
-        except Exception:
-            opt_ft = keras.optimizers.Adam(learning_rate=args.ft_lr)
-        model.compile(optimizer=opt_ft, loss=loss_dict, metrics=metrics_dict, loss_weights=loss_w)
-        h2 = model.fit(train_ds,
-                       validation_data=val_ds,
-                       epochs=args.epochs,
-                       callbacks=callbacks,
-                       verbose=1)
-        hist = pd.concat([pd.DataFrame(h1.history), pd.DataFrame(h2.history)], ignore_index=True)
+        # Pas de Phase 2: fine-tuning supprimé
+        print("[INFO] Fine-tuning phase SKIPPED (training heads only)")
+        hist = pd.DataFrame(h1.history)
         history_csv = os.path.join(args.output_dir, 'history.csv')
         hist.to_csv(history_csv, index=False)
 

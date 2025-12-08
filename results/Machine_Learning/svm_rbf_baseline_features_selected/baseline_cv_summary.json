@@ -1,0 +1,30 @@
+{
+  "best_params": {
+    "svm__C": 76.0,
+    "svm__class_weight": null
+  },
+  "best_cv_f1_macro": 0.9182636842383023,
+  "cv_rows": 2,
+  "summary_preview": [
+    {
+      "param_svm__C": 76.0,
+      "param_svm__class_weight": "balanced",
+      "mean_f1": 0.9115315451234393,
+      "std_f1": 0.004088248166831567,
+      "mean_bal": 0.9229253575132839,
+      "std_bal": 0.005177013980019388,
+      "f1_macro": "0.9115 ± 0.0041",
+      "balanced_accuracy": "0.9229 ± 0.0052"
+    },
+    {
+      "param_svm__C": 76.0,
+      "param_svm__class_weight": NaN,
+      "mean_f1": 0.9182636842383023,
+      "std_f1": 0.004551089535077403,
+      "mean_bal": 0.9151245088105636,
+      "std_bal": 0.005378683884478203,
+      "f1_macro": "0.9183 ± 0.0046",
+      "balanced_accuracy": "0.9151 ± 0.0054"
+    }
+  ]
+}

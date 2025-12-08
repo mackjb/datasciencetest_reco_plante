@@ -1,9 +1,0 @@
-{
-  "species_accuracy": 0.9987724036336852,
-  "species_f1": 0.9984184038331275,
-  "disease_accuracy": 0.9941075374416892,
-  "disease_f1": 0.9870013331157137,
-  "cascade_accuracy": 0.9933709796219004,
-  "cascade_f1_macro": 0.9650669454571849,
-  "cascade_f1_weighted": 0.9934421382896381
-}

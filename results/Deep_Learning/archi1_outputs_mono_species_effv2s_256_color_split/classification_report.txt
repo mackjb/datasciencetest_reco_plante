@@ -1,0 +1,24 @@
+Classification Report - Test Set
+Task: species
+Date: 2025-10-23T00:48:47.649638
+
+                         precision    recall  f1-score   support
+
+                  Apple     0.9979    1.0000    0.9989       474
+              Blueberry     1.0000    1.0000    1.0000       226
+Cherry_(including_sour)     1.0000    0.9930    0.9965       286
+           Corn_(maize)     1.0000    1.0000    1.0000       577
+                  Grape     1.0000    1.0000    1.0000       610
+                 Orange     1.0000    1.0000    1.0000       826
+                  Peach     1.0000    1.0000    1.0000       398
+           Pepper,_bell     1.0000    1.0000    1.0000       372
+                 Potato     0.9938    0.9938    0.9938       323
+              Raspberry     1.0000    1.0000    1.0000        55
+                Soybean     1.0000    0.9987    0.9993       764
+                 Squash     1.0000    1.0000    1.0000       275
+             Strawberry     0.9958    1.0000    0.9979       235
+                 Tomato     0.9989    0.9993    0.9991      2725
+
+               accuracy                         0.9991      8146
+              macro avg     0.9990    0.9989    0.9990      8146
+           weighted avg     0.9991    0.9991    0.9991      8146

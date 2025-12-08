@@ -1,0 +1,32 @@
+True,Predicted,Count,Percent_of_true
+Corn_(maize)___Northern_Leaf_Blight,Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot,11,7.4324324324324325
+Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot,Corn_(maize)___Northern_Leaf_Blight,6,7.792207792207792
+Tomato___Target_Spot,Tomato___Septoria_leaf_spot,4,1.8957345971563981
+Potato___Late_blight,Tomato___Late_blight,3,2.0
+Tomato___Late_blight,Tomato___Early_blight,3,1.048951048951049
+Tomato___Early_blight,Tomato___Target_Spot,3,2.0
+Tomato___Early_blight,Tomato___Late_blight,3,2.0
+Tomato___Early_blight,Tomato___Septoria_leaf_spot,2,1.3333333333333335
+Peach___Bacterial_spot,Tomato___Septoria_leaf_spot,2,0.5813953488372093
+Tomato___Target_Spot,Tomato___Spider_mites Two-spotted_spider_mite,2,0.9478672985781991
+Tomato___Target_Spot,Tomato___Early_blight,2,0.9478672985781991
+Tomato___Early_blight,Tomato___Leaf_Mold,2,1.3333333333333335
+Apple___Apple_scab,Apple___healthy,2,2.1505376344086025
+Corn_(maize)___Northern_Leaf_Blight,Corn_(maize)___healthy,1,0.6756756756756757
+Corn_(maize)___Common_rust_,Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot,1,0.5586592178770949
+Tomato___Bacterial_spot,Tomato___Target_Spot,1,0.3134796238244514
+Grape___Black_rot,Grape___Esca_(Black_Measles),1,0.5649717514124294
+Potato___Late_blight,Potato___Early_blight,1,0.6666666666666667
+Potato___Late_blight,Potato___healthy,1,0.6666666666666667
+Cherry_(including_sour)___healthy,Strawberry___Leaf_scorch,1,0.78125
+Cherry_(including_sour)___Powdery_mildew,Tomato___Late_blight,1,0.6329113924050633
+Tomato___Late_blight,Tomato___healthy,1,0.34965034965034963
+Tomato___Late_blight,Tomato___Leaf_Mold,1,0.34965034965034963
+Tomato___Leaf_Mold,Tomato___healthy,1,0.6993006993006993
+Tomato___Leaf_Mold,Tomato___Spider_mites Two-spotted_spider_mite,1,0.6993006993006993
+Tomato___Leaf_Mold,Tomato___Bacterial_spot,1,0.6993006993006993
+Tomato___Septoria_leaf_spot,Tomato___Early_blight,1,0.37593984962406013
+Tomato___Target_Spot,Tomato___Bacterial_spot,1,0.47393364928909953
+Tomato___Spider_mites Two-spotted_spider_mite,Tomato___healthy,1,0.398406374501992
+Tomato___Spider_mites Two-spotted_spider_mite,Tomato___Leaf_Mold,1,0.398406374501992
+Tomato___Tomato_mosaic_virus,Tomato___Tomato_Yellow_Leaf_Curl_Virus,1,1.7857142857142856

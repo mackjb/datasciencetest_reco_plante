@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html><head><meta charset='utf-8'><title>Galerie des erreurs</title>
+<style>body{font-family:sans-serif} .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px} .card{border:1px solid #ccc;padding:8px} img{max-width:100%;max-height:200px;border:1px solid #ddd} .btn{margin-top:6px;padding:6px 10px;cursor:pointer}</style>
+<script>function copyText(str, btn){if(!str)return; if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(str).then(function(){if(btn){var t=btn.textContent; btn.textContent='Copié!'; setTimeout(function(){btn.textContent=t;}, 1200);}}).catch(function(){fallbackCopy(str, btn);});} else {fallbackCopy(str, btn);} } function fallbackCopy(str, btn){var ta=document.createElement('textarea'); ta.value=str; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); if(btn){ var t=btn.textContent; btn.textContent='Copié!'; setTimeout(function(){btn.textContent=t;}, 1200);} } catch(e){} finally{document.body.removeChild(ta);} }</script>
+</head><body>
+<h1>Galerie des erreurs (quelques exemples)</h1>
+<p>Nombre total d'exemples affichés: 48</p>
+<div class='grid'>
+<div class='card'>
+<div><b>idx</b>: 46330</div>
+<div><b>vrai</b>: Apple</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___healthy/7a13d83d-7511-41c5-9fd5-9fd18d3cf3b1___RS_HL%205685_final_masked_26a4b90a.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___healthy/7a13d83d-7511-41c5-9fd5-9fd18d3cf3b1___RS_HL 5685_final_masked_26a4b90a.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___healthy/7a13d83d-7511-41c5-9fd5-9fd18d3cf3b1___RS_HL 5685_final_masked_26a4b90a.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 42009</div>
+<div><b>vrai</b>: Tomato</div>
+<div><b>prédit</b>: Grape</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Septoria_leaf_spot/54cf4681-e4b4-4a9d-9c7b-0745c8dae7a1___Matt.S_CG%201100_final_masked_0baa0531.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Septoria_leaf_spot/54cf4681-e4b4-4a9d-9c7b-0745c8dae7a1___Matt.S_CG 1100_final_masked_0baa0531.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Septoria_leaf_spot/54cf4681-e4b4-4a9d-9c7b-0745c8dae7a1___Matt.S_CG 1100_final_masked_0baa0531.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 50909</div>
+<div><b>vrai</b>: Soybean</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/b4cf2330-e6cd-4b3b-aa3a-4936e38e0571___RS_HL%207287_final_masked_fe080403.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/b4cf2330-e6cd-4b3b-aa3a-4936e38e0571___RS_HL 7287_final_masked_fe080403.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/b4cf2330-e6cd-4b3b-aa3a-4936e38e0571___RS_HL 7287_final_masked_fe080403.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 21769</div>
+<div><b>vrai</b>: Tomato</div>
+<div><b>prédit</b>: Orange</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Bacterial_spot/ad52d457-9701-4260-84d9-5a7acfa8cab8___GCREC_Bact.Sp%203739_final_masked_af601ac0.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Bacterial_spot/ad52d457-9701-4260-84d9-5a7acfa8cab8___GCREC_Bact.Sp 3739_final_masked_af601ac0.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Bacterial_spot/ad52d457-9701-4260-84d9-5a7acfa8cab8___GCREC_Bact.Sp 3739_final_masked_af601ac0.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 40628</div>
+<div><b>vrai</b>: Pepper,_bell</div>
+<div><b>prédit</b>: Strawberry</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper%2C_bell___Bacterial_spot/895a07dd-367e-4e79-8730-27bec5d951e9___JR_B.Spot%203259_final_masked_a3d09834.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper,_bell___Bacterial_spot/895a07dd-367e-4e79-8730-27bec5d951e9___JR_B.Spot 3259_final_masked_a3d09834.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper,_bell___Bacterial_spot/895a07dd-367e-4e79-8730-27bec5d951e9___JR_B.Spot 3259_final_masked_a3d09834.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 20347</div>
+<div><b>vrai</b>: Cherry_(including_sour)</div>
+<div><b>prédit</b>: Pepper,_bell</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_%28including_sour%29___Powdery_mildew/fd437fb9-f319-4f40-9142-b8800bccd21e___FREC_Pwd.M%205142_final_masked_889eaeb2.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___Powdery_mildew/fd437fb9-f319-4f40-9142-b8800bccd21e___FREC_Pwd.M 5142_final_masked_889eaeb2.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___Powdery_mildew/fd437fb9-f319-4f40-9142-b8800bccd21e___FREC_Pwd.M 5142_final_masked_889eaeb2.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 28627</div>
+<div><b>vrai</b>: Tomato</div>
+<div><b>prédit</b>: Soybean</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___healthy/45a1e50e-e504-40a6-8378-39c28914ca43___GH_HL%20Leaf%20448.1_final_masked_2e9e72d9.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___healthy/45a1e50e-e504-40a6-8378-39c28914ca43___GH_HL Leaf 448.1_final_masked_2e9e72d9.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___healthy/45a1e50e-e504-40a6-8378-39c28914ca43___GH_HL Leaf 448.1_final_masked_2e9e72d9.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 8752</div>
+<div><b>vrai</b>: Tomato</div>
+<div><b>prédit</b>: Peach</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Late_blight/40076fd7-8c21-41a4-9bc9-3c1c53e1a865___RS_Late.B%205594_final_masked_958acf50.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Late_blight/40076fd7-8c21-41a4-9bc9-3c1c53e1a865___RS_Late.B 5594_final_masked_958acf50.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Late_blight/40076fd7-8c21-41a4-9bc9-3c1c53e1a865___RS_Late.B 5594_final_masked_958acf50.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 17886</div>
+<div><b>vrai</b>: Tomato</div>
+<div><b>prédit</b>: Peach</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Leaf_Mold/d2102d1d-e4f2-40d3-84aa-7281e053e646___Crnl_L.Mold%209111_final_masked_b9aa2996.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Leaf_Mold/d2102d1d-e4f2-40d3-84aa-7281e053e646___Crnl_L.Mold 9111_final_masked_b9aa2996.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Leaf_Mold/d2102d1d-e4f2-40d3-84aa-7281e053e646___Crnl_L.Mold 9111_final_masked_b9aa2996.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 38294</div>
+<div><b>vrai</b>: Peach</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/8a275e2d-a847-4408-813c-54dd958cb1d4___Rut._Bact.S%201422_final_masked_ac57454f.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/8a275e2d-a847-4408-813c-54dd958cb1d4___Rut._Bact.S 1422_final_masked_ac57454f.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/8a275e2d-a847-4408-813c-54dd958cb1d4___Rut._Bact.S 1422_final_masked_ac57454f.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 49004</div>
+<div><b>vrai</b>: Strawberry</div>
+<div><b>prédit</b>: Grape</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Strawberry___Leaf_scorch/b56e74f4-6cdf-4476-8759-817fa8e58439___RS_L.Scorch%200117_final_masked_c8b0b887.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Strawberry___Leaf_scorch/b56e74f4-6cdf-4476-8759-817fa8e58439___RS_L.Scorch 0117_final_masked_c8b0b887.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Strawberry___Leaf_scorch/b56e74f4-6cdf-4476-8759-817fa8e58439___RS_L.Scorch 0117_final_masked_c8b0b887.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 26854</div>
+<div><b>vrai</b>: Raspberry</div>
+<div><b>prédit</b>: Blueberry</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Raspberry___healthy/29833d64-5b6a-47a3-9802-18f88e9fa48d___Mary_HL%209247_final_masked_37e8ac8d.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Raspberry___healthy/29833d64-5b6a-47a3-9802-18f88e9fa48d___Mary_HL 9247_final_masked_37e8ac8d.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Raspberry___healthy/29833d64-5b6a-47a3-9802-18f88e9fa48d___Mary_HL 9247_final_masked_37e8ac8d.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 39025</div>
+<div><b>vrai</b>: Peach</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/f5c54a86-b420-43ad-a734-40b47b13b93c___Rut._Bact.S%203418_final_masked_5278c5eb.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/f5c54a86-b420-43ad-a734-40b47b13b93c___Rut._Bact.S 3418_final_masked_5278c5eb.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/f5c54a86-b420-43ad-a734-40b47b13b93c___Rut._Bact.S 3418_final_masked_5278c5eb.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 40409</div>
+<div><b>vrai</b>: Peach</div>
+<div><b>prédit</b>: Cherry_(including_sour)</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/4669a1f2-c33f-411e-a94b-8d87a8a756c2___Rutg._Bact.S%201288_final_masked_bae3df8d.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/4669a1f2-c33f-411e-a94b-8d87a8a756c2___Rutg._Bact.S 1288_final_masked_bae3df8d.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/4669a1f2-c33f-411e-a94b-8d87a8a756c2___Rutg._Bact.S 1288_final_masked_bae3df8d.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 39111</div>
+<div><b>vrai</b>: Peach</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/db52bbd8-579f-4f1a-b346-d1e16b224172___Rut._Bact.S%203501_final_masked_5651fca6.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/db52bbd8-579f-4f1a-b346-d1e16b224172___Rut._Bact.S 3501_final_masked_5651fca6.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/db52bbd8-579f-4f1a-b346-d1e16b224172___Rut._Bact.S 3501_final_masked_5651fca6.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 50076</div>
+<div><b>vrai</b>: Soybean</div>
+<div><b>prédit</b>: Cherry_(including_sour)</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/916436ad-4470-482d-af25-53456a7de862___RS_HL%204320_final_masked_be2a06a1.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/916436ad-4470-482d-af25-53456a7de862___RS_HL 4320_final_masked_be2a06a1.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/916436ad-4470-482d-af25-53456a7de862___RS_HL 4320_final_masked_be2a06a1.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 11600</div>
+<div><b>vrai</b>: Pepper,_bell</div>
+<div><b>prédit</b>: Orange</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper%2C_bell___healthy/d6e06adc-15b1-4513-97b7-7e7b3920824f___JR_HL%208258_final_masked_ae64b785.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper,_bell___healthy/d6e06adc-15b1-4513-97b7-7e7b3920824f___JR_HL 8258_final_masked_ae64b785.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper,_bell___healthy/d6e06adc-15b1-4513-97b7-7e7b3920824f___JR_HL 8258_final_masked_ae64b785.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 8082</div>
+<div><b>vrai</b>: Tomato</div>
+<div><b>prédit</b>: Strawberry</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Late_blight/f27d1b5c-46e2-442f-846d-dd5c6018bb2a___RS_Late.B%206984_final_masked_7f81f3d4.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Late_blight/f27d1b5c-46e2-442f-846d-dd5c6018bb2a___RS_Late.B 6984_final_masked_7f81f3d4.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Late_blight/f27d1b5c-46e2-442f-846d-dd5c6018bb2a___RS_Late.B 6984_final_masked_7f81f3d4.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 46492</div>
+<div><b>vrai</b>: Apple</div>
+<div><b>prédit</b>: Soybean</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___healthy/18121688-72a8-414a-8e36-43060cdebb22___RS_HL%205747_final_masked_c13a72ce.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___healthy/18121688-72a8-414a-8e36-43060cdebb22___RS_HL 5747_final_masked_c13a72ce.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___healthy/18121688-72a8-414a-8e36-43060cdebb22___RS_HL 5747_final_masked_c13a72ce.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 7886</div>
+<div><b>vrai</b>: Potato</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Potato___Late_blight/66473aff-3438-4a8c-8c05-5fed8a4255ae___RS_LB%204473_final_masked_c693d06f.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Potato___Late_blight/66473aff-3438-4a8c-8c05-5fed8a4255ae___RS_LB 4473_final_masked_c693d06f.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Potato___Late_blight/66473aff-3438-4a8c-8c05-5fed8a4255ae___RS_LB 4473_final_masked_c693d06f.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 19388</div>
+<div><b>vrai</b>: Cherry_(including_sour)</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_%28including_sour%29___Powdery_mildew/ad7637de-7c1f-4ec7-a3d6-14032337a6c3___FREC_Pwd.M%205163_final_masked_f8c388fb.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___Powdery_mildew/ad7637de-7c1f-4ec7-a3d6-14032337a6c3___FREC_Pwd.M 5163_final_masked_f8c388fb.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___Powdery_mildew/ad7637de-7c1f-4ec7-a3d6-14032337a6c3___FREC_Pwd.M 5163_final_masked_f8c388fb.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 15810</div>
+<div><b>vrai</b>: Orange</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Orange___Haunglongbing_%28Citrus_greening%29/879eb67e-779c-49be-a791-a2d06440d7d8___CREC_HLB%207809_final_masked_c6fddbc1.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Orange___Haunglongbing_(Citrus_greening)/879eb67e-779c-49be-a791-a2d06440d7d8___CREC_HLB 7809_final_masked_c6fddbc1.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Orange___Haunglongbing_(Citrus_greening)/879eb67e-779c-49be-a791-a2d06440d7d8___CREC_HLB 7809_final_masked_c6fddbc1.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 22600</div>
+<div><b>vrai</b>: Tomato</div>
+<div><b>prédit</b>: Cherry_(including_sour)</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Bacterial_spot/c0b98fdd-b9b8-453f-8de3-4aeec4299f8c___GCREC_Bact.Sp%206086_final_masked_ad28e7a6.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Bacterial_spot/c0b98fdd-b9b8-453f-8de3-4aeec4299f8c___GCREC_Bact.Sp 6086_final_masked_ad28e7a6.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Bacterial_spot/c0b98fdd-b9b8-453f-8de3-4aeec4299f8c___GCREC_Bact.Sp 6086_final_masked_ad28e7a6.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 53549</div>
+<div><b>vrai</b>: Soybean</div>
+<div><b>prédit</b>: Grape</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/ab25b32e-1228-4fd4-b61d-e5397d8a6a38___RS_HL%202878_final_masked_e2aebf56.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/ab25b32e-1228-4fd4-b61d-e5397d8a6a38___RS_HL 2878_final_masked_e2aebf56.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/ab25b32e-1228-4fd4-b61d-e5397d8a6a38___RS_HL 2878_final_masked_e2aebf56.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 20356</div>
+<div><b>vrai</b>: Cherry_(including_sour)</div>
+<div><b>prédit</b>: Orange</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_%28including_sour%29___Powdery_mildew/3e71bd88-d17c-4e8f-b32b-9848ddc093ce___FREC_Pwd.M%204509_final_masked_150194f8.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___Powdery_mildew/3e71bd88-d17c-4e8f-b32b-9848ddc093ce___FREC_Pwd.M 4509_final_masked_150194f8.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___Powdery_mildew/3e71bd88-d17c-4e8f-b32b-9848ddc093ce___FREC_Pwd.M 4509_final_masked_150194f8.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 41072</div>
+<div><b>vrai</b>: Pepper,_bell</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper%2C_bell___Bacterial_spot/2700e5b5-295c-4378-b829-0e5989864380___NREC_B.Spot%209091_final_masked_87e3bd86.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper,_bell___Bacterial_spot/2700e5b5-295c-4378-b829-0e5989864380___NREC_B.Spot 9091_final_masked_87e3bd86.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper,_bell___Bacterial_spot/2700e5b5-295c-4378-b829-0e5989864380___NREC_B.Spot 9091_final_masked_87e3bd86.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 13356</div>
+<div><b>vrai</b>: Orange</div>
+<div><b>prédit</b>: Pepper,_bell</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Orange___Haunglongbing_%28Citrus_greening%29/5033d61f-02be-42c5-9ef6-1c5a9605818d___CREC_HLB%204477_final_masked_f7d4505f.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Orange___Haunglongbing_(Citrus_greening)/5033d61f-02be-42c5-9ef6-1c5a9605818d___CREC_HLB 4477_final_masked_f7d4505f.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Orange___Haunglongbing_(Citrus_greening)/5033d61f-02be-42c5-9ef6-1c5a9605818d___CREC_HLB 4477_final_masked_f7d4505f.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 20491</div>
+<div><b>vrai</b>: Apple</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___Cedar_apple_rust/09239528-a0a0-4a2d-af03-c5d5f7a27710___FREC_C.Rust%204024_final_masked_edb6b3f8.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___Cedar_apple_rust/09239528-a0a0-4a2d-af03-c5d5f7a27710___FREC_C.Rust 4024_final_masked_edb6b3f8.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___Cedar_apple_rust/09239528-a0a0-4a2d-af03-c5d5f7a27710___FREC_C.Rust 4024_final_masked_edb6b3f8.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 51700</div>
+<div><b>vrai</b>: Soybean</div>
+<div><b>prédit</b>: Apple</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/5ab639b3-7224-494c-923b-0b1a98a95c7b___RS_HL%205562%201_final_masked_887ac378.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/5ab639b3-7224-494c-923b-0b1a98a95c7b___RS_HL 5562 1_final_masked_887ac378.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/5ab639b3-7224-494c-923b-0b1a98a95c7b___RS_HL 5562 1_final_masked_887ac378.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 40681</div>
+<div><b>vrai</b>: Pepper,_bell</div>
+<div><b>prédit</b>: Orange</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper%2C_bell___Bacterial_spot/bde95d13-80fa-4993-a13e-6ca4f7f1c9ef___JR_B.Spot%208867_final_masked_3c960a0d.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper,_bell___Bacterial_spot/bde95d13-80fa-4993-a13e-6ca4f7f1c9ef___JR_B.Spot 8867_final_masked_3c960a0d.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Pepper,_bell___Bacterial_spot/bde95d13-80fa-4993-a13e-6ca4f7f1c9ef___JR_B.Spot 8867_final_masked_3c960a0d.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 665</div>
+<div><b>vrai</b>: Grape</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Grape___Black_rot/37556529-d885-49b1-a6dd-7250fdc34592___FAM_B.Rot%203618_final_masked_bdf2b29f.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Grape___Black_rot/37556529-d885-49b1-a6dd-7250fdc34592___FAM_B.Rot 3618_final_masked_bdf2b29f.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Grape___Black_rot/37556529-d885-49b1-a6dd-7250fdc34592___FAM_B.Rot 3618_final_masked_bdf2b29f.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 2672</div>
+<div><b>vrai</b>: Blueberry</div>
+<div><b>prédit</b>: Potato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Blueberry___healthy/e3bd6e54-138d-4185-b6ff-44de12823111___RS_HL%200356_final_masked_ee279cf8.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Blueberry___healthy/e3bd6e54-138d-4185-b6ff-44de12823111___RS_HL 0356_final_masked_ee279cf8.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Blueberry___healthy/e3bd6e54-138d-4185-b6ff-44de12823111___RS_HL 0356_final_masked_ee279cf8.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 52637</div>
+<div><b>vrai</b>: Soybean</div>
+<div><b>prédit</b>: Potato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/7ccfc287-ca6b-4ef4-96db-9b18088bfe18___RS_HL%206327_final_masked_e329f6e6.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/7ccfc287-ca6b-4ef4-96db-9b18088bfe18___RS_HL 6327_final_masked_e329f6e6.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/7ccfc287-ca6b-4ef4-96db-9b18088bfe18___RS_HL 6327_final_masked_e329f6e6.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 5593</div>
+<div><b>vrai</b>: Tomato</div>
+<div><b>prédit</b>: Apple</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Target_Spot/53a1a1ee-09cc-4393-b255-6f808e2a4802___Com.G_TgS_FL%209850_final_masked_e959d67d.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Target_Spot/53a1a1ee-09cc-4393-b255-6f808e2a4802___Com.G_TgS_FL 9850_final_masked_e959d67d.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Target_Spot/53a1a1ee-09cc-4393-b255-6f808e2a4802___Com.G_TgS_FL 9850_final_masked_e959d67d.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 29152</div>
+<div><b>vrai</b>: Cherry_(including_sour)</div>
+<div><b>prédit</b>: Grape</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_%28including_sour%29___healthy/e7a46a0f-64f9-47a5-aecd-655cca1d4559___JR_HL%203923_final_masked_f020be3a.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___healthy/e7a46a0f-64f9-47a5-aecd-655cca1d4559___JR_HL 3923_final_masked_f020be3a.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___healthy/e7a46a0f-64f9-47a5-aecd-655cca1d4559___JR_HL 3923_final_masked_f020be3a.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 29340</div>
+<div><b>vrai</b>: Cherry_(including_sour)</div>
+<div><b>prédit</b>: Orange</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_%28including_sour%29___healthy/47c3230c-dc1e-4787-a533-2b5afc0cdffa___JR_HL%209491_final_masked_178a4e9e.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___healthy/47c3230c-dc1e-4787-a533-2b5afc0cdffa___JR_HL 9491_final_masked_178a4e9e.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___healthy/47c3230c-dc1e-4787-a533-2b5afc0cdffa___JR_HL 9491_final_masked_178a4e9e.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 23086</div>
+<div><b>vrai</b>: Grape</div>
+<div><b>prédit</b>: Apple</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Grape___healthy/666536ee-371f-46c2-b20d-f6fc87847cb1___Mt.N.V_HL%208944_final_masked_954e6061.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Grape___healthy/666536ee-371f-46c2-b20d-f6fc87847cb1___Mt.N.V_HL 8944_final_masked_954e6061.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Grape___healthy/666536ee-371f-46c2-b20d-f6fc87847cb1___Mt.N.V_HL 8944_final_masked_954e6061.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 43699</div>
+<div><b>vrai</b>: Squash</div>
+<div><b>prédit</b>: Peach</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Squash___Powdery_mildew/b9bdb26b-b3e8-4292-bda3-fe822436d8a2___MD_Powd.M%200100_final_masked_3909b682.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Squash___Powdery_mildew/b9bdb26b-b3e8-4292-bda3-fe822436d8a2___MD_Powd.M 0100_final_masked_3909b682.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Squash___Powdery_mildew/b9bdb26b-b3e8-4292-bda3-fe822436d8a2___MD_Powd.M 0100_final_masked_3909b682.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 3279</div>
+<div><b>vrai</b>: Blueberry</div>
+<div><b>prédit</b>: Apple</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Blueberry___healthy/93588c32-6a3c-41eb-b7f4-f8c70f1f397d___RS_HL%200441_final_masked_be59359f.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Blueberry___healthy/93588c32-6a3c-41eb-b7f4-f8c70f1f397d___RS_HL 0441_final_masked_be59359f.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Blueberry___healthy/93588c32-6a3c-41eb-b7f4-f8c70f1f397d___RS_HL 0441_final_masked_be59359f.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 18740</div>
+<div><b>vrai</b>: Grape</div>
+<div><b>prédit</b>: Strawberry</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Grape___Leaf_blight_%28Isariopsis_Leaf_Spot%29/67404133-edc0-4e07-a4ec-6bcb825e3702___FAM_L.Blight%204675_final_masked_0d08d009.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Grape___Leaf_blight_(Isariopsis_Leaf_Spot)/67404133-edc0-4e07-a4ec-6bcb825e3702___FAM_L.Blight 4675_final_masked_0d08d009.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Grape___Leaf_blight_(Isariopsis_Leaf_Spot)/67404133-edc0-4e07-a4ec-6bcb825e3702___FAM_L.Blight 4675_final_masked_0d08d009.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 39251</div>
+<div><b>vrai</b>: Peach</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/42a9a390-340a-4046-9bee-ab8671090955___Rut._Bact.S%201490_final_masked_b4f1a10e.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/42a9a390-340a-4046-9bee-ab8671090955___Rut._Bact.S 1490_final_masked_b4f1a10e.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___Bacterial_spot/42a9a390-340a-4046-9bee-ab8671090955___Rut._Bact.S 1490_final_masked_b4f1a10e.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 28894</div>
+<div><b>vrai</b>: Cherry_(including_sour)</div>
+<div><b>prédit</b>: Soybean</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_%28including_sour%29___healthy/914024a5-989c-46b2-83bb-5fe06421eb8b___JR_HL%209524_final_masked_25a0c02e.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___healthy/914024a5-989c-46b2-83bb-5fe06421eb8b___JR_HL 9524_final_masked_25a0c02e.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Cherry_(including_sour)___healthy/914024a5-989c-46b2-83bb-5fe06421eb8b___JR_HL 9524_final_masked_25a0c02e.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 15805</div>
+<div><b>vrai</b>: Orange</div>
+<div><b>prédit</b>: Pepper,_bell</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Orange___Haunglongbing_%28Citrus_greening%29/989cadeb-0e71-4ef6-9bd6-522bee18730f___CREC_HLB%206776_final_masked_1a8cdfc0.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Orange___Haunglongbing_(Citrus_greening)/989cadeb-0e71-4ef6-9bd6-522bee18730f___CREC_HLB 6776_final_masked_1a8cdfc0.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Orange___Haunglongbing_(Citrus_greening)/989cadeb-0e71-4ef6-9bd6-522bee18730f___CREC_HLB 6776_final_masked_1a8cdfc0.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 6837</div>
+<div><b>vrai</b>: Peach</div>
+<div><b>prédit</b>: Apple</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___healthy/ac7886c0-246e-4bae-b68d-9e7fbf237852___Rutg._HL%203602_final_masked_31cb379f.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___healthy/ac7886c0-246e-4bae-b68d-9e7fbf237852___Rutg._HL 3602_final_masked_31cb379f.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Peach___healthy/ac7886c0-246e-4bae-b68d-9e7fbf237852___Rutg._HL 3602_final_masked_31cb379f.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 2540</div>
+<div><b>vrai</b>: Potato</div>
+<div><b>prédit</b>: Tomato</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Potato___Early_blight/904dba96-8ff1-45e2-af16-9c9cc5865c32___RS_Early.B%207349_final_masked_a35f0050.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Potato___Early_blight/904dba96-8ff1-45e2-af16-9c9cc5865c32___RS_Early.B 7349_final_masked_a35f0050.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Potato___Early_blight/904dba96-8ff1-45e2-af16-9c9cc5865c32___RS_Early.B 7349_final_masked_a35f0050.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 20407</div>
+<div><b>vrai</b>: Apple</div>
+<div><b>prédit</b>: Soybean</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___Cedar_apple_rust/3dde7bc6-90e6-4057-a1e7-c2580ccf03a2___FREC_C.Rust%200092_final_masked_cae95ef9.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___Cedar_apple_rust/3dde7bc6-90e6-4057-a1e7-c2580ccf03a2___FREC_C.Rust 0092_final_masked_cae95ef9.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Apple___Cedar_apple_rust/3dde7bc6-90e6-4057-a1e7-c2580ccf03a2___FREC_C.Rust 0092_final_masked_cae95ef9.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 8792</div>
+<div><b>vrai</b>: Tomato</div>
+<div><b>prédit</b>: Cherry_(including_sour)</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Late_blight/97968e5a-b1d0-428c-842a-f77308212339___GHLB_PS%20Leaf%2046.2%20Day%2018_final_masked_7192a68b.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Late_blight/97968e5a-b1d0-428c-842a-f77308212339___GHLB_PS Leaf 46.2 Day 18_final_masked_7192a68b.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Tomato___Late_blight/97968e5a-b1d0-428c-842a-f77308212339___GHLB_PS Leaf 46.2 Day 18_final_masked_7192a68b.jpg', this)">Copier le chemin</button>
+</div>
+<div class='card'>
+<div><b>idx</b>: 53118</div>
+<div><b>vrai</b>: Soybean</div>
+<div><b>prédit</b>: Orange</div>
+<img src='file:///workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/8630f71d-5e91-4b2d-ac54-7624c6f50e70___RS_HL%207201_final_masked_ef936b1e.jpg' alt='img' />
+<div class='meta'><b>filepath</b>: /workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/8630f71d-5e91-4b2d-ac54-7624c6f50e70___RS_HL 7201_final_masked_ef936b1e.jpg</div>
+<button class='btn' onclick="copyText('/workspaces/datasciencetest_reco_plante/dataset/plantvillage/data/clean_plantvillage_dataset/Soybean___healthy/8630f71d-5e91-4b2d-ac54-7624c6f50e70___RS_HL 7201_final_masked_ef936b1e.jpg', this)">Copier le chemin</button>
+</div>
+</div>
+</body></html>

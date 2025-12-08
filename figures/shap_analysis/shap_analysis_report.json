@@ -1,0 +1,69 @@
+{
+  "date_analyse": "2025-11-04T15:36:40.438549",
+  "nombre_images_analysees": 500,
+  "nombre_features": 34,
+  "nombre_classes": 21,
+  "top_10_features_globales": {
+    "contour_density": 0.009995851077834713,
+    "fft_entropy": 0.007802133540469228,
+    "mean_R": 0.007468581902337102,
+    "netteté": 0.007086966075578614,
+    "dissimilarité": 0.006627075942809791,
+    "hog_std": 0.006066596147932704,
+    "fft_high_freq_power": 0.005001784549147975,
+    "mean_B": 0.004698440672244886,
+    "hog_entropy": 0.004587527232108292,
+    "std_R": 0.004512635015277999
+  },
+  "interpretation": {
+    "feature_la_plus_importante": "contour_density",
+    "valeur_shap_moyenne": 0.009995851077834713,
+    "categories_dominantes": {
+      "geometrie_forme": [
+        "contour_density",
+        "area",
+        "périmètre",
+        "circularité",
+        "excentricité",
+        "aspect_ratio"
+      ],
+      "texture": [
+        "hog_std",
+        "hog_entropy",
+        "hog_mean",
+        "homogeneity",
+        "energy",
+        "dissimilarité",
+        "Correlation"
+      ],
+      "couleur": [
+        "mean_R",
+        "mean_G",
+        "mean_B",
+        "mean_H",
+        "mean_S",
+        "mean_V",
+        "std_R",
+        "std_G",
+        "std_B"
+      ],
+      "frequence": [
+        "fft_entropy",
+        "fft_energy",
+        "fft_low_freq_power",
+        "fft_high_freq_power"
+      ],
+      "moments": [
+        "phi2",
+        "phi3",
+        "hu_1",
+        "hu_2",
+        "hu_3",
+        "hu_4",
+        "hu_5",
+        "hu_6",
+        "hu_7"
+      ]
+    }
+  }
+}

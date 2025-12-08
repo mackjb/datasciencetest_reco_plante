@@ -362,54 +362,49 @@ python -u scripts/prepare_clean_split.py \
 
 ### 6.3 Entraînement des modèles ML tabulaires
 
-- Régression logistique :
+Pour lancer **tous les modèles ML baselines** (ExtraTrees, XGBoost, SVM RBF, LogReg) d’un coup :
+
+```bash
+bash scripts/Machine_Learning/ML_models
+```
+
+Vous pouvez aussi exécuter individuellement chaque modèle si besoin :
 
 ```bash
 python Machine_Learning/Log_reg.py
-```
-
-- Extra Trees :
-
-```bash
 python Machine_Learning/Xtra_trees.py
+python Machine_Learning/xgboost_baseline.py
+python Machine_Learning/svm_rbf_plantvillage_features_selected_baseline.py
 ```
 
-### 6.4 Entraînement d’une architecture DL mono‑tâche (ex. species)
+### 6.4 Entraînement des architectures Deep Learning
+
+Des scripts d’orchestration sont fournis pour chaque architecture dans `scripts/Deep_Learning/` :
 
 ```bash
-python Deep_Learning/archi1_mono_tache.py \
-  --task species \
-  --data_root "/chemin/vers/plantvillage dataset/segmented" \
-  --output_dir results/Deep_Learning/archi1_outputs_mono_species_effv2s_256_color_split \
-  --epochs 60 --batch_size 64
-```
+# Architecture 1 : mono‑tâche (species / health / disease)
+bash scripts/Deep_Learning/train_arch1_mono_tache.sh
 
-### 6.5 YOLOv8 classification sur le split propre
+# Architecture 2 : mono‑tâche 2 têtes (species, disease_all)
+bash scripts/Deep_Learning/train_arch2_mono_tache_2_tetes.sh
 
-```bash
-python -u scripts/train_yolov8_cls.py \
-  --split_root dataset/plantvillage/clean_split \
-  --model yolov8s-cls.pt --epochs 5 --batch 32 --imgsz 256 --name exp_s
-```
+# Architecture 3 : 1 tête unique (35 classes Species_State)
+bash scripts/Deep_Learning/train_arch3_mono_1head_35classes.sh
 
-### 6.6 Évaluation d’un modèle (Keras ou YOLOv8)
+# Architecture 5 : embeddings Keras + SVM
+bash scripts/Deep_Learning/train_arch5_embeddings_svm.sh
 
-Keras :
+# Architecture 6 : multi‑tâche species / health / disease (sans fine‑tuning)
+bash scripts/Deep_Learning/train_arch6_multi_no_finetuning.sh
 
-```bash
-python -u scripts/evaluate_cls.py --framework keras \
-  --weights <chemin_vers_best_model.keras> \
-  --splits <chemin_vers_splits.json> \
-  --out <dossier_de_sortie>
-```
+# Architecture 7 : multi‑tâche 2 têtes (species, disease)
+bash scripts/Deep_Learning/train_arch7_multi_tache_2_tetes.sh
 
-YOLOv8 :
+# Architecture 8 : multi‑tâche 2 têtes (species, disease_all avec healthy classe stable)
+bash scripts/Deep_Learning/train_arch8_multi_2heads_health_classe_stable.sh
 
-```bash
-python -u scripts/evaluate_cls.py --framework yolov8 \
-  --weights outputs/yolov8_cls/exp_s/weights/best.pt \
-  --split_root dataset/plantvillage/clean_split --split test \
-  --out outputs/yolov8_cls/exp_s/eval_test
+# Architecture 9 : multi‑tâches species + health → disease
+bash scripts/Deep_Learning/train_arch9.sh
 ```
 
 ### 6.7 Interprétabilité

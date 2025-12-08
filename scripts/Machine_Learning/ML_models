@@ -1,0 +1,22 @@
+#!/bin/bash
+# Lance séquentiellement les modèles ML classiques (baselines)
+
+set -e
+
+echo "🚀 Lancement des modèles ML classiques (XtraTrees, XGBoost, SVM RBF, LogReg)"
+echo "==============================================================="
+
+echo "[1/4] Extra-Trees..."
+python /workspaces/app/models/Xtra_trees.py
+
+echo "[2/4] XGBoost..."
+python /workspaces/app/models/xgboost_baseline.py
+
+echo "[3/4] SVM RBF (features sélectionnées)..."
+python /workspaces/app/models/svm_rbf_plantvillage_features_selected_baseline.py
+
+echo "[4/4] Régression Logistique..."
+python /workspaces/app/models/Log_reg.py
+
+echo ""
+echo "✅ Tous les modèles ML ont été exécutés."

@@ -100,10 +100,22 @@ Les principaux scripts se trouvent dans `Machine_Learning/` :
   - Grid‑search sur le nombre d’arbres et le `class_weight`.
   - Même schéma de validation, bootstrap d’IC, diagnostics détaillés.
 
+- `svm_rbf_plantvillage_features_selected_baseline.py`  
+  - Baseline **SVM RBF** sur un sous‑ensemble de features sélectionnées.  
+  - Pipeline : `RobustScaler` → `SVC`. CV sur `C` et `class_weight`, bootstrap d’IC.  
+  - Génère rapports, matrices de confusion (dont une version interactive avec images) et galeries d’erreurs.
+
+- `xgboost_baseline.py`  
+  - Baseline **XGBoost** multi‑classe sur les mêmes features.  
+  - Pipeline : `RobustScaler` → `XGBClassifier` (CPU ou GPU si disponible).  
+  - Grid‑search sur les principaux hyperparamètres, diagnostics, matrices de confusion et courbes de validation.
+
 Les résultats sont stockés sous :
 
+- `results/Machine_Learning/logreg_baseline/`  
 - `results/Machine_Learning/extra_trees_baseline/`  
-- `results/Machine_Learning/logreg_baseline/`
+- `results/Machine_Learning/svm_rbf_baseline_features_selected/`  
+- `results_modifiés/models/xgb_baseline/`
 
 
 ### 2.3 Interprétabilité ML avec SHAP
@@ -206,43 +218,87 @@ Particularités :
   - entraîne des SVM (species, health, disease global/per‑species) sur ces embeddings ;
   - sauvegarde modèles, matrices de confusion, métriques détaillées.
 
+### 3.6 Architecture 4 : cascade espèce → maladie globale
 
-### 3.6 Baseline YOLOv8 en classification
+- Script : `Deep_Learning/archi4_train_multi_tache_cascade.py`
 
-- Script : `scripts/train_yolov8_cls.py`
+Idée :
 
-Rôle :
-
-- entraîner un modèle **YOLOv8‑cls** sur le dossier `clean_split` produit plus haut ;
-- sauver les artefacts sous `outputs/yolov8_cls/<run_name>`.
-
-
-### 3.7 Évaluation commune Keras / YOLOv8
-
-- Script : `scripts/evaluate_cls.py`
-
-Permet d’évaluer :
-
-- un modèle **Keras** sauvegardé (`.keras`) à partir de listes de chemins (`splits.json`) ;
-- un modèle **YOLOv8‑cls** à partir d’un répertoire `train/val/test`.
-
-Sorties :
-
-- `per_class_metrics.csv` (précision, rappel, F1, support) ;
-- `confusion_matrix.png` ;
-- `summary.json` (accuracy globale, macro‑F1, #classes, #échantillons).
+- deux modèles séquentiels :  
+  - un modèle **espèce** EfficientNetV2B0 (image → espèce, 14 classes) ;  
+  - un modèle **maladie globale** EfficientNetV2B2 avec attention (image + espèce en entrée → maladie, 21 classes).  
+- entraînement en deux phases (backbone gelé puis fine‑tuning) pour chaque modèle ;  
+- évaluation en mode **ORACLE** (espèce GT) et **CASCADE** (espèce prédite), avec matrices de confusion et rapports dédiés.
 
 
-### 3.8 Interprétabilité DL par Grad‑CAM
+### 3.7 Architecture 6 : multi‑tâche species / health / disease
+
+- Script : `Deep_Learning/archi6_multi_tache.py`
+
+Idée :
+
+- une seule EfficientNetV2S avec **3 têtes** :  
+  - `species` (14 classes),  
+  - `health` (binaire healthy / diseased),  
+  - `disease` (maladies uniquement, tête entraînée seulement sur les images malades).  
+- multi‑tâche **heads‑only** (backbone gelé, sans fine‑tuning) sur le PlantVillage segmenté ;  
+- pertes pondérées par tâche (`loss_w_species`, `loss_w_health`, `loss_w_disease`), callback Macro‑F1 multi‑tâches, rapports species/health/disease + matrices de confusion.
+
+
+### 3.8 Architecture 7 : multi‑tâche 2 têtes (species, disease)
+
+- Script : `Deep_Learning/archi7_multi_tache_2_tetes.py`
+
+Idée :
+
+- EfficientNetV2S avec **2 têtes de sortie** :  
+  - `species` (14 classes),  
+  - `disease` (maladies uniquement, healthy exclu de cette tête).  
+- la notion de santé healthy/diseased n’est pas une tête explicite :  
+  - un signal interne fournit la probabilité d’être malade comme feature pour la tête disease ;  
+  - les images **healthy** sont masquées pour la perte disease (sample_weight = 0).  
+- entraînement en deux phases (têtes seules puis fine‑tuning partiel), avec rapports species/disease et matrices de confusion associées.
+
+
+### 3.9 Architecture 8 : multi‑tâche 2 têtes (species, disease_all = 21 classes)
+
+- Script : `Deep_Learning/archi8_multi_tache_2_tetes_health_est_une_classe.py`
+
+Idée :
+
+- 2 têtes simultanées :  
+  - `species` (14 classes),  
+  - `disease_all` (21 classes : 20 maladies + healthy).  
+- **healthy est une classe** de `disease_all` : pas de tête health séparée, pas de filtrage ;  
+  tous les échantillons contribuent à l’entraînement des deux têtes.  
+- EfficientNetV2S backbone, fine‑tuning partiel, possibilité de gradient clipping, rapports species et disease_all (21 classes), matrices de confusion et courbes d’entraînement.
+
+
+### 3.10 Interprétabilité DL par Grad‑CAM
 
 - Script : `Deep_Learning/Interpretability/gradcam_quickstart_arch9.py`
 
 Fonctionnalités :
 
-- charge un modèle Archi 9 pré‑entraîné (`best_model.keras`) ;
-- sélectionne automatiquement la tête disease ;
-- génère **original, heatmap Grad‑CAM et overlay** pour une image fournie (ou une image par défaut du dataset) ;
+- charge un modèle Archi 9 pré‑entraîné (`best_model.keras`) ;  
+- sélectionne automatiquement la tête disease ;  
+- génère **original, heatmap Grad‑CAM et overlay** pour une image fournie (ou une image par défaut du dataset) ;  
 - sauvegarde les résultats dans un dossier `comparisons/interpretability/...`.
+
+
+### 3.11 Tableau récapitulatif des architectures (1 à 9)
+
+| Architecture | Script principal                                           | Type de modèle                                      | Tâches sorties principales                           |
+|-------------:|------------------------------------------------------------|-----------------------------------------------------|------------------------------------------------------|
+| **1**        | `Deep_Learning/archi1_mono_tache.py`                      | Mono‑tâche, 1 tête par run                          | `species` (14 classes), `health` (2), `disease` (multi‑classe malades) |
+| **2**        | `Deep_Learning/archi2_mono_tache_2_tetes.py`             | Mono‑objectif, **2 têtes** (runs séparés)           | `species` (14 classes) ou `disease_all` (21 classes avec healthy)     |
+| **3**        | `Deep_Learning/archi3_mono_tache_1_tete.py`              | Mono‑objectif, **1 tête unique** (35 classes)       | Classe combinée `Espèce_État` (35 classes)           |
+| **4**        | `Deep_Learning/archi4_train_multi_tache_cascade.py`      | Cascade 2 modèles (espèce → maladie globale)        | Modèle espèce (14) + modèle maladie globale (21)     |
+| **5**        | `Deep_Learning/archi5_export_embeddings_keras.py` +<br>`Deep_Learning/archi5_train_svm_from_embeddings.py` | CNN Keras pour **embeddings** + SVM tabulaires      | Species / health / disease (selon SVM entraîné)      |
+| **6**        | `Deep_Learning/archi6_multi_tache.py`                    | Multi‑tâche, **3 têtes** simultanées                | `species` (14), `health` (2), `disease` (malades uniquement) |
+| **7**        | `Deep_Learning/archi7_multi_tache_2_tetes.py`            | Multi‑tâche, **2 têtes** (species, disease)         | `species` (14), `disease` (maladies, healthy masqué) |
+| **8**        | `Deep_Learning/archi8_multi_tache_2_tetes_health_est_une_classe.py` | Multi‑tâche, **2 têtes** (species, disease_all) | `species` (14), `disease_all` (21 classes incluant healthy) |
+| **9**        | `Deep_Learning/archi9_multi_tache_species_health_to_disease.py` | Multi‑tâche hiérarchique (species + health → disease) | `species` (14), `health` interne, `disease` conditionnée   |
 
 
 ## 4. Organisation du dépôt

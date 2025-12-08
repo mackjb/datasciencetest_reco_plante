@@ -1,0 +1,70 @@
+{
+  "best_params": {
+    "logreg__C": 10.0,
+    "logreg__class_weight": null
+  },
+  "best_cv_f1_macro": 0.8258685565555334,
+  "cv_rows": 6,
+  "summary_preview": [
+    {
+      "param_logreg__C": 0.1,
+      "param_logreg__class_weight": "balanced",
+      "mean_f1": 0.7415880151142419,
+      "std_f1": 0.005245075025232795,
+      "mean_bal": 0.8118720327103158,
+      "std_bal": 0.00486929827820184,
+      "f1_macro": "0.7416 ± 0.0052",
+      "balanced_accuracy": "0.8119 ± 0.0049"
+    },
+    {
+      "param_logreg__C": 0.1,
+      "param_logreg__class_weight": NaN,
+      "mean_f1": 0.7683499783528444,
+      "std_f1": 0.008185197542256412,
+      "mean_bal": 0.7429417273001965,
+      "std_bal": 0.008287785816274599,
+      "f1_macro": "0.7683 ± 0.0082",
+      "balanced_accuracy": "0.7429 ± 0.0083"
+    },
+    {
+      "param_logreg__C": 1.0,
+      "param_logreg__class_weight": "balanced",
+      "mean_f1": 0.7803390952227938,
+      "std_f1": 0.004310671078905836,
+      "mean_bal": 0.8431171435489828,
+      "std_bal": 0.005548088554628695,
+      "f1_macro": "0.7803 ± 0.0043",
+      "balanced_accuracy": "0.8431 ± 0.0055"
+    },
+    {
+      "param_logreg__C": 1.0,
+      "param_logreg__class_weight": NaN,
+      "mean_f1": 0.8117225640308918,
+      "std_f1": 0.006856424982554257,
+      "mean_bal": 0.7964790119515504,
+      "std_bal": 0.00644299814253587,
+      "f1_macro": "0.8117 ± 0.0069",
+      "balanced_accuracy": "0.7965 ± 0.0064"
+    },
+    {
+      "param_logreg__C": 10.0,
+      "param_logreg__class_weight": "balanced",
+      "mean_f1": 0.7937209215734817,
+      "std_f1": 0.0014001366049057262,
+      "mean_bal": 0.853911664986066,
+      "std_bal": 0.00366523315457917,
+      "f1_macro": "0.7937 ± 0.0014",
+      "balanced_accuracy": "0.8539 ± 0.0037"
+    },
+    {
+      "param_logreg__C": 10.0,
+      "param_logreg__class_weight": NaN,
+      "mean_f1": 0.8258685565555334,
+      "std_f1": 0.002550264374612783,
+      "mean_bal": 0.8156426713530237,
+      "std_bal": 0.004238192474472534,
+      "f1_macro": "0.8259 ± 0.0026",
+      "balanced_accuracy": "0.8156 ± 0.0042"
+    }
+  ]
+}

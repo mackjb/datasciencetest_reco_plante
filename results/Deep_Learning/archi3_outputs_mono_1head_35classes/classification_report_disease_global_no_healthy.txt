@@ -1,0 +1,29 @@
+Classification report (diseases only, 'healthy' excluded)
+Source: outputs_mono_1head_35classes/classification_report_disease_global.txt
+
+label                                    precision    recall  f1-score   support
+
+apple_scab                                  1.0000    1.0000    1.0000        94
+bacterial_spot                              0.9975    0.9988    0.9982       813
+black_rot                                   0.9963    1.0000    0.9982       270
+cedar_apple_rust                            1.0000    1.0000    1.0000        41
+cercospora_leaf_spot gray_leaf_spot         0.9351    0.9351    0.9351        77
+common_rust                                 1.0000    1.0000    1.0000       179
+early_blight                                0.9933    0.9867    0.9900       300
+esca_(black_measles)                        1.0000    0.9952    0.9976       207
+haunglongbing_(citrus_greening)             0.9988    1.0000    0.9994       826
+late_blight                                 0.9909    0.9954    0.9932       437
+leaf_blight_(isariopsis_leaf_spot)          1.0000    1.0000    1.0000       162
+leaf_mold                                   1.0000    1.0000    1.0000       143
+leaf_scorch                                 1.0000    1.0000    1.0000       167
+northern_leaf_blight                        0.9660    0.9660    0.9660       147
+powdery_mildew                              1.0000    1.0000    1.0000       433
+septoria_leaf_spot                          0.9962    0.9925    0.9943       265
+spider_mites two-spotted_spider_mite        1.0000    0.9960    0.9980       252
+target_spot                                 0.9858    0.9858    0.9858       211
+tomato_mosaic_virus                         1.0000    1.0000    1.0000        56
+tomato_yellow_leaf_curl_virus               1.0000    1.0000    1.0000       803
+
+                                accuracy                        0.9959      5883
+                               macro avg    0.9930    0.9926    0.9928      5883
+                            weighted avg    0.9959    0.9959    0.9959      5883

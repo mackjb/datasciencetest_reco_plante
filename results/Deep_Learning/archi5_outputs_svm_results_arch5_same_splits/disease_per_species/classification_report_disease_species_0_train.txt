@@ -1,0 +1,12 @@
+Species 0 — Apple (TRAIN)
+
+                  precision    recall  f1-score   support
+
+      apple_scab     1.0000    1.0000    1.0000       536
+       black_rot     1.0000    1.0000    1.0000       528
+cedar_apple_rust     1.0000    1.0000    1.0000       234
+
+        accuracy                         1.0000      1298
+       macro avg     1.0000    1.0000    1.0000      1298
+    weighted avg     1.0000    1.0000    1.0000      1298
+

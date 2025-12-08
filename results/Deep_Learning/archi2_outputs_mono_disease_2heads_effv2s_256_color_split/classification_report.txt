@@ -1,0 +1,31 @@
+Classification Report - Test Set
+Task: disease_all
+Date: 2025-10-27T14:33:47.932993
+
+                                      precision    recall  f1-score   support
+
+                          apple_scab     0.9691    1.0000    0.9843        94
+                      bacterial_spot     0.9988    0.9975    0.9982       813
+                           black_rot     0.9963    1.0000    0.9982       270
+                    cedar_apple_rust     1.0000    1.0000    1.0000        41
+ cercospora_leaf_spot gray_leaf_spot     0.8941    0.9870    0.9383        77
+                         common_rust     1.0000    1.0000    1.0000       179
+                        early_blight     0.9933    0.9833    0.9883       300
+                esca_(black_measles)     1.0000    1.0000    1.0000       207
+     haunglongbing_(citrus_greening)     1.0000    1.0000    1.0000       826
+                             healthy     0.9991    0.9982    0.9987      2263
+                         late_blight     0.9864    0.9954    0.9909       437
+  leaf_blight_(isariopsis_leaf_spot)     1.0000    1.0000    1.0000       162
+                           leaf_mold     1.0000    0.9930    0.9965       143
+                         leaf_scorch     1.0000    1.0000    1.0000       167
+                northern_leaf_blight     0.9928    0.9388    0.9650       147
+                      powdery_mildew     1.0000    0.9977    0.9988       433
+                  septoria_leaf_spot     0.9962    0.9962    0.9962       265
+spider_mites two-spotted_spider_mite     0.9960    1.0000    0.9980       252
+                         target_spot     0.9952    0.9858    0.9905       211
+                 tomato_mosaic_virus     1.0000    1.0000    1.0000        56
+       tomato_yellow_leaf_curl_virus     0.9988    1.0000    0.9994       803
+
+                            accuracy                         0.9964      8146
+                           macro avg     0.9912    0.9940    0.9924      8146
+                        weighted avg     0.9966    0.9964    0.9965      8146

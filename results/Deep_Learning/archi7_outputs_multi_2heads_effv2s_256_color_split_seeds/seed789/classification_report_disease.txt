@@ -1,0 +1,26 @@
+                                      precision    recall  f1-score   support
+
+                          apple_scab     1.0000    1.0000    1.0000        94
+                      bacterial_spot     0.9975    0.9975    0.9975       813
+                           black_rot     0.9963    1.0000    0.9982       270
+                    cedar_apple_rust     1.0000    1.0000    1.0000        41
+ cercospora_leaf_spot gray_leaf_spot     0.8736    0.9870    0.9268        77
+                         common_rust     1.0000    1.0000    1.0000       179
+                        early_blight     0.9966    0.9633    0.9797       300
+                esca_(black_measles)     1.0000    0.9952    0.9976       207
+     haunglongbing_(citrus_greening)     1.0000    1.0000    1.0000       826
+                         late_blight     0.9909    0.9954    0.9932       437
+  leaf_blight_(isariopsis_leaf_spot)     1.0000    1.0000    1.0000       162
+                           leaf_mold     1.0000    0.9860    0.9930       143
+                         leaf_scorch     1.0000    1.0000    1.0000       167
+                northern_leaf_blight     0.9927    0.9252    0.9577       147
+                      powdery_mildew     1.0000    0.9977    0.9988       433
+                  septoria_leaf_spot     0.9925    0.9925    0.9925       265
+spider_mites two-spotted_spider_mite     0.9881    0.9881    0.9881       252
+                         target_spot     0.9417    0.9953    0.9677       211
+                 tomato_mosaic_virus     1.0000    1.0000    1.0000        56
+       tomato_yellow_leaf_curl_virus     1.0000    0.9988    0.9994       803
+
+                            accuracy                         0.9935      5883
+                           macro avg     0.9885    0.9911    0.9895      5883
+                        weighted avg     0.9939    0.9935    0.9936      5883

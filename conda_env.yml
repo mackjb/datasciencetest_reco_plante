@@ -23,4 +23,4 @@ dependencies:
       - torchvision
       - shap
       - joblib
-      - "-e ."
+    

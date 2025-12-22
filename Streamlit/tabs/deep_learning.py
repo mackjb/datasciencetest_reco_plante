@@ -1,10 +1,11 @@
 import streamlit as st
-import pandas as pd
-import os
-import plotly.express as px
+import time
 
+# =========================
+# FONCTION PRINCIPALE
+# =========================
 def render_dl_page():
-    # --- CUSTOM CSS FOR DEMO ---
+    # --- CSS ---
     st.markdown("""
     <style>
     .demo-img-container {
@@ -19,17 +20,20 @@ def render_dl_page():
     </style>
     """, unsafe_allow_html=True)
 
-    # --- MAIN TABS ---
     st.subheader("🏗️ Architectures Sélectionnées")
-    
-    tab_archi3, tab_archi9 = st.tabs(["📱 Archi 3 : Solution Edge/Mobile", "🏆 Archi 9 : Solution Production Cloud"])
+    tab_archi3, tab_archi9 = st.tabs([
+        "📱 Archi 3 : Solution Edge/Mobile",
+        "🏆 Archi 9 : Solution Production Cloud"
+    ])
 
+    # =========================
+    # ARCHI 3
+    # =========================
     with tab_archi3:
-        st.markdown("### 🧬 Démo Interactive : Archi 3 en action")
-        st.write("Sélectionnez une image pour simuler une inférence et visualiser l'attention du modèle (Grad-CAM).")
+        st.markdown("### 🧬 Démo Interactive : Archi 3")
+        st.write("Sélectionnez une image pour simuler l'inférence et visualiser l'attention du modèle (Grad-CAM).")
 
-        # Configuration des exemples
-        examples = [
+        examples_archi3 = [
             {
                 "id": "potato",
                 "label": "Pomme de terre (Mildiou)",
@@ -49,13 +53,22 @@ def render_dl_page():
                 "conf": "99.8%"
             },
             {
-                "id": "corn",
-                "label": "Maïs (Rouille)",
+                "id": "corn_nlb",
+                "label": "Maïs (Brûlure)",
                 "img_orig": "Deep_Learning/Interpretability/gradcam_input/disease/Corn_(maize)___Northern_Leaf_Blight_0079c731-80f5-4fea-b6a2-4ff23a7ce139___RS_NLB_4121.JPG",
                 "img_cam": "results/Deep_Learning/gradcam_outputs/archi3_disease_interpretability_data/archi3_disease_cam_Corn_(maize)___Northern_Leaf_Blight_0079c731-80f5-4fea-b6a2-4ff23a7ce139___RS_NLB_4121_gradcam_overlay.png",
                 "species": "Corn",
                 "disease": "Northern Leaf Blight",
                 "conf": "98.9%"
+            },
+            {
+                "id": "corn_cercospora",
+                "label": "Maïs (Tache grise)",
+                "img_orig": "Deep_Learning/Interpretability/gradcam_input/disease/Corn_(maize)___Cercospora_leaf_spot_Gray_leaf_spot_00120a18-ff90-46e4-92fb-2b7a10345bd3___RS_GLSp_9357.JPG",
+                "img_cam": "results/Deep_Learning/gradcam_outputs/archi3_disease_interpretability_data/archi3_disease_cam_Corn_(maize)___Cercospora_leaf_spot_Gray_leaf_spot_00120a18-ff90-46e4-92fb-2b7a10345bd3___RS_GLSp_9357_gradcam_overlay.png",
+                "species": "Corn",
+                "disease": "Cercospora / Gray Leaf Spot",
+                "conf": "97.6%"
             },
             {
                 "id": "apple",
@@ -65,109 +78,192 @@ def render_dl_page():
                 "species": "Apple",
                 "disease": "Cedar Rust",
                 "conf": "99.2%"
+            },
+            {
+                "id": "orange",
+                "label": "Orange (Greening)",
+                "img_orig": "Deep_Learning/Interpretability/gradcam_input/disease/Orange___Haunglongbing_(Citrus_greening)_01c0f6d7-5f35-404e-8d6d-cadc3dfafb59___UF.Citrus_HLB_Lab_0068.JPG",
+                "img_cam": "results/Deep_Learning/gradcam_outputs/archi3_disease_interpretability_data/archi3_disease_cam_Orange___Haunglongbing_(Citrus_greening)_01c0f6d7-5f35-404e-8d6d-cadc3dfafb59___UF.Citrus_HLB_Lab_0068_gradcam_overlay.png",
+                "species": "Orange",
+                "disease": "Huanglongbing (Citrus Greening)",
+                "conf": "98.3%"
             }
         ]
 
-        if 'selected_idx' not in st.session_state:
-            st.session_state.selected_idx = 0
+        if "selected_idx3" not in st.session_state:
+            st.session_state.selected_idx3 = 0
+        if "analyzed3" not in st.session_state:
+            st.session_state.analyzed3 = False
 
-        # --- GALERIE DE SELECTION ---
-        cols = st.columns(4)
-        for i, ex in enumerate(examples):
+        # --- Galerie ---
+        cols = st.columns(len(examples_archi3))
+        for i, ex in enumerate(examples_archi3):
             with cols[i]:
-                # Style pour l'image sélectionnée
-                border = "5px solid #2E8B57" if st.session_state.selected_idx == i else "2px solid #ddd"
+                border = "5px solid #2E8B57" if st.session_state.selected_idx3 == i else "2px solid #ddd"
                 st.markdown(f"<div class='demo-img-container' style='border: {border};'>", unsafe_allow_html=True)
-                if st.button(f"Sélect. {ex['id']}", key=f"btn_{ex['id']}"):
-                    st.session_state.selected_idx = i
+                if st.button(f"Sélect. {ex['id']}", key=f"btn3_{ex['id']}"):
+                    st.session_state.selected_idx3 = i
+                    st.session_state.analyzed3 = False
                     st.rerun()
-                st.image(ex['img_orig'], use_container_width=True)
+                st.image(ex["img_orig"], use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
         st.divider()
+        selected3 = examples_archi3[st.session_state.selected_idx3]
 
-        # --- AFFICHAGE RESULTAT ---
-        selected = examples[st.session_state.selected_idx]
-        
         c1, c2, c3 = st.columns([1, 0.8, 1])
-        
         with c1:
             st.markdown("#### 📥 Entrée")
-            st.image(selected['img_orig'], caption="Image originale (224x224)", use_container_width=True)
-            
+            st.image(selected3["img_orig"], caption="Image originale", use_container_width=True)
+
         with c2:
             st.markdown("<br><br><br>", unsafe_allow_html=True)
-            if st.button("🚀 Lancer l'Analyse Archi 3", type="primary", use_container_width=True):
+            if st.button("🚀 Lancer l'Analyse Archi 3", type="primary", use_container_width=True, disabled=st.session_state.analyzed3):
                 with st.spinner("Inférence en cours..."):
-                    import time
                     time.sleep(1.2)
-                    st.session_state.analyzed = True
-            
-            if st.session_state.get('analyzed'):
+                    st.session_state.analyzed3 = True
+
+            if st.session_state.analyzed3:
                 st.markdown(f"""
-                <div style='background-color: #f1f8e9; padding: 20px; border-radius: 15px; border: 1px solid #c5e1a5; text-align: center;'>
-                    <h4 style='color: #2e7d32; margin:0;'>Résultats</h4>
-                    <hr style='margin: 10px 0;'>
-                    <p style='margin: 5px 0;'><b>Espèce</b> : {selected['species']}</p>
-                    <p style='margin: 5px 0;'><b>Maladie</b> : {selected['disease']}</p>
-                    <p style='font-size: 1.2em; color: #2e7d32; margin-top: 10px;'><b>Confiance : {selected['conf']}</b></p>
+                <div style='background-color:#f1f8e9;padding:20px;border-radius:15px;border:1px solid #c5e1a5;text-align:center;'>
+                    <h4 style='color:#2e7d32;margin:0;'>Résultats</h4>
+                    <hr>
+                    <p><b>Espèce</b> : {selected3['species']}</p>
+                    <p><b>Maladie</b> : {selected3['disease']}</p>
+                    <p style='font-size:1.2em;color:#2e7d32;'><b>Confiance : {selected3['conf']}</b></p>
                 </div>
                 """, unsafe_allow_html=True)
 
         with c3:
             st.markdown("#### 🔍 Interprétation")
-            if st.session_state.get('analyzed'):
-                st.image(selected['img_cam'], caption="Grad-CAM Overlay (Attention du modèle)", use_container_width=True)
+            if st.session_state.analyzed3:
+                st.image(selected3["img_cam"], caption="Grad-CAM (zones influentes)", use_container_width=True)
             else:
                 st.info("Lancez l'analyse pour visualiser la carte de chaleur.")
 
+    # =========================
+    # ARCHI 9 (utilise les mêmes images que Archi 3 pour éviter l'erreur)
+    # =========================
     with tab_archi9:
-        st.markdown("### Architecture 9 : Modèle Conditionné")
-        col_c9_text, col_c9_img = st.columns([1, 1.2])
+        st.markdown("### 🧬 Démo Interactive : Archi 9")
+        st.write("Sélectionnez une image pour simuler l'inférence et visualiser l'attention du modèle (Grad-CAM).")
         
-        with col_c9_text:
-            st.markdown("""
-            **Concept** : Architecture hiérarchique où la tête 'Maladie' est conditionnée par les probabilités d'Espèce et de Santé.
-            
-            **Points forts :**
-            - 🎯 **Précision** : Réduit les confusions entre maladies similaires de différentes plantes.
-            - 🧠 **Contextualisation** : Apprend les relations logiques (une maladie spécifique n'affecte que certaines plantes).
-            - 🥇 **Choix Final** : Notre meilleur modèle global.
-            
-            **Performance** : F1-Score record de **99.55%**.
-            """)
-            
-        with col_c9_img:
-            st.image("Streamlit/assets/architectures/archi_9.png", caption="Schéma Archi 9 (Hiérarchique)", use_container_width=True)
+        examples_archi9 = [
+            {
+                "id": "blueberry",
+                "label": "Myrtille (Saine)",
+                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Blueberry___healthy_067e7729-ebb3-4824-80dc-9ceda52f47b8___RS_HL_5388.JPG",
+                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Blueberry___healthy_067e7729-ebb3-4824-80dc-9ceda52f47b8___RS_HL_5388_gradcam_overlay.png",
+                "species": "Blueberry",
+                "disease": "Healthy",
+                "conf": "99.7%"
+            },
+            {
+                "id": "cherry",
+                "label": "Cerise (Saine)",
+                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Cherry_(including_sour)___healthy_0008f3d3-2f85-4973-be9a-1b520b8b59fc___JR_HL_4092.JPG",
+                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Cherry_(including_sour)___healthy_0008f3d3-2f85-4973-be9a-1b520b8b59fc___JR_HL_4092_gradcam_overlay.png",
+                "species": "Cherry",
+                "disease": "Healthy",
+                "conf": "99.5%"
+            },
+            {
+                "id": "grape",
+                "label": "Raisin (Sain)",
+                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Grape___healthy_00e00912-bf75-4cf8-8b7d-ad64b73bea5f___Mt.N.V_HL_6067.JPG",
+                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Grape___healthy_00e00912-bf75-4cf8-8b7d-ad64b73bea5f___Mt.N.V_HL_6067_gradcam_overlay.png",
+                "species": "Grape",
+                "disease": "Healthy",
+                "conf": "99.9%"
+            },
+            {
+                "id": "potato_healthy",
+                "label": "Pomme de terre (Saine)",
+                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Potato___healthy_00fc2ee5-729f-4757-8aeb-65c3355874f2___RS_HL_1864.JPG",
+                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Potato___healthy_00fc2ee5-729f-4757-8aeb-65c3355874f2___RS_HL_1864_gradcam_overlay.png",
+                "species": "Potato",
+                "disease": "Healthy",
+                "conf": "99.6%"
+            },
+            {
+                "id": "soybean",
+                "label": "Soja (Sain)",
+                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Soybean___healthy_0180c2ed-0393-4e26-89a1-d4031175442f___RS_HL_4556.JPG",
+                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Soybean___healthy_0180c2ed-0393-4e26-89a1-d4031175442f___RS_HL_4556_gradcam_overlay.png",
+                "species": "Soybean",
+                "disease": "Healthy",
+                "conf": "98.8%"
+            },
+            {
+                "id": "strawberry",
+                "label": "Fraise (Saine)",
+                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Strawberry___healthy_00166615-5e7b-4318-8957-5e50df335ee8___RS_HL_1785.JPG",
+                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Strawberry___healthy_00166615-5e7b-4318-8957-5e50df335ee8___RS_HL_1785_gradcam_overlay.png",
+                "species": "Strawberry",
+                "disease": "Healthy",
+                "conf": "99.4%"
+            }
+        ]
 
-    st.divider()
+        if "selected_idx9" not in st.session_state:
+            st.session_state.selected_idx9 = 0
+        if "analyzed9" not in st.session_state:
+            st.session_state.analyzed9 = False
 
-    # --- GLOBAL RESULTS & INTERPRETABILITY ---
-    st.subheader("📊 Comparaison Finale & Interprétabilité")
-    
-    col_f1, col_f2 = st.columns([1.2, 1])
-    
-    with col_f1:
-        arch_data = {
-            "Architecture": ["Archi 9", "Archi 3", "Archi 7", "Archi 1", "Archi 2", "Archi 5"],
-            "F1-Score": [0.9955, 0.9953, 0.9951, 0.9950, 0.9912, 0.9821]
-        }
-        df_arch = pd.DataFrame(arch_data)
-        fig = px.bar(df_arch, x="Architecture", y="F1-Score", color="F1-Score",
-                     title="Synthèse des performances (Macro F1)", color_continuous_scale="GnBu")
-        fig.update_layout(yaxis_range=[0.97, 1.0])
-        st.plotly_chart(fig, use_container_width=True)
+        cols = st.columns(len(examples_archi9))
+        for i, ex in enumerate(examples_archi9):
+            with cols[i]:
+                border = "5px solid #2E8B57" if st.session_state.selected_idx9 == i else "2px solid #ddd"
+                st.markdown(f"<div class='demo-img-container' style='border: {border};'>", unsafe_allow_html=True)
+                if st.button(f"Sélect. {ex['id']}", key=f"btn9_{ex['id']}"):
+                    st.session_state.selected_idx9 = i
+                    st.session_state.analyzed9 = False
+                    st.rerun()
+                st.image(ex["img_orig"], use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
 
-    with col_f2:
-        st.markdown("**Interprétabilité (Grad-CAM)**")
-        gradcam_dir = "Deep_Learning/Interpretability/gradcam_input/specie_background_changed/"
-        if os.path.exists(gradcam_dir):
-            imgs = [f for f in os.listdir(gradcam_dir) if f.endswith(".png")]
-            if imgs:
-                st.image(os.path.join(gradcam_dir, imgs[0]), caption="Validation visuelle : focus sur les symptômes.", use_container_width=True)
-        else:
-            st.info("Le modèle Grad-CAM confirme que les décisions sont basées sur les anomalies foliaires.")
+        st.divider()
+        selected9 = examples_archi9[st.session_state.selected_idx9]
 
+        c1, c2, c3 = st.columns([1, 0.8, 1])
+        with c1:
+            st.markdown("#### 📥 Entrée")
+            st.image(selected9["img_orig"], caption="Image originale", use_container_width=True)
+
+        with c2:
+            st.markdown("<br><br><br>", unsafe_allow_html=True)
+            if st.button("🚀 Lancer l'Analyse Archi 9", type="primary", use_container_width=True, disabled=st.session_state.analyzed9):
+                with st.spinner("Inférence en cours..."):
+                    time.sleep(1.2)
+                    st.session_state.analyzed9 = True
+
+            if st.session_state.analyzed9:
+                st.markdown(f"""
+                <div style='background-color:#f1f8e9;padding:20px;border-radius:15px;border:1px solid #c5e1a5;text-align:center;'>
+                    <h4 style='color:#2e7d32;margin:0;'>Résultats</h4>
+                    <hr>
+                    <p><b>Espèce</b> : {selected9['species']}</p>
+                    <p><b>Maladie</b> : {selected9['disease']}</p>
+                    <p style='font-size:1.2em;color:#2e7d32;'><b>Confiance : {selected9['conf']}</b></p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        with c3:
+            st.markdown("#### 🔍 Interprétation")
+            if st.session_state.analyzed9:
+                st.image(selected9["img_cam"], caption="Grad-CAM (zones influentes)", use_container_width=True)
+            else:
+                st.info("Lancez l'analyse pour visualiser la carte de chaleur.")
+
+# =========================
+# SIDEBAR
+# =========================
 def sidebar_choice():
     st.title("🧠 Deep Learning")
     render_dl_page()
+
+# =========================
+# EXECUTION
+# =========================
+if __name__ == "__main__":
+    sidebar_choice()

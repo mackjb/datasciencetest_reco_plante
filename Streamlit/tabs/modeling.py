@@ -155,6 +155,67 @@ def render_dl_content():
     contrairement au Machine Learning classique qui nécessite une extraction manuelle de descripteurs.
     """)
     
+    # --- Phase d'exploration individuelle ---
+    with st.expander("👥 Phase d'Exploration Individuelle", expanded=False):
+        st.markdown("""
+        Dans le cadre de notre formation, **chaque membre de l'équipe a d'abord exploré individuellement 
+        un modèle pré-entraîné** pour se familiariser avec les techniques de Deep Learning et comprendre 
+        les différents défis liés à :
+        
+        - Le choix du backbone (architecture du réseau)
+        - Le fine-tuning et le transfer learning
+        - La gestion du déséquilibre des classes
+        - L'optimisation des hyperparamètres
+        - L'interprétabilité des modèles
+        
+        Cette phase exploratoire nous a permis de **confronter la théorie à la pratique** et d'acquérir 
+        une compréhension approfondie des leviers disponibles avant de nous lancer dans l'exploration 
+        structurée des 9 architectures.
+        """)
+        
+        
+        st.markdown("### 🔄 Transfer Learning et Comparaison des Modèles")
+        
+        st.markdown("""
+        Nous avons choisi d'utiliser le **transfert d'apprentissage** car les modèles sont déjà entraînés 
+        sur des millions d'images pour détecter des motifs génériques (contours, textures, formes). 
+        C'est un **gain de temps et de ressources** considérable.
+        """)
+        
+        st.markdown("**Comparatif des Modèles Pré-entraînés Explorés :**")
+        
+        models_comparison = {
+            "Caractéristique": ["Année", "Auteurs/Org", "Paramètres (M)", "Taille modèle (MB)", 
+                               "GFLOPs (224×224)", "GFLOPs (256×256)", "Taille vecteur sortie",
+                               "Top-1 Acc ImageNet", "Top-5 Acc ImageNet", "Latence CPU (ms)", 
+                               "Latence GPU (ms)", "Taille entrée", "Profondeur (layers)"],
+            "EfficientNetV2-S": [2021, "Google Brain", 21.5, "~86", 8.4, "~10.8", 1280, 
+                                "83.9%", "96.7%", "60-80", "5-8", "384×384 (optim.)", "~150"],
+            "ResNet50": [2015, "Microsoft Research", 25.6, "~102", 4.1, "~5.3", 2048,
+                        "76.1%", "93.0%", "40-50", "3-5", "224×224", "50"],
+            "YOLOv8n-cls*": [2023, "Ultralytics", 2.7, "~11", 4.2, "~5.4", 1024,
+                           "69.0%", "88.3%", "25-35", "2-4", "224×224", "~100"],
+            "DenseNet-121": [2017, "Cornell/Facebook", 8.0, "~32", 2.9, "~3.7", 1024,
+                           "74.4%", "92.0%", "30-40", "3-5", "224×224", "121"]
+        }
+        df_models = pd.DataFrame(models_comparison)
+        
+        # Transposer pour avoir les modèles en colonnes
+        df_models_t = df_models.set_index("Caractéristique").T
+        
+        st.dataframe(df_models_t, use_container_width=True)
+        
+        st.success("""
+        **🏆 Choix retenu pour l'exploration des architectures : EfficientNetV2S**
+        
+        EfficientNetV2S offre un **excellent compromis entre performance et efficacité** :
+        - **Précision Top-1** de 83,9% sur ImageNet, surpassant ResNet50 (76,1%) et DenseNet-121 (74,4%)
+        - **21,5M paramètres** : moins que ResNet50 (25,6M) mais plus que DenseNet-121 (8M)
+        - **Efficacité computationnelle** remarquable : latence GPU réduite (5-8 ms)
+        - **Précision Top-5** de 96,7%, idéale pour des tâches de classification exigeantes
+        - Adapté à nos travaux nécessitant rapidité avec des ressources limitées
+        """)
+    
     # --- Méthodologie ---
     with st.expander("🎯 Méthodologie & Critères de Sélection", expanded=True):
         st.markdown("""
@@ -186,7 +247,7 @@ def render_dl_content():
         """)
 
     # Onglets principaux DL
-    dl_tabs = st.tabs(["🏗️ Architectures", "📊 Performances", "🧬 Démos Interactives"])
+    dl_tabs = st.tabs(["🏗️ Architectures", "📊 Performances"])
     
     with dl_tabs[0]:
         st.header("Exploration des 9 Architectures")
@@ -202,6 +263,7 @@ def render_dl_content():
         
         st.divider()
         
+        
         # Présentation des architectures
         arch_info = [
             {
@@ -209,74 +271,87 @@ def render_dl_content():
                 "nom": "Trois modèles indépendants",
                 "desc": "3 CNN spécialisés (species, health, disease)",
                 "avantages": "Simplicité, performances maximales par tâche",
-                "limites": "Triplication des ressources, pas de synergie"
+                "limites": "Triplication des ressources, pas de synergie",
+                "img": "figures/architectures_dl/archi1.png"
             },
             {
                 "num": "2",
                 "nom": "Deux modèles (species + disease_extended)",
                 "desc": "'Healthy' intégré comme maladie spéciale",
                 "avantages": "Diagnostic complet en 2 inférences",
-                "limites": "Déséquilibre accru, perte de métrique binaire"
+                "limites": "Déséquilibre accru, perte de métrique binaire",
+                "img": "figures/architectures_dl/archi2.png"
             },
             {
                 "num": "3",
                 "nom": "Modèle unifié (35 classes)",
                 "desc": "Étiquette combinée Espèce__État",
                 "avantages": "Un seul modèle, synergie entre tâches",
-                "limites": "Moins flexible, classes rares sous-apprises"
+                "limites": "Moins flexible, classes rares sous-apprises",
+                "img": "figures/architectures_dl/archi3.png"
             },
             {
                 "num": "4",
                 "nom": "Architecture en cascade",
                 "desc": "Species → Disease avec attention spatiale",
                 "avantages": "Prédiction guidée, attention spatiale",
-                "limites": "Propagation d'erreurs, latence accrue"
+                "limites": "Propagation d'erreurs, latence accrue",
+                "img": "figures/architectures_dl/archi4.png"
             },
             {
                 "num": "5",
                 "nom": "CNN + SVM",
                 "desc": "Embeddings CNN + classifieurs SVM",
                 "avantages": "Entraînement rapide, simplicité",
-                "limites": "Features génériques, pas d'adaptation"
+                "limites": "Features génériques, pas d'adaptation",
+                "img": "figures/architectures_dl/archi5.png"
             },
             {
                 "num": "6",
                 "nom": "Multi-tâche unifié (3 têtes)",
                 "desc": "Backbone partagé + 3 têtes parallèles",
                 "avantages": "Synergie, une seule inférence",
-                "limites": "Conflits d'optimisation, pas de fine-tuning"
+                "limites": "Conflits d'optimisation, pas de fine-tuning",
+                "img": "figures/architectures_dl/archi6.png"
             },
             {
                 "num": "7",
                 "nom": "Multi-tâche 2 têtes + signal santé",
                 "desc": "Species + Disease avec signal santé auxiliaire",
                 "avantages": "Synergie, masquage des 'healthy'",
-                "limites": "Pas de sortie santé explicite"
+                "limites": "Pas de sortie santé explicite",
+                "img": "figures/architectures_dl/archi7.png"
             },
             {
                 "num": "8",
                 "nom": "Multi-tâche simplifié",
                 "desc": "Species + Disease (incluant healthy)",
                 "avantages": "Simplicité, cohérence de décision",
-                "limites": "Déséquilibre 'healthy', pas de conditionnement"
+                "limites": "Déséquilibre 'healthy', pas de conditionnement",
+                "img": "figures/architectures_dl/archi8.png"
             },
             {
                 "num": "9",
                 "nom": "Architecture conditionnée",
                 "desc": "Disease conditionnée par Species + Health",
                 "avantages": "Conditionnement explicite, synergie",
-                "limites": "Propagation d'erreurs, pas de sortie santé"
+                "limites": "Propagation d'erreurs, pas de sortie santé",
+                "img": "figures/architectures_dl/archi9.png"
             }
         ]
         
         for arch in arch_info:
             with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                st.markdown(f"**Description** : {arch['desc']}")
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns([1, 1])
+                
                 with col1:
+                    st.markdown(f"**Description** : {arch['desc']}")
                     st.markdown(f"✅ **Avantages** : {arch['avantages']}")
-                with col2:
                     st.markdown(f"⚠️ **Limites** : {arch['limites']}")
+                
+                with col2:
+                    if os.path.exists(arch['img']):
+                        st.image(arch['img'], caption=f"Schéma Architecture {arch['num']}", use_container_width=True)
     
     with dl_tabs[1]:
         st.header("Synthèse des Performances")
@@ -330,34 +405,6 @@ def render_dl_content():
             barmode='group'
         )
         st.plotly_chart(fig_comp, use_container_width=True)
-    
-    with dl_tabs[2]:
-        st.header("🧬 Démos Interactives")
-        
-        st.info("""
-        💡 **Les démos interactives complètes sont disponibles dans l'onglet "🧠 Deep Learning" de la sidebar.**
-        
-        Vous y trouverez :
-        - **Archi 3** : 6 images de plantes malades avec diagnostic de maladies
-        - **Archi 9** : 6 images de plantes saines avec identification d'espèces
-        - Visualisation Grad-CAM pour l'interprétabilité
-        """)
-        
-        st.markdown("""
-        ### Aperçu des Architectures Retenues
-        
-        #### 🏆 Architecture 3 : Solution Edge/Mobile
-        - **Type** : Modèle unifié (35 classes combinées Espèce__État)
-        - **Avantages** : Un seul modèle, une seule inférence, déploiement simplifié
-        - **Performance** : Species Macro-F1 = 0.990, Disease Accuracy = 0.990
-        - **Cas d'usage** : Idéal pour applications mobiles (smartphones, tablettes)
-        
-        #### 🚀 Architecture 9 : Solution Production Cloud
-        - **Type** : Architecture conditionnée (Disease guidée par Species + Health)
-        - **Avantages** : Conditionnement explicite, synergie maximale entre tâches
-        - **Performance** : Species Macro-F1 = 0.990, Disease Accuracy = 0.990
-        - **Cas d'usage** : Déploiement cloud avec ressources importantes
-        """)
 
 # =========================
 # FONCTION PRINCIPALE

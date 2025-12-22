@@ -66,7 +66,7 @@ def main():
     pages = {
         "🏠 Accueil": home,
         "🔍 Exploration": eda,
-        "📊 Machine Learning": modeling,
+        "📊 Modélisation": modeling,
         "🧠 Deep Learning": deep_learning,
         "🏁 Bilan & Conclusion": conclusion,
         "👥 L'Equipe": about

@@ -40,26 +40,7 @@ def sidebar_choice():
 
     st.divider()
 
-    # --- PROJECT CONTEXT ---
-    st.markdown("## 🌍 Contexte & Enjeux")
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("""
-        <div class='card'>
-        <h3>🚨 Le Problème</h3>
-        <p>Les maladies des plantes menacent la sécurité alimentaire mondiale (pertes estimées à plusieurs centaines de milliards de dollars par la FAO). 
-        Une détection précoce est cruciale mais difficile sans expertise onéreuse.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with c2:
-        st.markdown("""
-        <div class='card'>
-        <h3>🎯 L'Objectif Global</h3>
-        <p>Concevoir une solution basée sur l'IA pour identifier automatiquement les espèces végétales, évaluer leur santé et diagnostiquer les maladies.</p>
-        </div>
-        """, unsafe_allow_html=True)
+
 
     # --- OBJECTIFS SPECIFIQUES ---
     st.markdown("## 📋 Objectifs du Projet")
@@ -83,25 +64,75 @@ def sidebar_choice():
 
     st.divider()
 
-    # --- GALLERY ---
-    st.subheader("📸 Aperçu du Dataset PlantVillage")
+    # --- DECORATIVE GALLERY ---
+    st.markdown("""
+    <style>
+    .leaf-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 350px; /* Taille diminuée */
+        position: relative;
+        margin: 20px 0;
+        overflow: visible; /* Pour que le zoom ne soit pas coupé */
+        background-color: #111;
+        border-radius: 20px;
+        box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
+    }
+    .leaf-img {
+        position: absolute;
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        border: 2px solid #333;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), z-index 0.3s ease;
+        background-color: #000;
+        cursor: pointer;
+    }
+    .leaf-img:hover {
+        transform: scale(2.0) rotate(0deg) !important; /* Zoom agrandi */
+        z-index: 1000 !important;
+        border-color: #2E8B57;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.subheader("📸 Immersion dans le Dataset")
     
-    image_dirs = [
-        "Deep_Learning/Interpretability/gradcam_input/specie_background_changed/",
-        "Deep_Learning/Interpretability/gradcam_input/in_wild/"
-    ]
-    
-    found_images = []
-    for d in image_dirs:
-        if os.path.exists(d):
-            imgs = [os.path.join(d, f) for f in os.listdir(d) if f.endswith(('.png', '.jpg'))]
-            found_images.extend(imgs)
+    img_root = "Deep_Learning/Interpretability/gradcam_input/"
+    if os.path.exists(img_root):
+        all_imgs = []
+        for root, dirs, files in os.walk(img_root):
+            for file in files:
+                if file.endswith(".png"):
+                    all_imgs.append(os.path.join(root, file))
+        
+        # On essaie d'en avoir une dizaine
+        count = min(len(all_imgs), 12)
+        if count > 0:
+            import base64
+            import random
             
-    if found_images:
-        cols_img = st.columns(4)
-        for i, img_path in enumerate(found_images[:4]):
-             with cols_img[i]:
-                caption = os.path.basename(img_path).split("___")[0] 
-                if len(caption) > 15: caption = caption[:15] + "..."
-                st.image(img_path, caption=caption, use_container_width=True)
+            def get_base64(path):
+                with open(path, "rb") as f:
+                    return base64.b64encode(f.read()).decode()
+            
+            html_code = "<div class='leaf-container'>"
+            # On génère les positions mélangées
+            for i in range(count):
+                b64 = get_base64(all_imgs[i])
+                rot = random.randint(-25, 25)
+                tx = (i - (count/2)) * 70 # Espacement horizontal dynamique
+                ty = random.randint(-40, 40) # Léger décalage vertical
+                z = i
+                style = f"transform: rotate({rot}deg) translateX({tx}px) translateY({ty}px); z-index: {z};"
+                html_code += f"<img src='data:image/png;base64,{b64}' class='leaf-img' style='{style}'>"
+            html_code += "</div>"
+            st.markdown(html_code, unsafe_allow_html=True)
+        else:
+            st.info("Chargement des images...")
+    st.divider()
 

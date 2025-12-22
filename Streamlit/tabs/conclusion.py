@@ -6,7 +6,7 @@ def sidebar_choice():
     st.markdown("""
     <div style='background-color: #e8f5e9; padding: 20px; border-radius: 10px; border-left: 5px solid #2e7d32;'>
     <b>Synthèse Globale</b> : Nous avons réussi à développer une chaîne de traitement complète, 
-    allant de l'analyse exploratoire à la mise en production de modèles de Deep Learning performants.
+    allant de l'analyse exploratoire au développement de modèles de Deep Learning performants.
     </div>
     """, unsafe_allow_html=True)
     

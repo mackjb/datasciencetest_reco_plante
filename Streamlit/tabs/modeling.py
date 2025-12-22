@@ -3,105 +3,127 @@ import pandas as pd
 import plotly.express as px
 import os
 
-def sidebar_choice():
-    st.title("🤖 Modélisation Machine Learning Classique")
-    
+def render_ml_content():
     st.markdown("""
-    Avant d'utiliser des réseaux de neurones profonds, nous avons établi une **baseline** avec des algorithmes de Machine Learning classiques.
-    L'approche repose sur l'extraction manuelle de features (Handcrafted Features).
-    
-    ### 🎯 Les 3 Objectifs Visés
-    1.  **Objectif 1** : Identification de la Plante (Espèce).
-    2.  **Objectif 2** : Détection de l'État de Santé (Sain vs Malade).
-    3.  **Objectif 3** : Diagnostic Spécifique de la Maladie.
+    L'approche classique repose sur l'**extraction manuelle de descripteurs** (Handcrafted Features) plutôt que sur l'apprentissage direct des pixels. 
+    Elle sert de **baseline** robuste pour comparer nos futurs modèles Deep Learning.
     """)
     
-    tab1, tab2, tab3 = st.tabs(["⚙️ Feature Engineering", "📊 Performance Modèles", "🧠 Interprétabilité (SHAP)"])
-    
-    with tab1:
-        st.header("Extraction de Caractéristiques")
-        st.markdown("""
-        Nous transformons chaque image en un vecteur de données structurées pour nourrir nos classifieurs.
+    # --- Méthodologie ---
+    with st.expander("🛠️ Méthodologie & Pipeline", expanded=True):
+        col_m1, col_m2 = st.columns([1.5, 1])
         
-        | Type | Descripteurs | Dimension |
-        | :--- | :--- | :--- |
-        | **Forme** | Moments de Hu, Aire, Périmètre | Faible |
-        | **Texture** | Haralick (GLCM), LBP | Moyenne |
-        | **Couleur** | Histogrammes RGB/HSV, Momente | Faible |
-        | **Fréquentiel** | HOG (Histogram of Oriented Gradients) | Élevée |
-        """)
+        with col_m1:
+            st.markdown("""
+            **Étapes clefs du pipeline robuste :**
+            1. 📸 **Collecte** : Images nettes et segmentées.
+            2. 📐 **Extraction** : Calcul des descripteurs (Morpho, Couleur, Texture...).
+            3. 🧹 **Nettoyage** : Suppression des images corrompues.
+            4. 📈 **Augmentation** : Enrichissement du dataset (Rotation, Flip...).
+            5. ⚖️ **Scaling** : Normalisation **RobustScaler** (gestion des outliers).
+            6. 🎯 **Sélection** : Garder les features les plus discriminantes (SHAP).
+            7. 🤖 **Modélisation** : Entraînement des classifieurs.
+            """)
+            
+        with col_m2:
+            st.info("""
+            **🎯 Exploration par l'équipe :**
+            - **SVM (RBF)** : Bernadette GASMI
+            - **XGBoost** : Lionel SCHNEIDER
+            - **Reg. Logistique** : JB MACK
+            - **Extra-Trees** : Morgan PERCHEC
+            """)
         
         st.divider()
-        st.subheader("Classement des Caractéristiques (Feature Ranking)")
-        st.markdown("Voici l'importance relative des descripteurs extraits pour la classification.")
-        
+        st.info("""
+        **Points clés** : 
+        - Split **80/10/10** stratifié.
+        - **Data Augmentation** sur le train (91 770 images finales).
+        - **RobustScaler** utilisé pour gérer les 40% d'outliers détectés.
+        """)
+
+    tabs = st.tabs(["⚙️ Features", "📊 Performances", "🧠 SHAP"])
+    
+    with tabs[0]:
+        st.header("1. Extraction des Descripteurs")
+        st.markdown("""
+        **Catégories extraites :**
+        - 📏 **Morphologie** : Aire, périmètre, circularité...
+        - 🎨 **Couleur** : Moyennes et Écarts-types RGB / HSV.
+        - 🕸️ **Texture** : Matrices de co-occurrence (GLCM).
+        - 🔄 **Invariants** : Moments de Hu.
+        - 📻 **Fréquences** : Entropie et puissance spectrale (FFT).
+        - 📐 **Gradients** : Descripteurs HOG.
+        """)
+
+        st.divider()
+        st.subheader("Importance des Features")
         ranking_path = "results/feature_ranking.csv"
         if os.path.exists(ranking_path):
-            df_rank = pd.read_csv(ranking_path)
-            # On ne garde que les 20 premières si il y en a trop
-            df_plot = df_rank.head(20).sort_values(by="final_score", ascending=True)
-            
-            fig_rank = px.bar(df_plot, 
-                              x="final_score", 
-                              y="feature", 
-                              orientation="h",
-                              title="Top 20 des Features (Score Final)",
-                              labels={"final_score": "Importance (0-1)", "feature": "Caractéristique"},
-                              color="final_score",
-                              color_continuous_scale="Viridis")
-            
-            fig_rank.update_layout(height=600, showlegend=False)
+            df_rank = pd.read_csv(ranking_path).head(15).sort_values(by="final_score", ascending=True)
+            fig_rank = px.bar(df_rank, x="final_score", y="feature", orientation="h",
+                               title="Top 15 des Features les plus discriminantes",
+                               color="final_score", color_continuous_scale="GnBu")
             st.plotly_chart(fig_rank, use_container_width=True)
-            
-            st.info("💡 **Observations** : La **luminosité (mean_B)** et la **dissimilarité** de texture sortent souvent en tête, confirmant l'impact de l'éclairage et de la régularité du limbe.")
-        else:
-            st.warning("Fichier feature_ranking.csv non trouvé.")
         
-    with tab2:
-        st.header("Analyse de Performance")
-        
-        st.markdown("""
-        Voici les résultats obtenus pour l'**Objectif 1** (Identification de l'espèce) sur l'ensemble de test.
-        Nous avons comparé 4 modèles principaux.
-        """)
-        
-        # Tableau des performances du rapport
+    with tabs[1]:
+        st.header("2. Analyse des Performances")
         perf_data = {
-            "Modèle": ["SVM (RBF)", "XGBoost", "Régression Logistique", "Extra-Trees"],
+            "Modèle": ["SVM (RBF)", "XGBoost", "Reg. Logistique", "Extra-Trees"],
             "Accuracy": [0.9370, 0.9038, 0.8615, 0.8310],
             "F1-score (macro)": [0.9237, 0.8839, 0.8328, 0.7863]
         }
         df_perf = pd.DataFrame(perf_data)
-        st.table(df_perf)
+        
+        col1, col2 = st.columns([1, 1.2])
+        with col1:
+            st.dataframe(df_perf.style.highlight_max(axis=0))
+            st.success("🏆 **SVM (RBF)** est le plus performant.")
+        
+        with col2:
+            fig_perf = px.bar(df_perf, x="Modèle", y="F1-score (macro)", color="Modèle",
+                               title="Comparaison des F1-Scores", text_auto='.2f')
+            fig_perf.update_layout(showlegend=False)
+            st.plotly_chart(fig_perf, use_container_width=True)
 
-        st.info("💡 **Constat** : Le **SVM (RBF)** se détache nettement par sa capacité à capturer les relations non-linéaires entre les descripteurs morphologiques et colorimétriques.")
-
-        # Affichage conditionnel des résultats
-        res_dir = "results/Machine_Learning/logreg_baseline/plots/logreg/"
-        if os.path.exists(res_dir):
-            cm_path = os.path.join(res_dir, "confusion_matrix.png")
-            if os.path.exists(cm_path):
-                st.image(cm_path, caption="Matrice de Confusion (Baseline)", use_container_width=True)
+        cm_path = "results/Machine_Learning/svm_rbf_baseline_features_selected/plots/baseline/confusion_matrix.png"
+        if os.path.exists(cm_path):
+            with st.expander("🔍 Voir la Matrice de Confusion (SVM-RBF)"):
+                st.image(cm_path, use_container_width=True)
                 
-    with tab3:
-        st.header("Importance des Features (SHAP)")
-        st.write("Analyse de l'impact des descripteurs sur la décision du modèle.")
-        
-        col_shap1, col_shap2 = st.columns(2)
-        
+    with tabs[2]:
+        st.header("3. Interprétabilité SHAP")
         shap_dir = "figures/shap_analysis"
-        
-        with col_shap1:
-            p1 = os.path.join(shap_dir, "1_global_importance.png")
-            if os.path.exists(p1):
-                st.image(p1, caption="Importance Globale des Features", use_container_width=True)
-            else:
-                st.write("Graphique Global manquant")
-                
-        with col_shap2:
-            p2 = os.path.join(shap_dir, "2_feature_impact_summary.png")
-            if os.path.exists(p2):
-                st.image(p2, caption="Impact détaillé (Beeswarm Plot)", use_container_width=True)
-            else:
-                st.write("Graphique Impact manquant")
+        p1 = os.path.join(shap_dir, "1_global_importance.png")
+        if os.path.exists(p1):
+            st.image(p1, caption="Importance Globale des Features (Top 25)", use_container_width=True)
+            st.write("**Observation clé** : La `contour_density` est le descripteur le plus influent.")
+        else:
+            st.warning("Graphique SHAP non trouvé.")
 
+        st.divider()
+        st.subheader("🏆 Synthèse des Résultats par Modèle")
+        st.markdown("Comparaison finale des performances sur l'Objectif 1 (Identification de l'espèce).")
+        
+        full_perf_data = {
+            "Modèle": ["SVM (RBF)", "XGBoost", "Reg. Logistique", "Extra-Trees"],
+            "Accuracy": [0.9370, 0.9038, 0.8615, 0.8310],
+            "Précision (macro)": [0.9271, 0.9051, 0.8462, 0.8607],
+            "Rappel (macro)": [0.9207, 0.8654, 0.8214, 0.7405],
+            "F1-score (macro)": [0.9237, 0.8839, 0.8328, 0.7863]
+        }
+        df_full = pd.DataFrame(full_perf_data)
+        df_melt = df_full.melt(id_vars="Modèle", var_name="Métrique", value_name="Valeur")
+        
+        fig_full = px.bar(df_melt, x="Modèle", y="Valeur", color="Métrique", barmode="group",
+                          title="Comparaison Multi-Métriques (Test Set)",
+                          text_auto='.2f', color_discrete_sequence=px.colors.qualitative.Pastel)
+        
+        fig_full.update_layout(yaxis_range=[0.7, 1.0])
+        st.plotly_chart(fig_full, use_container_width=True)
+        
+        st.info("💡 **Constat** : Le **SVM (RBF)** surpasse ses concurrents sur toutes les métriques, confirmant sa robustesse face au déséquilibre des classes.")
+
+def sidebar_choice():
+    st.title("📊 Modélisation")
+    render_ml_content()

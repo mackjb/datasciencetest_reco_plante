@@ -91,7 +91,7 @@ def render_ml_content():
         
         col1, col2 = st.columns([1, 1.2])
         with col1:
-            st.dataframe(df_perf.style.highlight_max(axis=0))
+            st.dataframe(df_perf.style.apply(lambda x: ['background-color: yellow' if x.name == 0 else '' for _ in x], axis=1))
             st.success("🏆 **SVM (RBF)** est le plus performant.")
         
         with col2:
@@ -156,7 +156,7 @@ def render_dl_content():
     """)
     
     # --- Phase d'exploration individuelle ---
-    with st.expander("👥 Phase d'Exploration Individuelle", expanded=False):
+    with st.expander("👥 Phase d'Exploration Individuelle", expanded=True):
         st.markdown("""
         Dans le cadre de notre formation, **chaque membre de l'équipe a d'abord exploré individuellement 
         un modèle pré-entraîné** pour se familiariser avec les techniques de Deep Learning et comprendre 

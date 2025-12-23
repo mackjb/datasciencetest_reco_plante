@@ -40,8 +40,6 @@ def sidebar_choice():
 
     st.divider()
 
-
-
     # --- OBJECTIFS SPECIFIQUES ---
     st.markdown("## 📋 Objectifs du Projet")
     obj1, obj2, obj3 = st.columns(3)
@@ -71,10 +69,10 @@ def sidebar_choice():
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 350px; /* Taille diminuée */
+        height: 350px;
         position: relative;
         margin: 20px 0;
-        overflow: visible; /* Pour que le zoom ne soit pas coupé */
+        overflow: visible;
         background-color: #111;
         border-radius: 20px;
         box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
@@ -92,7 +90,7 @@ def sidebar_choice():
         cursor: pointer;
     }
     .leaf-img:hover {
-        transform: scale(2.0) rotate(0deg) !important; /* Zoom agrandi */
+        transform: scale(2.0) rotate(0deg) !important;
         z-index: 1000 !important;
         border-color: #2E8B57;
         box-shadow: 0 15px 35px rgba(0,0,0,0.8);
@@ -135,4 +133,3 @@ def sidebar_choice():
         else:
             st.info("Chargement des images...")
     st.divider()
-

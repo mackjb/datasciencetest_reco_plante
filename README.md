@@ -1,3 +1,14 @@
+---
+title: Plant Disease Recognition
+emoji: 🌿
+colorFrom: green
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.39.0
+app_file: Streamlit/app.py
+pinned: false
+---
+
 Reconnaissance de plantes et de maladies sur PlantVillage
 ========================================================
 

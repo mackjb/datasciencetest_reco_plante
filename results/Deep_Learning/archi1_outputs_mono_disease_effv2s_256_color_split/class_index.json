@@ -1,0 +1,22 @@
+{
+  "0": "apple_scab",
+  "1": "bacterial_spot",
+  "2": "black_rot",
+  "3": "cedar_apple_rust",
+  "4": "cercospora_leaf_spot gray_leaf_spot",
+  "5": "common_rust",
+  "6": "early_blight",
+  "7": "esca_(black_measles)",
+  "8": "haunglongbing_(citrus_greening)",
+  "9": "late_blight",
+  "10": "leaf_blight_(isariopsis_leaf_spot)",
+  "11": "leaf_mold",
+  "12": "leaf_scorch",
+  "13": "northern_leaf_blight",
+  "14": "powdery_mildew",
+  "15": "septoria_leaf_spot",
+  "16": "spider_mites two-spotted_spider_mite",
+  "17": "target_spot",
+  "18": "tomato_mosaic_virus",
+  "19": "tomato_yellow_leaf_curl_virus"
+}

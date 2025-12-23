@@ -1,0 +1,33 @@
+{
+  "black_rot": {
+    "precision": 0.9960199004975124,
+    "recall": 0.9980059820538385,
+    "f1-score": 0.9970119521912351,
+    "support": 1003.0
+  },
+  "esca_(black_measles)": {
+    "precision": 0.9982964224872232,
+    "recall": 0.9965986394557823,
+    "f1-score": 0.9974468085106383,
+    "support": 1176.0
+  },
+  "leaf_blight_(isariopsis_leaf_spot)": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1-score": 1.0,
+    "support": 914.0
+  },
+  "accuracy": 0.9980601357904947,
+  "macro avg": {
+    "precision": 0.9981054409949118,
+    "recall": 0.998201540503207,
+    "f1-score": 0.9981529202339577,
+    "support": 3093.0
+  },
+  "weighted avg": {
+    "precision": 0.998061607838338,
+    "recall": 0.9980601357904947,
+    "f1-score": 0.9980602763841964,
+    "support": 3093.0
+  }
+}

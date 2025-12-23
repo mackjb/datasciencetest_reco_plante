@@ -1,0 +1,30 @@
+{
+  "best_params": {
+    "xtr__class_weight": "balanced",
+    "xtr__n_estimators": 300
+  },
+  "best_cv_f1_macro": 0.7876335137699915,
+  "cv_rows": 2,
+  "summary_preview": [
+    {
+      "param_xtr__n_estimators": 300,
+      "param_xtr__class_weight": "balanced",
+      "mean_f1": 0.7876335137699915,
+      "std_f1": 0.009420787374404256,
+      "mean_bal": 0.7416495506002407,
+      "std_bal": 0.01129468643906275,
+      "f1_macro": "0.7876 ± 0.0094",
+      "balanced_accuracy": "0.7416 ± 0.0113"
+    },
+    {
+      "param_xtr__n_estimators": 300,
+      "param_xtr__class_weight": NaN,
+      "mean_f1": 0.787313598915303,
+      "std_f1": 0.009180878495506901,
+      "mean_bal": 0.7418856213757893,
+      "std_bal": 0.010301297352188899,
+      "f1_macro": "0.7873 ± 0.0092",
+      "balanced_accuracy": "0.7419 ± 0.0103"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+Species 4 — Grape (TRAIN)
+
+                                    precision    recall  f1-score   support
+
+                         black_rot     0.9960    0.9980    0.9970      1003
+              esca_(black_measles)     0.9983    0.9966    0.9974      1176
+leaf_blight_(isariopsis_leaf_spot)     1.0000    1.0000    1.0000       914
+
+                          accuracy                         0.9981      3093
+                         macro avg     0.9981    0.9982    0.9982      3093
+                      weighted avg     0.9981    0.9981    0.9981      3093
+

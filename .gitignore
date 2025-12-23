@@ -164,3 +164,13 @@ cython_debug/
 
 # Data folder
 data/
+dataset/plantvillage/data/**
+dataset/flavia/data/**
+dataset/flavia/Leaves.tar.bz2
+dataset/new_plant_diseases_dataset/data/**
+dataset/plant_disease/data/**
+
+results/models/**
+dataset/plantvillage/clean_split/**
+outputs/**/*.keras
+outputs/**/*.keras

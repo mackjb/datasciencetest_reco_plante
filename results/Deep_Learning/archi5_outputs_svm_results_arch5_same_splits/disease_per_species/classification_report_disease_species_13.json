@@ -1,0 +1,69 @@
+{
+  "bacterial_spot": {
+    "precision": 0.9845201238390093,
+    "recall": 0.9968652037617555,
+    "f1-score": 0.9906542056074766,
+    "support": 319.0
+  },
+  "early_blight": {
+    "precision": 0.950354609929078,
+    "recall": 0.8933333333333333,
+    "f1-score": 0.9209621993127147,
+    "support": 150.0
+  },
+  "late_blight": {
+    "precision": 0.9525423728813559,
+    "recall": 0.9790940766550522,
+    "f1-score": 0.9656357388316151,
+    "support": 287.0
+  },
+  "leaf_mold": {
+    "precision": 0.9652777777777778,
+    "recall": 0.972027972027972,
+    "f1-score": 0.9686411149825784,
+    "support": 143.0
+  },
+  "septoria_leaf_spot": {
+    "precision": 0.9809160305343512,
+    "recall": 0.969811320754717,
+    "f1-score": 0.9753320683111955,
+    "support": 265.0
+  },
+  "spider_mites two-spotted_spider_mite": {
+    "precision": 0.9568627450980393,
+    "recall": 0.9682539682539683,
+    "f1-score": 0.9625246548323472,
+    "support": 252.0
+  },
+  "target_spot": {
+    "precision": 0.9565217391304348,
+    "recall": 0.9383886255924171,
+    "f1-score": 0.9473684210526315,
+    "support": 211.0
+  },
+  "tomato_mosaic_virus": {
+    "precision": 0.9821428571428571,
+    "recall": 0.9821428571428571,
+    "f1-score": 0.9821428571428571,
+    "support": 56.0
+  },
+  "tomato_yellow_leaf_curl_virus": {
+    "precision": 0.9962640099626401,
+    "recall": 0.9962640099626401,
+    "f1-score": 0.9962640099626401,
+    "support": 803.0
+  },
+  "accuracy": 0.9758648431214803,
+  "macro avg": {
+    "precision": 0.9694891406995048,
+    "recall": 0.966242374164968,
+    "f1-score": 0.9677250300040063,
+    "support": 2486.0
+  },
+  "weighted avg": {
+    "precision": 0.9758357767683056,
+    "recall": 0.9758648431214803,
+    "f1-score": 0.9757562775282373,
+    "support": 2486.0
+  }
+}

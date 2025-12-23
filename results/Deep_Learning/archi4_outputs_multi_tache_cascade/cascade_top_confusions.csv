@@ -1,0 +1,27 @@
+True,Predicted,Count,Percent_of_true
+Corn_(maize)___Northern_Leaf_Blight,Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot,10,6.756756756756757
+Tomato___Late_blight,Tomato___Early_blight,8,2.797202797202797
+Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot,Corn_(maize)___Northern_Leaf_Blight,5,6.493506493506493
+Tomato___Early_blight,Tomato___Target_Spot,3,2.0
+Tomato___Target_Spot,Tomato___Septoria_leaf_spot,3,1.4218009478672986
+Potato___Late_blight,Tomato___Late_blight,2,1.3333333333333335
+Tomato___healthy,Tomato___Target_Spot,2,0.8368200836820083
+Tomato___Early_blight,Tomato___Septoria_leaf_spot,2,1.3333333333333335
+Cherry_(including_sour)___Powdery_mildew,Apple___Apple_scab,1,0.6329113924050633
+Apple___healthy,Peach___healthy,1,0.4048582995951417
+Peach___Bacterial_spot,Tomato___Late_blight,1,0.2898550724637681
+Grape___Black_rot,Tomato___Septoria_leaf_spot,1,0.5649717514124294
+Corn_(maize)___Northern_Leaf_Blight,Corn_(maize)___Common_rust_,1,0.6756756756756757
+Corn_(maize)___Common_rust_,Corn_(maize)___Northern_Leaf_Blight,1,0.5586592178770949
+Cherry_(including_sour)___healthy,Corn_(maize)___healthy,1,0.78125
+Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot,Corn_(maize)___Common_rust_,1,1.2987012987012987
+Tomato___Bacterial_spot,Tomato___Target_Spot,1,0.3134796238244514
+Potato___Late_blight,Blueberry___healthy,1,0.6666666666666667
+Tomato___Early_blight,Tomato___Tomato_Yellow_Leaf_Curl_Virus,1,0.6666666666666667
+Tomato___Early_blight,Tomato___Late_blight,1,0.6666666666666667
+Strawberry___healthy,Tomato___healthy,1,1.4705882352941175
+Tomato___Leaf_Mold,Tomato___healthy,1,0.6993006993006993
+Tomato___Spider_mites Two-spotted_spider_mite,Tomato___healthy,1,0.398406374501992
+Tomato___Septoria_leaf_spot,Tomato___Tomato_mosaic_virus,1,0.37593984962406013
+Tomato___Target_Spot,Tomato___Bacterial_spot,1,0.47393364928909953
+Tomato___Target_Spot,Tomato___Spider_mites Two-spotted_spider_mite,1,0.47393364928909953

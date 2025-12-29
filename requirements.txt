@@ -1,0 +1,16 @@
+kagglehub
+pandas
+numpy
+plotly
+Pillow
+matplotlib
+opencv-python-headless
+scikit-learn
+albumentations
+scikit-image
+imbalanced-learn
+seaborn
+torchvision
+shap
+joblib
+streamlit

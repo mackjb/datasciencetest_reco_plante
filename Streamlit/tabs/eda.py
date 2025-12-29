@@ -6,44 +6,130 @@ import plotly.express as px
 def sidebar_choice():
     st.title("🔎 Analyse Exploratoire & Preprocessing")
     
-    tab1, tab2, tab3 = st.tabs(["📊 Le Dataset", "🧹 Nettoyage", "📈 Visualisation"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📂 Les Datasets", "📊 PlantVillage", "🧹 Nettoyage", "📈 Visualisation"])
     
     with tab1:
-        st.header("1. Le Dataset PlantVillage")
+        st.header("1. Les Datasets")
+        st.markdown("""
+        À partir des **6 datasets** proposés par DataScientest, nous avons effectué plusieurs
+        sélections successives basées sur des explorations afin de n’en retenir qu’un : **PlantVillage**, détaillé dans l'onglet "PlantVillage".
+        """)
+
+        # --- 1ère partie : Datasets pour l'identification de l'espèce ---
+        st.markdown("### 1.1 Datasets pour l'identification de l'espèce")
+        st.markdown("""
+        Trois premiers jeux de données sont dédiés à l’**identification de l’espèce** à partir
+        d’images de plantes complètes dans des environnements variés :
+        **COCO**, **Open Images V6** et **V2 Plant Seedlings**.
+        """)
+
+        species_examples = {
+
+            "COCO": [
+                "Streamlit/assets/Les datasets/coco_1.png",
+                "Streamlit/assets/Les datasets/coco_2.png",
+            ],
+            "Open Images V6": [
+                "Streamlit/assets/Les datasets/open_images_v6_1.png",
+            ],
+            "V2 Plant Seedlings": [
+                "Streamlit/assets/Les datasets/v2_plant_seedlings_1.png",
+                "Streamlit/assets/Les datasets/v2_plant_seedlings_2.png",
+            ],
+        }
+
+        # Trois boîtes (une par dataset), empilées verticalement et alignées à gauche ;
+        # les images ne s'affichent que si l'on clique dessus
+
+        col_c, _ = st.columns([1, 1])
+        with col_c:
+            with st.expander("COCO"):
+                coco_imgs = species_examples["COCO"]
+                coco_cols = st.columns(len(coco_imgs))
+                for i, img_path in enumerate(coco_imgs):
+                    coco_cols[i].image(img_path, width=300)
+
+        col_o, _ = st.columns([1, 1])
+        with col_o:
+            with st.expander("Open Images V6"):
+                open_imgs = species_examples["Open Images V6"]
+                open_cols = st.columns(len(open_imgs))
+                for i, img_path in enumerate(open_imgs):
+                    open_cols[i].image(img_path, width=300)
+
+        col_v, _ = st.columns([1, 1])
+        with col_v:
+            with st.expander("V2 Plant Seedlings"):
+                v2_imgs = species_examples["V2 Plant Seedlings"]
+                v2_cols = st.columns(len(v2_imgs))
+                for i, img_path in enumerate(v2_imgs):
+                    v2_cols[i].image(img_path, width=300)
+
+        st.markdown("""
+        Les 3 datasets **V2 Plant Seedlings**, **Open Images V6** et **COCO**, qui contiennent des
+        images de plantes avec des environnements différents et peu d’espèces communes entre eux,
+        sont éliminés car notre scénario part d’une **photo de feuille cadrée sur fond uni**.
+        """)
+
+        # --- 2ème partie : Datasets pour l'identification des plantes et des maladies ---
+        st.markdown("### 1.2 Datasets pour l'identification des plantes et des maladies")
+        st.markdown("""
+        Les trois autres jeux de données : **Plant Disease**, **New Plant Diseases** et **PlantVillage** sont tous centrés sur des **feuilles de plantes recadrées sur fond uni**,
+        afin de faciliter la détection automatique des maladies.
+        PlantVillage constitue le **dataset de référence**, tandis que **Plant Disease** enrichit le nombre
+        de maladies pour un volume d’images comparable et que **New Plant Diseases** est une **extension
+        de PlantVillage par augmentation de données hors ligne** (environ 34 000 images supplémentaires).
+
+        Le tableau suivant compare ces 3 datasets permettant la **détection des maladies**.
+        """)
+
+        # st.subheader("Figure 4 – Comparatif des datasets")
+        st.image(
+            "Streamlit/assets/Les datasets/datasets_comparison_table.png",
+            caption="Comparatif des datasets",
+            use_container_width=True,
+        )
+
+        st.markdown("""
+        **Plant Disease** est éliminé car, pour un même ordre de grandeur du nombre d’images,
+        il fournit un plus grand nombre de types de maladies, ce qui n’apporte rien à notre scénario.
+
+        **New Plant Diseases** est créé à l’aide d’une **augmentation hors ligne de PlantVillage**
+        (environ 34 000 images supplémentaires). Notre analyse exploratoire a montré que certaines
+        espèces majoritaires ont été augmentées plus que d’autres pour couvrir un objectif non
+        précisé dans la littérature.
+
+        Notre choix se porte donc sur **PlantVillage**, qui cadre bien avec notre scénario.
+        Sa structure est détaillée dans l'onglet *PlantVillage*.
+        """)
+
+    with tab2:
+        st.header("2. Le Dataset PlantVillage")
         
-        c1, c2 = st.columns([2, 1])
+        c1, c2 = st.columns([8, 1])
+        
         with c1:
             st.markdown("""
-            **Source** : Le dataset **PlantVillage** est la référence mondiale pour l'étude des pathologies végétales.
+            **Source** : Le dataset **PlantVillage** est la référence mondiale pour l'étude des maladies végétales.
             
-            *   **Structure** : Organisé en 3 versions (Color, Grayscale, Segmented).
-            *   **Choix du Projet** : Utilisation de la version **Segmented** (593 Mo).
-            *   **Volumétrie** : 54,306 images haute résolution.
-            *   **Organisation** : 38 sous-dossiers nommés selon le format `Espèce___Maladie` ou `Espèce___Healthy`.
-            *   **Diversité** : 14 espèces de plantes distinctes et 20 pathologies spécifiques.
+            *   **Structure** : 3 dossiers (`color`, `grayscale`, `segmented`) contenant **les mêmes 54 306 images** chacun.
+            *   **Volumétrie** : 54 306 images par dossier, réparties dans **38 sous-dossiers** (les 38 classes).
+            *   **Diversité** : 14 espèces de plantes et 20 classes de maladies (dont les classes *healthy*).
+            *   **Taille** : Environ **593 Mo** par variante.
+            *   **Variantes** : la variante `color` correspond aux images RGB d’origine, où la feuille apparaît avec son fond (souvent simple), tandis que la variante `segmented` contient les feuilles segmentées, le fond ayant été supprimé et remplacé par un fond noir.
+            *   **Choix du projet** : utilisation de la variante **segmented** pour le ML et de la variante **color** pour le DL.
             """)
-            
-            st.info("🎯 **Notre Scénario** : L'utilisation des images segmentées permet au modèle de se concentrer sur la texture et les motifs de la feuille sans être pollué par l'arrière-plan.")
 
         with c2:
-            st.metric("Poids total", "593 Mo")
-            st.metric("Images", "54,306")
-            st.metric("Espèces", "14")
-            st.metric("Pathologies", "20")
+            st.metric("   Poids total", "593 Mo")
+            st.metric("   Images", "54306")
+            st.metric("   Espèces", "14")
+            st.metric("   Maladies", "20")
 
-        st.image("Streamlit/assets/dataset_overview.png", caption="Un aperçu de la diversité des espèces et pathologies dans le dataset PlantVillage", use_container_width=True)
-
-        st.divider()
-        st.subheader("🏁 Positionnement vis-à-vis des autres Datasets")
-        st.markdown("""
-        Le choix de **PlantVillage** s'appuie sur une comparaison rigoureuse avec d'autres standards du domaine. Bien que des datasets plus volumineux existent (comme *New Plant Diseases*), PlantVillage offre le meilleur compromis entre **qualité de segmentation** et **précision des annotations**.
-        """)
-        st.image("Streamlit/assets/dataset_comparison.png", caption="Comparaison des caractéristiques entre PlantVillage et ses variantes", use_container_width=True)
-        
-        st.info("💡 **Analyse** : PlantVillage reste la référence pour le benchmarking grâce à ses fonds unis qui facilitent l'apprentissage des motifs pathologiques purs.")
+        st.image("Streamlit/assets/dataset_overview.png", caption="Un aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage", use_container_width=True)
             
-    with tab2:
-        st.header("2. Pipeline de Preprocessing")
+    with tab3:
+        st.header("3. Pipeline de Preprocessing")
         st.markdown("""
         Pour garantir la robustesse du modèle lors du passage en production (images réelles), nous avons appliqué un nettoyage strict.
         """)
@@ -55,16 +141,8 @@ def sidebar_choice():
         3.  **Redimensionnement** : Uniformisation de toutes les images en **256 x 256 pixels**.
         """)
         
-        st.divider()
-        st.markdown("### ✨ L'Art du Nettoyage de Données")
-        st.markdown("""
-        Un modèle n'est performant que si ses données d'entrée sont irréprochables. Notre phase de nettoyage n'a pas seulement servi à "faire de la place", mais à **éliminer les biais** qui auraient pu induire le modèle en erreur. 
-        
-        En supprimant les doublons et les images corrompues, nous nous assurons que chaque pixel analysé apporte une réelle valeur ajoutée à l'apprentissage. C'est cette rigueur chirurgicale qui garantit la **fiabilité de nos futurs diagnostics**.
-        """)
-        
-    with tab3:
-        st.header("3. Visualisation des Données")
+    with tab4:
+        st.header("4. Visualisation des Données")
         st.write("Exploration de la distribution des classes.")
         
         # Chargement des données réelles

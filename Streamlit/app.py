@@ -1,5 +1,5 @@
 import streamlit as st
-from tabs import home, eda, modeling, deep_learning, conclusion, about
+from tabs import home, eda, modeling, machine_learning, deep_learning, proof_of_concept, conclusion
 
 st.set_page_config(
     page_title="HerbI-Dent - Reconnaissance des Plantes & Maladies",
@@ -36,11 +36,17 @@ st.markdown("""
     }
     /* Modern Card styling */
     .stMetric {
-        background-color: #f1f8e9;
-        padding: 15px;
+        background-color: #BBDEFB; /* bleu  */
+        padding: 2px;
         border-radius: 10px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }
+    [data-testid="stMetricValue"] {
+        font-size: 1.0rem !important;   /* valeur de la métrique */
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.85rem !important;  /* texte 'Poids total', 'Images', etc. */
+    }    
     /* Main titles */
     h1 {
         color: #2e7d32;
@@ -64,12 +70,13 @@ def main():
     
     # Dictionnaire des pages
     pages = {
-        "🏠 Accueil": home,
-        "🔍 Exploration": eda,
-        "📊 Modélisation": modeling,
-        "🧠 Deep Learning": deep_learning,
-        "🏁 Bilan & Conclusion": conclusion,
-        "👥 L'Equipe": about
+        "Le projet": home,
+        "Les jeux de données": eda,
+        "Méthodologie ML- DL": modeling,
+        "Machine Learning" : machine_learning,
+        "Deep Learning" : deep_learning,
+        "PoCs": proof_of_concept,
+        "Conclusion & Perspectives": conclusion,
     }
     
     # Création du menu radios

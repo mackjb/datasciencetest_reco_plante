@@ -34,33 +34,34 @@ def sidebar_choice():
     st.markdown("""
     <div class='sub-text'>
     <b>Projet de Reconnaissance des Plantes et leur Maladies par Vision par Ordinateur</b><br>
-    Certification Data Scientist - Promotion Février 2025
+    Certification Data Scientist - Promotion Mars 2025
     </div>
     """, unsafe_allow_html=True)
 
     st.divider()
 
     # --- OBJECTIFS SPECIFIQUES ---
-    st.markdown("## 📋 Objectifs du Projet")
+    st.markdown("## Objectifs du Projet")
     obj1, obj2, obj3 = st.columns(3)
     with obj1:
         st.info("**1. Classification d'espèce**\n\nQuelle est cette plante ? (14 espèces cibles)")
     with obj2:
         st.success("**2. État de santé**\n\nLa plante est-elle saine ou malade ?")
     with obj3:
-        st.warning("**3. Diagnostic précis**\n\nQuelle est la maladie spécifique ? (20 classes)")
+        st.warning("**3. Diagnostic Maladie**\n\nQuelle est la maladie spécifique ? (20 classes)")
 
-    # --- TEAM SECTION ---
-    st.markdown("## 👨‍💻 L'Équipe Projet")
-    
-    if os.path.exists("Streamlit/assets/team_collage.png"):
-        c1, c2, c3 = st.columns([1, 2, 1])
-        with c2:
-            st.image("Streamlit/assets/team_collage.png", caption="L'équipe au complet", use_container_width=True)
-    else:
-        st.info("Photo d'équipe à intégrer ici.")
+    # --- L'ÉQUIPE PROJET ---
+    col_team, col_env = st.columns(2)
+    with col_team:
+        st.markdown("## L'Équipe Projet")
+        st.image("Streamlit/assets/equipe.png", width=600)
 
-    st.divider()
+    # --- ENVIRONNEMENT DE DÉVELOPPEMENT ---
+    with col_env:
+        st.markdown("## Environnement de développement")
+        st.image("Streamlit/assets/env_dev.png", width=800)
+
+
 
     # --- DECORATIVE GALLERY ---
     st.markdown("""
@@ -98,38 +99,4 @@ def sidebar_choice():
     </style>
     """, unsafe_allow_html=True)
 
-    st.subheader("📸 Immersion dans le Dataset")
     
-    img_root = "Deep_Learning/Interpretability/gradcam_input/"
-    if os.path.exists(img_root):
-        all_imgs = []
-        for root, dirs, files in os.walk(img_root):
-            for file in files:
-                if file.endswith(".png"):
-                    all_imgs.append(os.path.join(root, file))
-        
-        # On essaie d'en avoir une dizaine
-        count = min(len(all_imgs), 12)
-        if count > 0:
-            import base64
-            import random
-            
-            def get_base64(path):
-                with open(path, "rb") as f:
-                    return base64.b64encode(f.read()).decode()
-            
-            html_code = "<div class='leaf-container'>"
-            # On génère les positions mélangées
-            for i in range(count):
-                b64 = get_base64(all_imgs[i])
-                rot = random.randint(-25, 25)
-                tx = (i - (count/2)) * 70 # Espacement horizontal dynamique
-                ty = random.randint(-40, 40) # Léger décalage vertical
-                z = i
-                style = f"transform: rotate({rot}deg) translateX({tx}px) translateY({ty}px); z-index: {z};"
-                html_code += f"<img src='data:image/png;base64,{b64}' class='leaf-img' style='{style}'>"
-            html_code += "</div>"
-            st.markdown(html_code, unsafe_allow_html=True)
-        else:
-            st.info("Chargement des images...")
-    st.divider()

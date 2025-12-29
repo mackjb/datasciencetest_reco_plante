@@ -1,269 +1,311 @@
 import streamlit as st
-import time
+import pandas as pd
+import plotly.graph_objects as go
+import os
 
-# =========================
-# FONCTION PRINCIPALE
-# =========================
-def render_dl_page():
-    # --- CSS ---
+
+def render_dl_content():
     st.markdown("""
-    <style>
-    .demo-img-container {
-        transition: transform 0.2s;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .demo-img-container:hover {
-        transform: scale(1.05);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    Le Deep Learning permet d'apprendre automatiquement les features directement à partir des pixels, 
+    contrairement au Machine Learning classique qui nécessite une extraction manuelle de descripteurs.
+    """)
+    
+    # --- Phase d'exploration individuelle ---
+    with st.expander("👥 Phase d'Exploration Individuelle", expanded=True):
+        st.markdown("""
+        Dans le cadre de notre formation, **chaque membre de l'équipe a d'abord exploré individuellement 
+        un modèle pré-entraîné** pour se familiariser avec les techniques de Deep Learning et comprendre 
+        les différents défis liés à :
+        """)
 
-    st.subheader("🏗️ Architectures Sélectionnées")
-    tab_archi3, tab_archi9 = st.tabs([
-        "📱 Archi 3 : Solution Edge/Mobile",
-        "🏆 Archi 9 : Solution Production Cloud"
-    ])
+        col_img, col_txt = st.columns([1.3, 2])
 
-    # =========================
-    # ARCHI 3
-    # =========================
-    with tab_archi3:
-        st.markdown("### 🧬 Démo Interactive : Archi 3")
-        st.write("Sélectionnez une image pour simuler l'inférence et visualiser l'attention du modèle (Grad-CAM).")
+        with col_img:
+            st.image(
+                "Streamlit/assets/leviers_DL.png",
+                use_container_width=True,
+            )
 
-        examples_archi3 = [
-            {
-                "id": "potato",
-                "label": "Pomme de terre (Mildiou)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/disease/Potato___Early_blight_001187a0-57ab-4329-baff-e7246a9edeb0___RS_Early.B_8178.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi3_disease_interpretability_data/archi3_disease_cam_Potato___Early_blight_001187a0-57ab-4329-baff-e7246a9edeb0___RS_Early.B_8178_gradcam_overlay.png",
-                "species": "Potato",
-                "disease": "Early Blight",
-                "conf": "99.4%"
-            },
-            {
-                "id": "tomato",
-                "label": "Tomate (Virus)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/disease/Tomato___Tomato_Yellow_Leaf_Curl_Virus_01f7eeb8-19c7-4c7b-9789-00538abf46fe___UF.GRC_YLCV_Lab_09492.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi3_disease_interpretability_data/archi3_disease_cam_Tomato___Tomato_Yellow_Leaf_Curl_Virus_01f7eeb8-19c7-4c7b-9789-00538abf46fe___UF.GRC_YLCV_Lab_09492_gradcam_overlay.png",
-                "species": "Tomato",
-                "disease": "Yellow Leaf Curl Virus",
-                "conf": "99.8%"
-            },
-            {
-                "id": "corn_nlb",
-                "label": "Maïs (Brûlure)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/disease/Corn_(maize)___Northern_Leaf_Blight_0079c731-80f5-4fea-b6a2-4ff23a7ce139___RS_NLB_4121.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi3_disease_interpretability_data/archi3_disease_cam_Corn_(maize)___Northern_Leaf_Blight_0079c731-80f5-4fea-b6a2-4ff23a7ce139___RS_NLB_4121_gradcam_overlay.png",
-                "species": "Corn",
-                "disease": "Northern Leaf Blight",
-                "conf": "98.9%"
-            },
-            {
-                "id": "corn_cercospora",
-                "label": "Maïs (Tache grise)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/disease/Corn_(maize)___Cercospora_leaf_spot_Gray_leaf_spot_00120a18-ff90-46e4-92fb-2b7a10345bd3___RS_GLSp_9357.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi3_disease_interpretability_data/archi3_disease_cam_Corn_(maize)___Cercospora_leaf_spot_Gray_leaf_spot_00120a18-ff90-46e4-92fb-2b7a10345bd3___RS_GLSp_9357_gradcam_overlay.png",
-                "species": "Corn",
-                "disease": "Cercospora / Gray Leaf Spot",
-                "conf": "97.6%"
-            },
-            {
-                "id": "apple",
-                "label": "Pomme (Rouille)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/disease/Apple___Cedar_apple_rust_025b2b9a-0ec4-4132-96ac-7f2832d0db4a___FREC_C.Rust_3655.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi3_disease_interpretability_data/archi3_disease_cam_Apple___Cedar_apple_rust_025b2b9a-0ec4-4132-96ac-7f2832d0db4a___FREC_C.Rust_3655_gradcam_overlay.png",
-                "species": "Apple",
-                "disease": "Cedar Rust",
-                "conf": "99.2%"
-            },
-            {
-                "id": "orange",
-                "label": "Orange (Greening)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/disease/Orange___Haunglongbing_(Citrus_greening)_01c0f6d7-5f35-404e-8d6d-cadc3dfafb59___UF.Citrus_HLB_Lab_0068.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi3_disease_interpretability_data/archi3_disease_cam_Orange___Haunglongbing_(Citrus_greening)_01c0f6d7-5f35-404e-8d6d-cadc3dfafb59___UF.Citrus_HLB_Lab_0068_gradcam_overlay.png",
-                "species": "Orange",
-                "disease": "Huanglongbing (Citrus Greening)",
-                "conf": "98.3%"
-            }
-        ]
+        with col_txt:
+            st.markdown("""
+            - Le choix du backbone (architecture du réseau)
+            - Le fine-tuning et le transfer learning
+            - La gestion du déséquilibre des classes
+            - L'optimisation des hyperparamètres
+            - L'interprétabilité des modèles
+            """)
 
-        if "selected_idx3" not in st.session_state:
-            st.session_state.selected_idx3 = 0
-        if "analyzed3" not in st.session_state:
-            st.session_state.analyzed3 = False
+        st.markdown("""
+        Cette phase exploratoire nous a permis de **confronter la théorie à la pratique** et d'acquérir 
+        une compréhension approfondie des leviers disponibles avant de nous lancer dans l'exploration 
+        structurée des 9 architectures.
+        """)
 
-        # --- Galerie ---
-        cols = st.columns(len(examples_archi3))
-        for i, ex in enumerate(examples_archi3):
-            with cols[i]:
-                border = "5px solid #2E8B57" if st.session_state.selected_idx3 == i else "2px solid #ddd"
-                st.markdown(f"<div class='demo-img-container' style='border: {border};'>", unsafe_allow_html=True)
-                if st.button(f"Sélect. {ex['id']}", key=f"btn3_{ex['id']}"):
-                    st.session_state.selected_idx3 = i
-                    st.session_state.analyzed3 = False
-                    st.rerun()
-                st.image(ex["img_orig"], use_container_width=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-
-        st.divider()
-        selected3 = examples_archi3[st.session_state.selected_idx3]
-
-        c1, c2, c3 = st.columns([1, 0.8, 1])
-        with c1:
-            st.markdown("#### 📥 Entrée")
-            st.image(selected3["img_orig"], caption="Image originale", use_container_width=True)
-
-        with c2:
-            st.markdown("<br><br><br>", unsafe_allow_html=True)
-            if st.button("🚀 Lancer l'Analyse Archi 3", type="primary", use_container_width=True, disabled=st.session_state.analyzed3):
-                with st.spinner("Inférence en cours..."):
-                    time.sleep(1.2)
-                    st.session_state.analyzed3 = True
-
-            if st.session_state.analyzed3:
-                st.markdown(f"""
-                <div style='background-color:#f1f8e9;padding:20px;border-radius:15px;border:1px solid #c5e1a5;text-align:center;'>
-                    <h4 style='color:#2e7d32;margin:0;'>Résultats</h4>
-                    <hr>
-                    <p><b>Espèce</b> : {selected3['species']}</p>
-                    <p><b>Maladie</b> : {selected3['disease']}</p>
-                    <p style='font-size:1.2em;color:#2e7d32;'><b>Confiance : {selected3['conf']}</b></p>
-                </div>
-                """, unsafe_allow_html=True)
-
-        with c3:
-            st.markdown("#### 🔍 Interprétation")
-            if st.session_state.analyzed3:
-                st.image(selected3["img_cam"], caption="Grad-CAM (zones influentes)", use_container_width=True)
-            else:
-                st.info("Lancez l'analyse pour visualiser la carte de chaleur.")
-
-    # =========================
-    # ARCHI 9 (utilise les mêmes images que Archi 3 pour éviter l'erreur)
-    # =========================
-    with tab_archi9:
-        st.markdown("### 🧬 Démo Interactive : Archi 9")
-        st.write("Sélectionnez une image pour simuler l'inférence et visualiser l'attention du modèle (Grad-CAM).")
+        st.markdown("### 🔄 Transfer Learning et Comparaison des Modèles")
         
-        examples_archi9 = [
+        st.markdown("""
+        Nous avons choisi d'utiliser le **transfert d'apprentissage** car les modèles sont déjà entraînés 
+        sur des millions d'images pour détecter des motifs génériques (contours, textures, formes). 
+        C'est un **gain de temps et de ressources** considérable.
+        """)
+        
+        st.markdown("**Comparatif des Modèles Pré-entraînés Explorés :**")
+        
+        models_comparison = {
+            "Caractéristique": ["Année", "Auteurs/Org", "Paramètres (M)", "Taille modèle (MB)", 
+                               "GFLOPs (224×224)", "GFLOPs (256×256)", "Taille vecteur sortie",
+                               "Top-1 Acc ImageNet", "Top-5 Acc ImageNet", "Latence CPU (ms)", 
+                               "Latence GPU (ms)", "Taille entrée", "Profondeur (layers)"],
+            "EfficientNetV2-S": [2021, "Google Brain", 21.5, "~86", 8.4, "~10.8", 1280, 
+                                "83.9%", "96.7%", "60-80", "5-8", "384×384 (optim.)", "~150"],
+            "ResNet50": [2015, "Microsoft Research", 25.6, "~102", 4.1, "~5.3", 2048,
+                        "76.1%", "93.0%", "40-50", "3-5", "224×224", "50"],
+            "YOLOv8n-cls*": [2023, "Ultralytics", 2.7, "~11", 4.2, "~5.4", 1024,
+                           "69.0%", "88.3%", "25-35", "2-4", "224×224", "~100"],
+            "DenseNet-121": [2017, "Cornell/Facebook", 8.0, "~32", 2.9, "~3.7", 1024,
+                           "74.4%", "92.0%", "30-40", "3-5", "224×224", "121"]
+        }
+        df_models = pd.DataFrame(models_comparison)
+        
+        # Transposer pour avoir les modèles en colonnes
+        df_models_t = df_models.set_index("Caractéristique").T
+        
+        st.dataframe(df_models_t, use_container_width=True)
+        
+        st.success("""
+        **🏆 Choix retenu pour l'exploration des architectures : EfficientNetV2S**
+        
+        EfficientNetV2S offre un **excellent compromis entre performance et efficacité** :
+        - **Précision Top-1** de 83,9% sur ImageNet, surpassant ResNet50 (76,1%) et DenseNet-121 (74,4%)
+        - **21,5M paramètres** : moins que ResNet50 (25,6M) mais plus que DenseNet-121 (8M)
+        - **Efficacité computationnelle** remarquable : latence GPU réduite (5-8 ms)
+        - **Précision Top-5** de 96,7%, idéale pour des tâches de classification exigeantes
+        - Adapté à nos travaux nécessitant rapidité avec des ressources limitées
+        """)
+    
+    # --- Méthodologie ---
+    with st.expander("🎯 Méthodologie & Critères de Sélection", expanded=True):
+        st.markdown("""
+        ### Démarche structurée en 3 étapes :
+        
+        1. **Exploration** : 9 architectures testées pour comprendre le Deep Learning et ses défis
+        2. **Évaluation comparative** : Restriction à quelques architectures couvrant 3 cas d'usage
+        3. **Sélection & Recommandation** : Projection pour un déploiement réel
+        
+        ### Critères de sélection :
+        
+        | Catégorie | Critères | Justification |
+        |-----------|----------|---------------|
+        | **Métier** | Précision (Macro-F1, Accuracy) | Capacité à bien prédire toutes les classes |
+        | | Généralisation (écart val/test) | Robustesse du modèle (<2% = bon, >5% = overfitting) |
+        | | Couverture opérationnelle | Réponse aux 3 cas d'usage métier |
+        | **Technique** | Coût d'inférence (FLOPs, latence) | Impact sur batterie et expérience utilisateur |
+        | | Coût d'entraînement (temps, GPU) | Budget cloud et itérations rapides |
+        | | Complexité (paramètres, maintenabilité) | Taille du modèle et facilité de maintenance |
+        | **Autres** | Interprétabilité | Capacité à expliquer les prédictions (Grad-CAM) |
+        | | Besoins en données | Quantité d'images annotées nécessaire |
+        """)
+        
+        st.info("""
+        **🎯 Les 3 cas d'usage :**
+        - **Cas 1** : Identification d'espèce uniquement
+        - **Cas 2** : Diagnostic ciblé (espèce connue → maladie)
+        - **Cas 3** : Diagnostic complet (espèce + maladie inconnues)
+        """)
+
+    # Onglets principaux DL
+    dl_tabs = st.tabs(["🏗️ Architectures", "📊 Performances"])
+    
+    with dl_tabs[0]:
+        st.header("Exploration des 9 Architectures")
+        
+        st.markdown("""
+        **Protocole expérimental commun :**
+        - Dataset : PlantVillage/color
+        - Backbone pré-entraîné : **EfficientNetV2S** (ImageNet)
+        - Splits identiques pour tous les modèles
+        - Hyperparamètres fixés : learning rate, batch size, augmentation
+        - Métriques : Loss, Accuracy, Macro-F1, matrice de confusion
+        """)
+        
+        st.divider()
+        
+        # Présentation des architectures
+        st.markdown("### 🏗️ Backbone Pré-entraîné Dédié à Chaque Objectif")
+        
+        arch_info_dedicated = [
             {
-                "id": "blueberry",
-                "label": "Myrtille (Saine)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Blueberry___healthy_067e7729-ebb3-4824-80dc-9ceda52f47b8___RS_HL_5388.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Blueberry___healthy_067e7729-ebb3-4824-80dc-9ceda52f47b8___RS_HL_5388_gradcam_overlay.png",
-                "species": "Blueberry",
-                "disease": "Healthy",
-                "conf": "99.7%"
+                "num": "1",
+                "nom": "Trois modèles indépendants",
+                "desc": "**Architecture spécialisée** : Trois modèles CNN indépendants, chacun dédié à une seule tâche (species, health, disease). Chaque modèle comprend un backbone pré-entraîné et une tête de classification Dense adaptée au nombre de classes.",
+                "workflow": "Chaque modèle s'entraîne en 2 phases sur le même dataset : (1) backbone gelé avec entraînement de la tête uniquement; (2) fine-tuning des dernières couches du backbone pour adapter les features ImageNet aux spécificités du dataset.",
+                "avantages": "Simplicité (1 tâche = 1 modèle), absence de conflits entre tâches (pas de compromis dans l'optimisation), performances maximales par tâche (spécialisation totale), interprétabilité facilitée (1 objectif clair par modèle).",
+                "limites": "Triplication des ressources (3 backbones à stocker et maintenir), inférences multiples pour cas d'usage complexes, absence de synergie inter-tâches (pas de transfert d'apprentissage entre les 3 têtes), temps d'entraînement cumulé plus long (3 runs).",
+                "img": "figures/architectures_dl/archi1.png"
             },
             {
-                "id": "cherry",
-                "label": "Cerise (Saine)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Cherry_(including_sour)___healthy_0008f3d3-2f85-4973-be9a-1b520b8b59fc___JR_HL_4092.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Cherry_(including_sour)___healthy_0008f3d3-2f85-4973-be9a-1b520b8b59fc___JR_HL_4092_gradcam_overlay.png",
-                "species": "Cherry",
-                "disease": "Healthy",
-                "conf": "99.5%"
+                "num": "2",
+                "nom": "Deux modèles (species + disease_extended)",
+                "desc": "Deux modèles CNN indépendants : l'un pour l'espèce, l'autre pour l'état sanitaire complet. La classe 'healthy' est intégrée comme une maladie spéciale.",
+                "workflow": "Deux runs mono-tâche. Le modèle species s'entraîne sur toutes les images (saines + malades). Le modèle disease_extended s'entraîne également sur toutes les images.",
+                "avantages": "Simplicité (2 têtes), uniformité (deux softmax multi-classe), diagnostic complet en 2 inférences (species + disease_extended), 'healthy' est un état sanitaire comme les maladies.",
+                "limites": "Déséquilibre accru (classe 'healthy' majoritaire), perte de la métrique binaire explicite healthy/diseased, interprétation plus ambiguë des prédictions mixtes (ex: 40% healthy, 35% early_blight).",
+                "img": "figures/architectures_dl/archi2.png"
             },
             {
-                "id": "grape",
-                "label": "Raisin (Sain)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Grape___healthy_00e00912-bf75-4cf8-8b7d-ad64b73bea5f___Mt.N.V_HL_6067.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Grape___healthy_00e00912-bf75-4cf8-8b7d-ad64b73bea5f___Mt.N.V_HL_6067_gradcam_overlay.png",
-                "species": "Grape",
-                "disease": "Healthy",
-                "conf": "99.9%"
+                "num": "3",
+                "nom": "Modèle unifié (35 classes)",
+                "desc": "**Architecture unifiée** : Un modèle CNN pré-entraîné + 1 tête Dense softmax (35 classes). Étiquette combinée : chaque image est étiquetée par un couple 'Espèce__État' (Tomato__healthy, Apple__scab…).",
+                "workflow": "Phase 1: backbone gelé, entraînement de la tête uniquement. Phase 2: fine-tuning partiel des dernières couches du backbone. Les labels sont pré-combinés en 35 classes.",
+                "avantages": "Un seul modèle, une seule inférence : plus simple à déployer et à utiliser. Synergie entre tâches : l'apprentissage capte directement les co-dépendances espèce↔maladie/santé.",
+                "limites": "Moins de spécialisation par tâche. Les classes rares peuvent être sous-apprises. Peu flexible : impossible de gérer des paires inédites (nouvelle espèce/maladie) sans réentraîner les 35 classes. Interprétabilité : plus dur d'isoler l'erreur (vient-elle de l'identification d'espèce ou de maladie ?).",
+                "img": "figures/architectures_dl/archi3.png"
             },
             {
-                "id": "potato_healthy",
-                "label": "Pomme de terre (Saine)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Potato___healthy_00fc2ee5-729f-4757-8aeb-65c3355874f2___RS_HL_1864.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Potato___healthy_00fc2ee5-729f-4757-8aeb-65c3355874f2___RS_HL_1864_gradcam_overlay.png",
-                "species": "Potato",
-                "disease": "Healthy",
-                "conf": "99.6%"
-            },
-            {
-                "id": "soybean",
-                "label": "Soja (Sain)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Soybean___healthy_0180c2ed-0393-4e26-89a1-d4031175442f___RS_HL_4556.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Soybean___healthy_0180c2ed-0393-4e26-89a1-d4031175442f___RS_HL_4556_gradcam_overlay.png",
-                "species": "Soybean",
-                "disease": "Healthy",
-                "conf": "98.8%"
-            },
-            {
-                "id": "strawberry",
-                "label": "Fraise (Saine)",
-                "img_orig": "Deep_Learning/Interpretability/gradcam_input/specie/Strawberry___healthy_00166615-5e7b-4318-8957-5e50df335ee8___RS_HL_1785.JPG",
-                "img_cam": "results/Deep_Learning/gradcam_outputs/archi9_disease_interpretability_data/archi9_disease_cam_Strawberry___healthy_00166615-5e7b-4318-8957-5e50df335ee8___RS_HL_1785_gradcam_overlay.png",
-                "species": "Strawberry",
-                "disease": "Healthy",
-                "conf": "99.4%"
+                "num": "4",
+                "nom": "Architecture en cascade",
+                "desc": "**Architecture en cascade** : Deux modèles CNN pré-entraînés chaînés. Un classificateur d'espèce extrait un embedding et prédit l'espèce. Un classificateur de maladie global (21 classes, dont 'healthy') reçoit l'image + l'espèce et applique une attention spatiale pour se focaliser sur les zones pertinentes.",
+                "workflow": "Phase 1 : backbone gelé, entraînement de la tête. Phase 2 : fine-tuning partiel du backbone. Entraînement du modèle maladie en 2 phases, en lui fournissant l'espèce (True) en entrée pour stabiliser l'apprentissage. Évaluation en CASCADE avec espèce prédite.",
+                "avantages": "La prédiction d'espèce guide la maladie, réduisant les confusions entre espèces. L'attention spatiale aide à capter les indices visuels pertinents. Modularité : possibilité d'améliorer séparément espèce ou maladie sans tout réentraîner.",
+                "limites": "Une espèce mal prédite dégrade la maladie. Le modèle maladie voit l'espèce (True) à l'entraînement mais la prédite en production. Latence accrue avec passes réseau successives. En cas d'espèce erronée, une maladie impossible peut être proposée.",
+                "img": "figures/architectures_dl/archi4.png"
             }
         ]
-
-        if "selected_idx9" not in st.session_state:
-            st.session_state.selected_idx9 = 0
-        if "analyzed9" not in st.session_state:
-            st.session_state.analyzed9 = False
-
-        cols = st.columns(len(examples_archi9))
-        for i, ex in enumerate(examples_archi9):
-            with cols[i]:
-                border = "5px solid #2E8B57" if st.session_state.selected_idx9 == i else "2px solid #ddd"
-                st.markdown(f"<div class='demo-img-container' style='border: {border};'>", unsafe_allow_html=True)
-                if st.button(f"Sélect. {ex['id']}", key=f"btn9_{ex['id']}"):
-                    st.session_state.selected_idx9 = i
-                    st.session_state.analyzed9 = False
-                    st.rerun()
-                st.image(ex["img_orig"], use_container_width=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-
+        
+        for arch in arch_info_dedicated:
+            with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
+                col1, col2 = st.columns([1.2, 1])
+                
+                with col1:
+                    st.markdown(f"**Description** : {arch['desc']}")
+                    st.markdown(f"**Workflow** : {arch['workflow']}")
+                    st.markdown(f"✅ **Avantages** : {arch['avantages']}")
+                    st.markdown(f"⚠️ **Limites** : {arch['limites']}")
+                
+                with col2:
+                    if os.path.exists(arch['img']):
+                        st.image(arch['img'], caption=f"Schéma Architecture {arch['num']}", use_container_width=True)
+        
         st.divider()
-        selected9 = examples_archi9[st.session_state.selected_idx9]
+        st.markdown("### 🔗 Backbone Pré-entraîné Partagé Entre Plusieurs Objectifs")
+        
+        arch_info_shared = [
+            {
+                "num": "5",
+                "nom": "CNN + SVM",
+                "desc": "**Architecture 'CNN + SVM'** : Un backbone CNN pré-entraîné (gelé) transforme chaque image en vecteur d'embeddings (features). Des classifieurs SVM (espèce, santé, maladie) sont entraînés sur ces embeddings.",
+                "workflow": "Sauvegarde des vecteurs + labels. Puis chargement des embeddings, entraînement de trois têtes SVM: Espèce (multi-classe), Santé (binaire: healthy vs diseased), Maladie (soit global multi-classe, soit par espèce).",
+                "avantages": "Entraînement très rapide des SVM; itérations légères (on réutilise les embeddings). Simplicité opérationnelle : séparation claire 'features gelées' / 'classifieurs'; facile de remplacer le backbone ou de réentraîner seulement les SVM.",
+                "limites": "Les features restent génériques : pas d'adaptation conjointe aux tâches du dataset. Cohérence multi-tâches limitée.",
+                "img": "figures/architectures_dl/archi5.png"
+            },
+            {
+                "num": "6",
+                "nom": "Multi-tâche unifié (3 têtes)",
+                "desc": "**Architecture multi-tâche unifiée** : Un seul backbone CNN pré-entraîné partagé produit un embedding commun, puis trois têtes de classification parallèles: Espèce, Santé, Maladie. La tête 'maladie' est optimisée sur les images malades uniquement.",
+                "workflow": "Une seule phase 'têtes seules' avec backbone gelé (pertes pondérées par tête). Pas de fine-tuning activé.",
+                "avantages": "Les trois tâches se renforcent (l'espèce et la santé aident la maladie). Un seul backbone à entraîner ; une seule inférence pour obtenir espèce, santé, maladie. Contrôle des compromis via pondérations de pertes par tête.",
+                "limites": "Conflits d'optimisation : objectifs parfois concurrents ; sensibilité aux pondérations des pertes. Malgré la tête dédiée, les maladies peu représentées restent difficiles. Features ImageNet peuvent rester trop génériques (pas de fine-tuning). Couplage des tâches : une mauvaise modélisation de l'espèce/santé peut impacter la maladie.",
+                "img": "figures/architectures_dl/archi6.png"
+            },
+            {
+                "num": "7",
+                "nom": "Multi-tâche 2 têtes + signal santé",
+                "desc": "**Architecture multi-tâche à 2 têtes** : Un backbone CNN pré-entraîné partagé produit un embedding commun. Tête espèce (multi-classe). Tête maladie (multi-classe hors 'healthy', activée uniquement pour échantillons malades). Un signal santé auxiliaire interne est injecté comme feature dans la tête maladie.",
+                "workflow": "Phase 1: entraînement des têtes avec backbone gelé (pondérations de pertes, l'échantillon tagué 'healthy' n'entraîne pas la tête maladie). Phase 2: fine-tuning partiel des couches hautes du backbone.",
+                "avantages": "Une seule passe backbone pour deux tâches; coût d'inférence réduit. L'injection de la probabilité 'malade' et le masquage de perte évitent que les 'healthy' perturbent la tête maladie. Synergie utile: l'embedding partagé bénéficie des signaux espèce et santé auxiliaire. Equilibre des objectifs via pondérations des pertes.",
+                "limites": "Pas de sortie santé explicite: pas de score/label 'healthy vs diseased' livrable tel quel (signal interne non calibré). Dépendance au signal santé: si le signal auxiliaire est biaisé, la tête maladie peut sur- ou sous-activer certaines classes. Conflits d'optimisation: sensibilité aux pondérations et au fine-tuning. Classes rares: malgré le masquage des 'healthy', les maladies peu représentées restent difficiles.",
+                "img": "figures/architectures_dl/archi7.png"
+            },
+            {
+                "num": "8",
+                "nom": "Multi-tâche simplifié",
+                "desc": "**Architecture multi-tâche simplifiée (2 têtes)** : Un seul backbone CNN pré-entraîné partagé, et deux têtes parallèles: Espèce, Disease (incluant explicitement healthy). Pas de tête 'santé' dédiée, pas de masquage : toutes les images entraînent les deux têtes.",
+                "workflow": "Phase 1: entraînement des têtes avec backbone gelé (pondérations de pertes, label smoothing). Phase 2: fine-tuning partiel du haut du backbone (option gradient clipping). Inférence: une seule passe réseau → deux sorties simultanées: Espèce et Healthy/Maladie.",
+                "avantages": "Simplicité: pas de tête santé, pas de règles/mask; supervision uniforme. Efficience: un seul backbone et une seule inférence pour obtenir espèce + santé/maladie. Cohérence de décision: healthy fait partie du même espace que les maladies → seuils et calibration unifiés (softmax à 21 classes). Maintenance légère: pipeline standardisé.",
+                "limites": "Déséquilibre 'healthy': la classe healthy peut dominer et biaiser la tête disease_all, au détriment des maladies rares. Pas de conditionnement par espèce: risque de confusions inter-espèces. Seuils globaux: calibration potentiellement sous-optimale pour distributions très différentes selon l'espèce. Shortcut possible: le modèle peut exploiter des corrélations de fond plutôt que des lésions fines.",
+                "img": "figures/architectures_dl/archi8.png"
+            },
+            {
+                "num": "9",
+                "nom": "Architecture conditionnée",
+                "desc": "**Architecture conditionnée (Species + Health → Disease)** : Un backbone CNN pré-entraîné unique produit un embedding partagé. Tête espèce (multi-classe). Tête maladie (multi-classe hors 'healthy'), conditionnée par le vecteur de probabilités d'espèce et la probabilité interne d'être malade (tête santé auxiliaire non exposée). Les échantillons 'healthy' n'entraînent pas la tête maladie.",
+                "workflow": "Phase 1: apprentissage des têtes avec backbone gelé, pondérations de pertes. Phase 2: fine-tuning partiel des couches hautes. La tête maladie est optimisée uniquement sur les images malades (healthy masqués).",
+                "avantages": "Conditionnement explicite: la maladie est guidée par l'info d'espèce et un indicateur de santé, réduisant les confusions inter-espèces et focalisant sur les cas réellement malades. Synergie multi-tâches: l'embedding partagé + signaux auxiliaires apportent un contexte fort. Efficience: un seul backbone; une seule inférence pour obtenir espèce et maladie. Contrôle des compromis via pondérations de pertes.",
+                "limites": "Propagation d'erreurs: une erreur d'espèce ou un biais du signal santé peut entraîner une mauvaise prédiction de maladie. Raccourcis/biais: le modèle peut sur-utiliser les a priori espèce/santé au détriment d'indices visuels fins. Pas de sortie santé livrable: la santé est un signal interne. Calibrage sur 'healthy': la tête maladie n'est pas entraînée sur les sains; ses sorties peuvent être peu informatives pour des images réellement 'healthy'.",
+                "img": "figures/architectures_dl/archi9.png"
+            }
+        ]
+        
+        for arch in arch_info_shared:
+            with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
+                col1, col2 = st.columns([1.2, 1])
+                
+                with col1:
+                    st.markdown(f"**Description** : {arch['desc']}")
+                    st.markdown(f"**Workflow** : {arch['workflow']}")
+                    st.markdown(f"✅ **Avantages** : {arch['avantages']}")
+                    st.markdown(f"⚠️ **Limites** : {arch['limites']}")
+                
+                with col2:
+                    if os.path.exists(arch['img']):
+                        st.image(arch['img'], caption=f"Schéma Architecture {arch['num']}", use_container_width=True)
+    
+    with dl_tabs[1]:
+        st.header("Synthèse des Performances")
+        
+        # Tableau de performances
+        perf_dl = {
+            "Architecture": ["Archi 1", "Archi 2", "Archi 3", "Archi 4", "Archi 5", "Archi 6", "Archi 7", "Archi 8", "Archi 9"],
+            "Species Macro-F1": [0.990, 0.990, 0.990, 0.990, 0.985, 0.988, 0.990, 0.989, 0.990],
+            "Species Accuracy": [0.990, 0.990, 0.990, 0.990, 0.986, 0.988, 0.990, 0.989, 0.990],
+            "Disease Accuracy": [0.990, 0.988, 0.990, 0.987, 0.982, 0.975, 0.990, 0.986, 0.990],
+            "FLOPs (relatif)": ["3×", "2×", "1×", "2×", "1×", "1×", "1×", "1×", "1×"],
+            "Maintenabilité": ["Faible", "Moyenne", "Élevée", "Faible", "Moyenne", "Moyenne", "Moyenne", "Moyenne", "Faible"]
+        }
+        df_perf_dl = pd.DataFrame(perf_dl)
+        
+        st.dataframe(df_perf_dl.style.highlight_max(subset=["Species Macro-F1", "Species Accuracy", "Disease Accuracy"], axis=0))
+        
+        st.divider()
+        
+        st.markdown("""
+        ### 🎯 Décisions et Exclusions
+        
+        **Architectures exclues :**
+        - **Archi 4** : Cascade complexe sans gain tangible, risque de propagation d'erreurs
+        - **Archi 6** : En retrait sur la maladie (0.975 vs ≥0.989 pour les autres)
+        - **Archi 8** : Pas de bénéfice mesurable vs Archi 7/9
+        
+        **Architectures retenues pour recommandation :**
+        - **Archi 3** : Excellente simplicité de déploiement (1 modèle, 1 inférence)
+        - **Archi 7** : Bon compromis performance/efficience
+        - **Archi 9** : Conditionnement explicite, synergie maximale
+        """)
+        
+        # Graphique comparatif
+        fig_comp = go.Figure()
+        fig_comp.add_trace(go.Bar(
+            name='Species Macro-F1',
+            x=df_perf_dl['Architecture'],
+            y=df_perf_dl['Species Macro-F1'],
+            marker_color='lightblue'
+        ))
+        fig_comp.add_trace(go.Bar(
+            name='Disease Accuracy',
+            x=df_perf_dl['Architecture'],
+            y=df_perf_dl['Disease Accuracy'],
+            marker_color='lightcoral'
+        ))
+        fig_comp.update_layout(
+            title="Comparaison des Performances par Architecture",
+            yaxis_range=[0.97, 1.0],
+            barmode='group'
+        )
+        st.plotly_chart(fig_comp, use_container_width=True)
 
-        c1, c2, c3 = st.columns([1, 0.8, 1])
-        with c1:
-            st.markdown("#### 📥 Entrée")
-            st.image(selected9["img_orig"], caption="Image originale", use_container_width=True)
 
-        with c2:
-            st.markdown("<br><br><br>", unsafe_allow_html=True)
-            if st.button("🚀 Lancer l'Analyse Archi 9", type="primary", use_container_width=True, disabled=st.session_state.analyzed9):
-                with st.spinner("Inférence en cours..."):
-                    time.sleep(1.2)
-                    st.session_state.analyzed9 = True
-
-            if st.session_state.analyzed9:
-                st.markdown(f"""
-                <div style='background-color:#f1f8e9;padding:20px;border-radius:15px;border:1px solid #c5e1a5;text-align:center;'>
-                    <h4 style='color:#2e7d32;margin:0;'>Résultats</h4>
-                    <hr>
-                    <p><b>Espèce</b> : {selected9['species']}</p>
-                    <p><b>Maladie</b> : {selected9['disease']}</p>
-                    <p style='font-size:1.2em;color:#2e7d32;'><b>Confiance : {selected9['conf']}</b></p>
-                </div>
-                """, unsafe_allow_html=True)
-
-        with c3:
-            st.markdown("#### 🔍 Interprétation")
-            if st.session_state.analyzed9:
-                st.image(selected9["img_cam"], caption="Grad-CAM (zones influentes)", use_container_width=True)
-            else:
-                st.info("Lancez l'analyse pour visualiser la carte de chaleur.")
-
-# =========================
-# SIDEBAR
-# =========================
 def sidebar_choice():
     st.title("🧠 Deep Learning")
-    render_dl_page()
+    render_dl_content()
 
-# =========================
-# EXECUTION
-# =========================
-if __name__ == "__main__":
-    sidebar_choice()

@@ -4,9 +4,9 @@ import os
 import plotly.express as px
 
 def sidebar_choice():
-    st.title("🔎 Analyse Exploratoire & Preprocessing")
+    st.title("Analyse Exploratoire & Preprocessing")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📂 Les Datasets", "📊 PlantVillage", "🧹 Nettoyage", "📈 Visualisation"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Les Datasets", "PlantVillage", "Nettoyage", "Visualisation"])
     
     with tab1:
         st.header("1. Les Datasets")
@@ -41,7 +41,7 @@ def sidebar_choice():
         # Trois boîtes (une par dataset), empilées verticalement et alignées à gauche ;
         # les images ne s'affichent que si l'on clique dessus
 
-        col_c, _ = st.columns([1, 1])
+        col_c, col_o, col_v = st.columns(3)
         with col_c:
             with st.expander("COCO"):
                 coco_imgs = species_examples["COCO"]
@@ -49,7 +49,6 @@ def sidebar_choice():
                 for i, img_path in enumerate(coco_imgs):
                     coco_cols[i].image(img_path, width=300)
 
-        col_o, _ = st.columns([1, 1])
         with col_o:
             with st.expander("Open Images V6"):
                 open_imgs = species_examples["Open Images V6"]
@@ -57,7 +56,6 @@ def sidebar_choice():
                 for i, img_path in enumerate(open_imgs):
                     open_cols[i].image(img_path, width=300)
 
-        col_v, _ = st.columns([1, 1])
         with col_v:
             with st.expander("V2 Plant Seedlings"):
                 v2_imgs = species_examples["V2 Plant Seedlings"]
@@ -84,10 +82,12 @@ def sidebar_choice():
         """)
 
         # st.subheader("Figure 4 – Comparatif des datasets")
-        st.image(
-            "Streamlit/assets/Les datasets/datasets_comparison_table.png",
+        col_left, col_img = st.columns([1, 4])  # ratio 1 / 4 a ajuster si besoin
+        with col_img:
+            st.image(
+                "Streamlit/assets/Les datasets/datasets_comparison_table.png",
             caption="Comparatif des datasets",
-            use_container_width=True,
+            width=700,
         )
 
         st.markdown("""
@@ -126,7 +126,22 @@ def sidebar_choice():
             st.metric("   Espèces", "14")
             st.metric("   Maladies", "20")
 
-        st.image("Streamlit/assets/dataset_overview.png", caption="Un aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage", use_container_width=True)
+        col_color, col_seg = st.columns(2)
+
+    with col_color:
+        st.image(
+            "Streamlit/assets/dataset_overview_color_select.png",
+            caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage / color (fond original)",
+            width=650,
+        )
+
+    with col_seg:
+        st.image(
+        "Streamlit/assets/dataset_overview_segmented_select.png",
+        caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage/segmented (fond noir)",
+        width=650,
+    )
+
             
     with tab3:
         st.header("3. Pipeline de Preprocessing")
@@ -134,7 +149,7 @@ def sidebar_choice():
         Pour garantir la robustesse du modèle lors du passage en production (images réelles), nous avons appliqué un nettoyage strict.
         """)
         
-        st.markdown("### 🛠 Étapes Clés du Nettoyage")
+        st.markdown("### Étapes Clés du Nettoyage")
         st.markdown("""
         1.  **Suppression des Images Inexploitables** : 18 images détectées comme presque noires ont été retirées.
         2.  **Détection de Doublons** : 21 doublons d'images ont été supprimés pour éviter tout biais.
@@ -165,10 +180,10 @@ def sidebar_choice():
             st.metric("Total Images (Train)", df_counts['count'].sum())
             
         else:
-            st.warning(f"⚠️ Fichier de données introuvable : {cnt_path}")
+            st.warning(f"Fichier de données introuvable : {cnt_path}")
             
         st.divider()
-        st.markdown("### 📊 Statistiques de Nettoyage & Qualité")
+        st.markdown("### Statistiques de Nettoyage & Qualité")
         
         v1, v2 = st.columns(2)
         
@@ -199,7 +214,7 @@ def sidebar_choice():
             st.caption("Zoom sur les 44 images écartées lors de l'audit technique.")
 
         st.markdown("---")
-        st.markdown("#### 🔄 Impact du Pipeline de Nettoyage")
+        st.markdown("#### Impact du Pipeline de Nettoyage")
         
         # Un petit graphique de progression pour le volume de données
         steps = ["Initial", "Après Doublons", "Après Outliers Noirs", "Dataset Final"]
@@ -210,7 +225,7 @@ def sidebar_choice():
         fig_steps.update_traces(line_color='#2E8B57', line_width=4)
         st.plotly_chart(fig_steps, use_container_width=True)
         st.markdown("---")
-        st.markdown("#### ⚖️ Analyse de l'Équilibre Saine vs Malade (Interactif)")
+        st.markdown("#### Analyse de l'Équilibre Saine vs Malade")
         
         csv_full_path = "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all.csv"
         if os.path.exists(csv_full_path):
@@ -259,6 +274,6 @@ def sidebar_choice():
             st.warning("Données sources introuvables pour les graphiques interactifs.")
             st.image("Streamlit/assets/class_distribution_analysis.png", caption="Répartition détaillée (version statique)", use_container_width=True)
         
-        st.info("💡 **Insight Expert** : Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
+        st.info("💡 Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
 
 

@@ -24,12 +24,16 @@ def sidebar_choice():
         margin-bottom: 20px;
     }
     </style>
-    <h1 class='main-header'>🌿 DataScienceTest : Reco Plante</h1>
+    <h1 class='main-header'>🌿 DataScientest : Reco Plante</h1>
     """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1,2,1])
+    ''' col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        st.image("https://www.datasciencetest.com/wp-content/uploads/2020/12/Logo-DataScienceTest-1.png", use_container_width=True)
+        logo_path = "Streamlit/assets/logo_datascientest.png"
+        if os.path.exists(logo_path):
+            st.image(logo_path, width=350) '''
 
     st.markdown("""
     <div class='sub-text'>
@@ -50,6 +54,16 @@ def sidebar_choice():
     with obj3:
         st.warning("**3. Diagnostic Maladie**\n\nQuelle est la maladie spécifique ? (20 classes)")
 
+    st.markdown(
+            """
+    Notre projet s’inspire d’une revue systématique de 2024, qui confirme la supériorité du Deep Learning pour la reconnaissance 
+    des plantes. Nous avons cependant implémenté une baseline en Machine Learning classique, principalement pour appliquer les 
+    méthodes enseignées dans le cursus Data Scientist.
+    Cette approche ne vise pas à rivaliser avec le Deep Learning, que nous avons largement exploré et optimisé à travers différentes 
+    techniques pour en améliorer significativement les performances.
+    """
+        )
+
     # --- L'ÉQUIPE PROJET ---
     col_team, col_env = st.columns(2)
     with col_team:
@@ -61,42 +75,6 @@ def sidebar_choice():
         st.markdown("## Environnement de développement")
         st.image("Streamlit/assets/env_dev.png", width=800)
 
-
-
-    # --- DECORATIVE GALLERY ---
-    st.markdown("""
-    <style>
-    .leaf-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 350px;
-        position: relative;
-        margin: 20px 0;
-        overflow: visible;
-        background-color: #111;
-        border-radius: 20px;
-        box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
-    }
-    .leaf-img {
-        position: absolute;
-        width: 150px;
-        height: 150px;
-        object-fit: cover;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-        border: 2px solid #333;
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), z-index 0.3s ease;
-        background-color: #000;
-        cursor: pointer;
-    }
-    .leaf-img:hover {
-        transform: scale(2.0) rotate(0deg) !important;
-        z-index: 1000 !important;
-        border-color: #2E8B57;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.8);
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    st.divider()
 
     

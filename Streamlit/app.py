@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from tabs import home, eda, modeling, machine_learning, deep_learning, proof_of_concept, conclusion, mindmap
 
@@ -82,6 +83,10 @@ def main():
     
     # Création du menu radios
     selection = st.sidebar.radio("Aller à", list(pages.keys()))
+
+    logo_path = "Streamlit/assets/logo_datascientest.png"
+    if os.path.exists(logo_path):
+        st.sidebar.image(logo_path, width=250)
     
     # Appel de la fonction de la page sélectionnée
     page = pages[selection]

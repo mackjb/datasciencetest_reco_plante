@@ -43,33 +43,36 @@ def render_ml_content():
         - **RobustScaler** utilisé pour gérer les 40% d'outliers détectés.
         """)
 
-    tabs = st.tabs(["⚙️ Features", "📊 Performances", "🧠 SHAP"])
+    tabs = st.tabs(["Features", "Performances", "SHAP"])
     
     with tabs[0]:
-        st.header("1. Extraction des Descripteurs")
+        st.header("Extraction des Descripteurs")
 
-        center_col = st.columns([1, 2, 1])[1]
-        with center_col:
+        col_p1, col_p2, = st.columns(2)
+        with col_p1:
+            st.subheader(" ")       
             st.image(
                 "Streamlit/assets/Les datasets/Caractéristiques.drawio.png",
                 caption="Synthèse des catégories de descripteurs extraits",
-                width=750,
+                width=700,
             )
 
-        st.markdown("""
-        **Catégories extraites :**
-        - 📏 **Morphologie** : Aire, périmètre, circularité, excentricité, aspect ratio, densité de contours
-        - 🎨 **Couleur** : Moyennes et Écarts-types RGB / HSV
-        - 🕸️ **Texture** : Matrices de co-occurrence (GLCM) - netteté, contraste, energy, homogeneity, dissimilarity, correlation
-        - 🔄 **Invariants** : Moments de Hu (hu_1 à hu_7)
-        - 📻 **Fréquences** : Entropie et puissance spectrale (FFT)
-        - 📐 **Gradients** : Descripteurs HOG (moyenne, écart-type, entropie)
-        """)
+        with col_p2:
+            st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
+            st.markdown("""
+            **Catégories extraites :**
+            - **Morphologie** : Aire, périmètre, circularité, excentricité, aspect ratio, densité de contours
+            - **Couleur** : Moyennes et Écarts-types RGB / HSV
+            - **Texture** : Matrices de co-occurrence (GLCM) - netteté, contraste, energy, homogeneity, dissimilarity, correlation
+            - **Invariants** : Moments de Hu (hu_1 à hu_7)
+            - **Fréquences** : Entropie et puissance spectrale (FFT)
+            - **Gradients** : Descripteurs HOG (moyenne, écart-type, entropie)
+            """)
 
-        st.markdown("""
-        Ces descripteurs sont concaténés pour former un **vecteur unique par image** (34 features), 
-        servant ensuite d'entrée aux algorithmes de classification.
-        """)
+            st.markdown("""
+            Ces descripteurs sont concaténés pour former un **vecteur unique par image** (34 features), 
+            servant ensuite d'entrée aux algorithmes de classification.
+            """)
 
         st.divider()
         st.subheader("Importance des Features")
@@ -79,10 +82,10 @@ def render_ml_content():
             fig_rank = px.bar(df_rank, x="final_score", y="feature", orientation="h",
                                title="Top 15 des Features les plus discriminantes",
                                color="final_score", color_continuous_scale="GnBu")
-            st.plotly_chart(fig_rank, use_container_width=True)
+            st.plotly_chart(fig_rank, width=800)
         
     with tabs[1]:
-        st.header("2. Analyse des Performances")
+        st.header("Analyse des Performances")
         
         st.markdown("""
         Résultats obtenus pour l'**Objectif 1** (Identification de l'espèce) sur l'ensemble de test.
@@ -113,25 +116,49 @@ def render_ml_content():
                 st.image(cm_path, use_container_width=True)
                 
     with tabs[2]:
-        st.header("3. Interprétabilité SHAP")
-        
-        st.markdown("""
-        **Observations clés :**
-        - La **contour_density** domine très nettement l'importance globale (30% supérieure à la 2ème feature)
-        - Les features de **fréquence spectrale** (fft_entropy) et de **couleur** (mean_R, mean_B) complètent le trio de tête
-        - Chaque classe de maladie s'appuie sur un **sous-ensemble différent de features**
-        - Les **34 features extraites sont toutes pertinentes**, aucune n'est totalement négligeable
-        """)
-        
-        shap_dir = "figures/shap_analysis"
-        p1 = os.path.join(shap_dir, "1_global_importance.png")
-        if os.path.exists(p1):
-            st.image(p1, caption="Importance Globale des Features (Top 25)", use_container_width=True)
-        else:
-            st.warning("Graphique SHAP non trouvé.")
+        st.header("Interprétabilité SHAP")
+        col_shap_1, col_shap_2 = st.columns(2)
 
+        with col_shap_1:
+        
+            shap_dir = "figures/shap_analysis"
+            p1 = os.path.join(shap_dir, "1_global_importance.png")
+            if os.path.exists(p1):
+                st.image(p1,  width=800)
+            else:
+                st.warning("Graphique SHAP non trouvé.")
+            
+            st.markdown("""
+
+
+
+            **Observations clés :**
+            - La **contour_density** domine très nettement l'importance globale (30% supérieure à la 2ème feature)
+            - Les features de **fréquence spectrale** (fft_entropy) et de **couleur** (mean_R, mean_B) complètent le trio de tête
+            - Chaque classe de maladie s'appuie sur un **sous-ensemble différent de features**
+            - Les **34 features extraites sont toutes pertinentes**, aucune n'est totalement négligeable
+            """)
+
+        with col_shap_2:
+
+            shap_dir = "figures/shap_analysis"
+            p2 = os.path.join(shap_dir, "3_top_features_by_class.png")
+            if os.path.exists(p2):
+                st.image(p2,width=700)
+            else:
+                st.warning("Graphique SHAP non trouvé.")
+        
+            st.markdown("""
+            **Observations clés :**
+            - L'analyse par classe révèle des signatures de features distinctes pour chaque maladie : 
+            par exemple, hog_std (texture) est extrêmement discriminant pour Apple_scab mais beaucoup moins pour les autres maladies. 
+            À l'inverse, contour_density présente une importance élevée et relativement uniforme pour plusieurs maladies, indiquant 
+            qu'il s'agit d'une feature généraliste importante pour détecter les anomalies foliaires. 
+            Cette variabilité confirme que différentes maladies se manifestent par des combinaisons spécifiques de caractéristiques visuelles.
+            """)
+            
         st.divider()
-        st.subheader("🏆 Synthèse des Résultats par Modèle")
+        st.subheader("Synthèse des Résultats par Modèle")
         st.markdown("Comparaison finale des performances sur l'Objectif 1 (Identification de l'espèce).")
         
         full_perf_data = {
@@ -151,10 +178,10 @@ def render_ml_content():
         fig_full.update_layout(yaxis_range=[0.7, 1.0])
         st.plotly_chart(fig_full, use_container_width=True)
         
-        st.info("💡 **Constat** : Le **SVM (RBF)** surpasse ses concurrents sur toutes les métriques, confirmant sa robustesse face au déséquilibre des classes.")
+        st.info("**Constat** : Le **SVM (RBF)** surpasse ses concurrents sur toutes les métriques, confirmant sa robustesse face au déséquilibre des classes.")
 
 
 def sidebar_choice():
-    st.title("🤖 Machine Learning")
+    st.title("Machine Learning")
     render_ml_content()
 

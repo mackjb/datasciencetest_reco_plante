@@ -12,20 +12,20 @@ st.markdown("""
 <style>
     /* Width of the sidebar */
     [data-testid="stSidebar"] {
-        background-image: linear-gradient(#2e7d32, #1b5e20);
+        background-image: linear-gradient(#97DFC6);
         color: white;
         width: 350px !important;
         min-width: 350px !important;
     }
     [data-testid="stSidebar"] .stRadio > label {
-        color: white !important;
+        color: black !important;
         font-weight: bold;
         font-size: 1.1rem !important;
     }
     /* Increase font size for navigation items */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label p {
         font-size: 1.2rem !important;
-        color: white !important;
+        color: black !important;
     }
     /* Sidebar title styling */
     [data-testid="stSidebar"] h1 {
@@ -53,6 +53,10 @@ st.markdown("""
         border-bottom: 2px solid #2e7d32;
         padding-bottom: 10px;
     }
+    /* Move page content (and titles) closer to the top */
+    .block-container {
+        padding-top: 1rem !important;
+    }
     h2 {
         color: #388e3c;
     }
@@ -66,7 +70,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def main():
-    st.sidebar.title("Navigation")
     
     # Dictionnaire des pages
     pages = {
@@ -81,7 +84,9 @@ def main():
     
     # Création du menu radios
     selection = st.sidebar.radio("Aller à", list(pages.keys()))
-    
+    st.sidebar.markdown("<br><br>", unsafe_allow_html=True)
+    st.sidebar.image("Streamlit/assets/logo-2021.png", use_container_width=True)
+
     # Appel de la fonction de la page sélectionnée
     page = pages[selection]
     page.sidebar_choice()

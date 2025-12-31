@@ -24,12 +24,10 @@ def sidebar_choice():
         margin-bottom: 20px;
     }
     </style>
-    <h1 class='main-header'>🌿 DataScienceTest : Reco Plante</h1>
+    <h1 class='main-header'> DataScienceTest : Reco Plante</h1>
     """, unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        st.image("https://www.datasciencetest.com/wp-content/uploads/2020/12/Logo-DataScienceTest-1.png", use_container_width=True)
 
     st.markdown("""
     <div class='sub-text'>
@@ -98,5 +96,6 @@ def sidebar_choice():
     }
     </style>
     """, unsafe_allow_html=True)
+
 
     

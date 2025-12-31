@@ -11,7 +11,7 @@ def render_dl_content():
     """)
     
     # --- Phase d'exploration individuelle ---
-    with st.expander("👥 Phase d'Exploration Individuelle", expanded=True):
+    with st.expander("Phase d'Exploration Individuelle", expanded=True):
         st.markdown("""
         Dans le cadre de notre formation, **chaque membre de l'équipe a d'abord exploré individuellement 
         un modèle pré-entraîné** pour se familiariser avec les techniques de Deep Learning et comprendre 
@@ -41,7 +41,7 @@ def render_dl_content():
         structurée des 9 architectures.
         """)
 
-        st.markdown("### 🔄 Transfer Learning et Comparaison des Modèles")
+        st.subheader("Transfer Learning et Comparaison des Modèles")
         
         st.markdown("""
         Nous avons choisi d'utiliser le **transfert d'apprentissage** car les modèles sont déjà entraînés 
@@ -73,7 +73,7 @@ def render_dl_content():
         st.dataframe(df_models_t, use_container_width=True)
         
         st.success("""
-        **🏆 Choix retenu pour l'exploration des architectures : EfficientNetV2S**
+        **Choix retenu pour l'exploration des architectures : EfficientNetV2S**
         
         EfficientNetV2S offre un **excellent compromis entre performance et efficacité** :
         - **Précision Top-1** de 83,9% sur ImageNet, surpassant ResNet50 (76,1%) et DenseNet-121 (74,4%)
@@ -84,7 +84,7 @@ def render_dl_content():
         """)
     
     # --- Méthodologie ---
-    with st.expander("🎯 Méthodologie & Critères de Sélection", expanded=True):
+    with st.expander("Méthodologie & Critères de Sélection", expanded=True):
         st.markdown("""
         ### Démarche structurée en 3 étapes :
         
@@ -107,20 +107,19 @@ def render_dl_content():
         """)
         
         st.info("""
-        **🎯 Les 3 cas d'usage :**
+        **Les 3 cas d'usage :**
         - **Cas 1** : Identification d'espèce uniquement
         - **Cas 2** : Diagnostic ciblé (espèce connue → maladie)
         - **Cas 3** : Diagnostic complet (espèce + maladie inconnues)
         """)
 
     # Onglets principaux DL
-    dl_tabs = st.tabs(["🏗️ Architectures", "📊 Performances"])
+    dl_tabs = st.tabs(["Architectures", "Performances"])
     
     with dl_tabs[0]:
-        st.header("Exploration des 9 Architectures")
+        st.header("Protocole expérimental commun pour les 9 Architectures")
         
         st.markdown("""
-        **Protocole expérimental commun :**
         - Dataset : PlantVillage/color
         - Backbone pré-entraîné : **EfficientNetV2S** (ImageNet)
         - Splits identiques pour tous les modèles
@@ -131,7 +130,7 @@ def render_dl_content():
         st.divider()
         
         # Présentation des architectures
-        st.markdown("### 🏗️ Backbone Pré-entraîné Dédié à Chaque Objectif")
+        st.subheader("Backbone Pré-entraîné Dédié à Chaque Objectif")
         
         arch_info_dedicated = [
             {
@@ -179,15 +178,15 @@ def render_dl_content():
                 with col1:
                     st.markdown(f"**Description** : {arch['desc']}")
                     st.markdown(f"**Workflow** : {arch['workflow']}")
-                    st.markdown(f"✅ **Avantages** : {arch['avantages']}")
-                    st.markdown(f"⚠️ **Limites** : {arch['limites']}")
+                    st.markdown(f"**Avantages** : {arch['avantages']}")
+                    st.markdown(f"**Limites** : {arch['limites']}")
                 
                 with col2:
                     if os.path.exists(arch['img']):
                         st.image(arch['img'], caption=f"Schéma Architecture {arch['num']}", use_container_width=True)
         
         st.divider()
-        st.markdown("### 🔗 Backbone Pré-entraîné Partagé Entre Plusieurs Objectifs")
+        st.subheader("Backbone Pré-entraîné Partagé Entre Plusieurs Objectifs")
         
         arch_info_shared = [
             {
@@ -244,8 +243,8 @@ def render_dl_content():
                 with col1:
                     st.markdown(f"**Description** : {arch['desc']}")
                     st.markdown(f"**Workflow** : {arch['workflow']}")
-                    st.markdown(f"✅ **Avantages** : {arch['avantages']}")
-                    st.markdown(f"⚠️ **Limites** : {arch['limites']}")
+                    st.markdown(f"**Avantages** : {arch['avantages']}")
+                    st.markdown(f"**Limites** : {arch['limites']}")
                 
                 with col2:
                     if os.path.exists(arch['img']):
@@ -269,20 +268,6 @@ def render_dl_content():
         
         st.divider()
         
-        st.markdown("""
-        ### 🎯 Décisions et Exclusions
-        
-        **Architectures exclues :**
-        - **Archi 4** : Cascade complexe sans gain tangible, risque de propagation d'erreurs
-        - **Archi 6** : En retrait sur la maladie (0.975 vs ≥0.989 pour les autres)
-        - **Archi 8** : Pas de bénéfice mesurable vs Archi 7/9
-        
-        **Architectures retenues pour recommandation :**
-        - **Archi 3** : Excellente simplicité de déploiement (1 modèle, 1 inférence)
-        - **Archi 7** : Bon compromis performance/efficience
-        - **Archi 9** : Conditionnement explicite, synergie maximale
-        """)
-        
         # Graphique comparatif
         fig_comp = go.Figure()
         fig_comp.add_trace(go.Bar(
@@ -304,8 +289,21 @@ def render_dl_content():
         )
         st.plotly_chart(fig_comp, use_container_width=True)
 
+        st.header("Décisions et Exclusions")
+        
+        st.markdown("""
+        **Architectures exclues :**
+        - **Archi 4** : Cascade complexe sans gain tangible, risque de propagation d'erreurs
+        - **Archi 6** : En retrait sur la maladie (0.975 vs ≥0.989 pour les autres)
+        - **Archi 8** : Pas de bénéfice mesurable vs Archi 7/9
+        
+        **Architectures retenues pour recommandation :**
+        - **Archi 3** : Excellente simplicité de déploiement (1 modèle, 1 inférence)
+        - **Archi 7** : Bon compromis performance/efficience
+        - **Archi 9** : Conditionnement explicite, synergie maximale
+        """)
 
 def sidebar_choice():
-    st.title("🧠 Deep Learning")
+    st.title("Deep Learning")
     render_dl_content()
 

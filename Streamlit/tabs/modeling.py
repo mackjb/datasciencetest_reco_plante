@@ -46,7 +46,7 @@ def render_dl_content():
 # FONCTION PRINCIPALE
 # =========================
 def sidebar_choice():
-    st.title("📊 Méthodologie")
+    st.title("Méthodologie")
     
     # Affichage direct de l'approche méthodologique
     render_approach_content()

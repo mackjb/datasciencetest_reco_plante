@@ -4,19 +4,19 @@ import os
 import plotly.express as px
 
 def sidebar_choice():
-    st.title("🔎 Analyse Exploratoire & Preprocessing")
+    st.title("Analyse Exploratoire & Preprocessing")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📂 Les Datasets", "📊 PlantVillage", "🧹 Nettoyage", "📈 Visualisation"])
-    
+    tab1, tab2, tab3, tab4 = st.tabs(["Les Datasets", "PlantVillage", "Nettoyage", "Visualisation"])
+# ---------------- Partie Les Datasets ----------------    
     with tab1:
-        st.header("1. Les Datasets")
+        st.header("Les Datasets")
         st.markdown("""
         À partir des **6 datasets** proposés par DataScientest, nous avons effectué plusieurs
         sélections successives basées sur des explorations afin de n’en retenir qu’un : **PlantVillage**, détaillé dans l'onglet "PlantVillage".
         """)
 
         # --- 1ère partie : Datasets pour l'identification de l'espèce ---
-        st.markdown("### 1.1 Datasets pour l'identification de l'espèce")
+        st.subheader("""Datasets pour l'identification de l'espèce""")
         st.markdown("""
         Trois premiers jeux de données sont dédiés à l’**identification de l’espèce** à partir
         d’images de plantes complètes dans des environnements variés :
@@ -72,23 +72,55 @@ def sidebar_choice():
         """)
 
         # --- 2ème partie : Datasets pour l'identification des plantes et des maladies ---
-        st.markdown("### 1.2 Datasets pour l'identification des plantes et des maladies")
+        st.subheader("""Datasets pour l'identification des plantes et des maladies""")
         st.markdown("""
         Les trois autres jeux de données : **Plant Disease**, **New Plant Diseases** et **PlantVillage** sont tous centrés sur des **feuilles de plantes recadrées sur fond uni**,
-        afin de faciliter la détection automatique des maladies.
-        PlantVillage constitue le **dataset de référence**, tandis que **Plant Disease** enrichit le nombre
+        afin de faciliter la détection automatique des maladies. PlantVillage constitue le **dataset de référence** pour les 2 autres datasets, tandis que **Plant Disease** enrichit le nombre
         de maladies pour un volume d’images comparable et que **New Plant Diseases** est une **extension
         de PlantVillage par augmentation de données hors ligne** (environ 34 000 images supplémentaires).
-
-        Le tableau suivant compare ces 3 datasets permettant la **détection des maladies**.
         """)
 
-        # st.subheader("Figure 4 – Comparatif des datasets")
-        st.image(
-            "Streamlit/assets/Les datasets/datasets_comparison_table.png",
-            caption="Comparatif des datasets",
-            use_container_width=True,
+        df_comparison = pd.read_excel(
+            "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Les datasets/dataset_comparison.xlsx",
+            index_col=0,
         )
+
+        styled_comparison = (
+            df_comparison.style
+            .set_table_styles(
+                [
+                    {
+                        "selector": "table",
+                        "props": [
+                            ("width", "20%"),
+                        ],
+                    },
+                    {
+                        "selector": "th",
+                        "props": [
+                            ("background-color", "#a2d2ff"),
+                            ("font-weight", "bold"),
+                            ("border", "1px solid #00b4d8"),
+                        ],
+                    },
+                    {
+                        "selector": "td",
+                        "props": [
+                            ("border", "1px solid #00b4d8"),
+                        ],
+                    },
+                    {
+                        "selector": "th.row_heading",
+                        "props": [
+                            ("font-weight", "bold"),
+                        ],
+                    },
+                ]
+            )
+            .set_properties(border="1px solid #00b4d8")
+        )
+
+        st.table(styled_comparison)
 
         st.markdown("""
         **Plant Disease** est éliminé car, pour un même ordre de grandeur du nombre d’images,
@@ -98,13 +130,59 @@ def sidebar_choice():
         (environ 34 000 images supplémentaires). Notre analyse exploratoire a montré que certaines
         espèces majoritaires ont été augmentées plus que d’autres pour couvrir un objectif non
         précisé dans la littérature.
-
-        Notre choix se porte donc sur **PlantVillage**, qui cadre bien avec notre scénario.
-        Sa structure est détaillée dans l'onglet *PlantVillage*.
         """)
 
+        st.subheader("""Sélection du dataset pour l'identification des plantes et des maladies""")
+
+        # Styles de "card" réutilisés depuis la page Conclusion (onglet Limites)
+        st.markdown(
+            '''
+        <style>
+        .card {
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 18px;
+        padding: 16px 16px 14px 16px;
+        background: rgba(255,255,255,0.03);
+        margin: 0.25rem 0 0.9rem 0;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+        }
+        [data-theme="light"] .card {
+        border: 1px solid rgba(0,0,0,0.08);
+        background: rgba(0,0,0,0.02);
+        box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+        }
+        .card__title {
+        font-weight: 800;
+        font-size: 1.05rem;
+        margin-bottom: 0.35rem;
+        }
+        .card__body {
+        color: rgba(255,255,255,0.82);
+        font-size: 0.95rem;
+        line-height: 1.35;
+        }
+        [data-theme="light"] .card__body { color: rgba(0,0,0,0.74); }
+        .card--success { border-color: rgba(46, 204, 113, 0.35); }
+        .card--warning { border-color: rgba(241, 196, 15, 0.40); }
+        .card--info    { border-color: rgba(52, 152, 219, 0.40); }
+        </style>
+        ''',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            '''
+        <div class="card card--success" style="background-color:#FFE4C4;">
+            <div class="card__body" style="color:#0353a4;">
+                Notre choix se porte donc sur <b>PlantVillage</b>, qui cadre bien avec notre scénario.<br/>
+            </div>
+        </div>
+        ''',
+            unsafe_allow_html=True,
+        )
+# ---------------- Partie PlantVillage ----------------
     with tab2:
-        st.header("2. Le Dataset PlantVillage")
+        st.header("Le Dataset PlantVillage")
         
         c1, c2 = st.columns([8, 1])
         
@@ -125,24 +203,33 @@ def sidebar_choice():
             st.metric("   Images", "54306")
             st.metric("   Espèces", "14")
             st.metric("   Maladies", "20")
+        st.divider()
 
-        st.image("Streamlit/assets/dataset_overview.png", caption="Un aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage", use_container_width=True)
-            
+        col_seg, col_col = st.columns([8, 8])
+        with col_seg:
+            st.subheader("Variante Segmented")
+            st.image("Streamlit/assets/dataset_overview.png", width=800)
+        with col_col:
+            st.subheader("Variante Color")
+            st.image("Streamlit/assets/dataset_overview.png", width=800)
+
+# ---------------- Partie Nettoyage ----------------
     with tab3:
-        st.header("3. Pipeline de Preprocessing")
+        st.header("Pipeline de Preprocessing")
         st.markdown("""
         Pour garantir la robustesse du modèle lors du passage en production (images réelles), nous avons appliqué un nettoyage strict.
         """)
         
-        st.markdown("### 🛠 Étapes Clés du Nettoyage")
+        st.markdown("###Étapes Clés du Nettoyage")
         st.markdown("""
         1.  **Suppression des Images Inexploitables** : 18 images détectées comme presque noires ont été retirées.
         2.  **Détection de Doublons** : 21 doublons d'images ont été supprimés pour éviter tout biais.
         3.  **Redimensionnement** : Uniformisation de toutes les images en **256 x 256 pixels**.
         """)
-        
+
+# ---------------- Partie Visualisation ----------------
     with tab4:
-        st.header("4. Visualisation des Données")
+        st.header("Visualisation des Données")
         st.write("Exploration de la distribution des classes.")
         
         # Chargement des données réelles
@@ -165,10 +252,10 @@ def sidebar_choice():
             st.metric("Total Images (Train)", df_counts['count'].sum())
             
         else:
-            st.warning(f"⚠️ Fichier de données introuvable : {cnt_path}")
+            st.warning(f"Fichier de données introuvable : {cnt_path}")
             
         st.divider()
-        st.markdown("### 📊 Statistiques de Nettoyage & Qualité")
+        st.markdown("###Statistiques de Nettoyage & Qualité")
         
         v1, v2 = st.columns(2)
         
@@ -199,7 +286,7 @@ def sidebar_choice():
             st.caption("Zoom sur les 44 images écartées lors de l'audit technique.")
 
         st.markdown("---")
-        st.markdown("#### 🔄 Impact du Pipeline de Nettoyage")
+        st.markdown("####Impact du Pipeline de Nettoyage")
         
         # Un petit graphique de progression pour le volume de données
         steps = ["Initial", "Après Doublons", "Après Outliers Noirs", "Dataset Final"]
@@ -210,7 +297,7 @@ def sidebar_choice():
         fig_steps.update_traces(line_color='#2E8B57', line_width=4)
         st.plotly_chart(fig_steps, use_container_width=True)
         st.markdown("---")
-        st.markdown("#### ⚖️ Analyse de l'Équilibre Saine vs Malade (Interactif)")
+        st.markdown("####Analyse de l'Équilibre Saine vs Malade (Interactif)")
         
         csv_full_path = "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all.csv"
         if os.path.exists(csv_full_path):

@@ -184,7 +184,7 @@ def sidebar_choice():
     with tab2:
         st.header("Le Dataset PlantVillage")
         
-        c1, c2 = st.columns([8, 1])
+        c1, c2 = st.columns([7, 1])
         
         with c1:
             st.markdown("""
@@ -199,19 +199,19 @@ def sidebar_choice():
             """)
 
         with c2:
-            st.metric("   Poids total", "593 Mo")
-            st.metric("   Images", "54306")
-            st.metric("   Espèces", "14")
-            st.metric("   Maladies", "20")
+            st.metric("Poids total "," 593 Mo")
+            st.metric("Images "," 54306")
+            st.metric("Espèces "," 14")
+            st.metric("Maladies "," 20")
         st.divider()
 
         col_seg, col_col = st.columns([8, 8])
         with col_seg:
             st.subheader("Variante Segmented")
-            st.image("Streamlit/assets/dataset_overview.png", width=800)
+            st.image("Streamlit/assets/Les datasets/dataset_overview_segmented_select.png", width=600)
         with col_col:
             st.subheader("Variante Color")
-            st.image("Streamlit/assets/dataset_overview.png", width=800)
+            st.image("Streamlit/assets/Les datasets/dataset_overview_color_select.png", width=600)
 
 # ---------------- Partie Nettoyage ----------------
     with tab3:
@@ -220,7 +220,6 @@ def sidebar_choice():
         Pour garantir la robustesse du modèle lors du passage en production (images réelles), nous avons appliqué un nettoyage strict.
         """)
         
-        st.markdown("###Étapes Clés du Nettoyage")
         st.markdown("""
         1.  **Suppression des Images Inexploitables** : 18 images détectées comme presque noires ont été retirées.
         2.  **Détection de Doublons** : 21 doublons d'images ont été supprimés pour éviter tout biais.

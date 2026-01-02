@@ -1,0 +1,77 @@
+===========================================
+  Rapport de Validation GPU
+  Date: 2025-10-17T09:04:51+00:00
+===========================================
+
+SYSTÈME
+-------
+OS: 
+Kernel: 6.6.87.2-microsoft-standard-WSL2
+
+GPU HÔTE
+--------
+NVIDIA GeForce RTX 5070 Laptop GPU, 581.42, 8151 MiB
+
+NVIDIA-SMI
+----------
+index, name, compute_cap, driver_version, memory.total [MiB]
+0, NVIDIA GeForce RTX 5070 Laptop GPU, 12.0, 581.42, 8151 MiB
+
+ENVIRONNEMENT CONDA
+-------------------
+Nom: gpu-env
+Localisation: /opt/conda/envs/gpu-env
+
+TENSORFLOW
+----------
+Version: 2.21.0-dev20251013
+GPU support: True
+GPU détectés: 1
+
+CUDA PACKAGES (pip)
+-------------------
+keras                    3.11.3
+keras-nightly            3.12.0.dev2025100703
+nvidia-cublas-cu12       12.9.1.4
+nvidia-cuda-nvcc-cu12    12.9.86
+nvidia-cuda-runtime-cu12 12.9.79
+nvidia-cudnn-cu12        9.14.0.64
+
+PACKAGES PRINCIPAUX
+-------------------
+matplotlib               3.10.7
+pandas                   2.3.3
+pillow                   12.0.0
+scikit-learn             1.7.2
+
+TEST GPU
+--------
+  TEST GPU - RTX 5070 CUDA 12.8
+============================================================
+
+TensorFlow version: 2.21.0-dev20251013
+Built with CUDA: True
+
+GPUs détectés: 1
+  GPU 0: /physical_device:GPU:0
+    Compute Capability: (12, 0)
+
+Test matmul sur /GPU:0...
+✅ Calcul réussi! Shape: (1000, 1000)
+
+✅ GPU fonctionnel!
+
+============================================================
+Pour Jupyter: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+============================================================
+
+FICHIERS SAUVEGARDÉS
+--------------------
+- environment-gpu.yml (définition manuelle)
+- environment-gpu-export.yml (export conda complet)
+- requirements-gpu-frozen.txt (pip freeze)
+- Dockerfile.gpu
+- devcontainer-gpu.json
+- test_gpu.py
+- README-GPU.md
+- .devcontainer/validation-report-20251017-090451.txt

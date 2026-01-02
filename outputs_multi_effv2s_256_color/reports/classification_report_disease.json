@@ -1,0 +1,135 @@
+{
+  "apple_scab": {
+    "precision": 1.0,
+    "recall": 0.9148936170212766,
+    "f1-score": 0.9555555555555556,
+    "support": 94.0
+  },
+  "bacterial_spot": {
+    "precision": 0.9433051869722557,
+    "recall": 0.9618696186961869,
+    "f1-score": 0.9524969549330086,
+    "support": 813.0
+  },
+  "black_rot": {
+    "precision": 0.9744525547445255,
+    "recall": 0.9888888888888889,
+    "f1-score": 0.9816176470588235,
+    "support": 270.0
+  },
+  "cedar_apple_rust": {
+    "precision": 1.0,
+    "recall": 0.975609756097561,
+    "f1-score": 0.9876543209876543,
+    "support": 41.0
+  },
+  "cercospora_leaf_spot gray_leaf_spot": {
+    "precision": 0.7227722772277227,
+    "recall": 0.948051948051948,
+    "f1-score": 0.8202247191011236,
+    "support": 77.0
+  },
+  "common_rust": {
+    "precision": 0.9834254143646409,
+    "recall": 0.994413407821229,
+    "f1-score": 0.9888888888888889,
+    "support": 179.0
+  },
+  "early_blight": {
+    "precision": 0.8873720136518771,
+    "recall": 0.8666666666666667,
+    "f1-score": 0.8768971332209107,
+    "support": 300.0
+  },
+  "esca_(black_measles)": {
+    "precision": 0.9855072463768116,
+    "recall": 0.9855072463768116,
+    "f1-score": 0.9855072463768116,
+    "support": 207.0
+  },
+  "haunglongbing_(citrus_greening)": {
+    "precision": 0.9915966386554622,
+    "recall": 1.0,
+    "f1-score": 0.9957805907172996,
+    "support": 826.0
+  },
+  "late_blight": {
+    "precision": 0.9365079365079365,
+    "recall": 0.9450800915331807,
+    "f1-score": 0.9407744874715261,
+    "support": 437.0
+  },
+  "leaf_blight_(isariopsis_leaf_spot)": {
+    "precision": 0.9938650306748467,
+    "recall": 1.0,
+    "f1-score": 0.9969230769230769,
+    "support": 162.0
+  },
+  "leaf_mold": {
+    "precision": 0.9621212121212122,
+    "recall": 0.8881118881118881,
+    "f1-score": 0.9236363636363636,
+    "support": 143.0
+  },
+  "leaf_scorch": {
+    "precision": 0.9939759036144579,
+    "recall": 0.9880239520958084,
+    "f1-score": 0.990990990990991,
+    "support": 167.0
+  },
+  "northern_leaf_blight": {
+    "precision": 0.9516129032258065,
+    "recall": 0.8027210884353742,
+    "f1-score": 0.8708487084870848,
+    "support": 147.0
+  },
+  "powdery_mildew": {
+    "precision": 0.9976744186046511,
+    "recall": 0.9907621247113164,
+    "f1-score": 0.9942062572421785,
+    "support": 433.0
+  },
+  "septoria_leaf_spot": {
+    "precision": 0.8853046594982079,
+    "recall": 0.9320754716981132,
+    "f1-score": 0.9080882352941176,
+    "support": 265.0
+  },
+  "spider_mites two-spotted_spider_mite": {
+    "precision": 0.9482071713147411,
+    "recall": 0.9444444444444444,
+    "f1-score": 0.9463220675944334,
+    "support": 252.0
+  },
+  "target_spot": {
+    "precision": 0.9025641025641026,
+    "recall": 0.8341232227488151,
+    "f1-score": 0.8669950738916257,
+    "support": 211.0
+  },
+  "tomato_mosaic_virus": {
+    "precision": 0.96,
+    "recall": 0.8571428571428571,
+    "f1-score": 0.9056603773584906,
+    "support": 56.0
+  },
+  "tomato_yellow_leaf_curl_virus": {
+    "precision": 0.9839108910891089,
+    "recall": 0.9900373599003736,
+    "f1-score": 0.9869646182495344,
+    "support": 803.0
+  },
+  "accuracy": 0.9576746557878634,
+  "macro avg": {
+    "precision": 0.9502087780604185,
+    "recall": 0.940421182522137,
+    "f1-score": 0.943801665698975,
+    "support": 5883.0
+  },
+  "weighted avg": {
+    "precision": 0.9586128326612977,
+    "recall": 0.9576746557878634,
+    "f1-score": 0.957587759461104,
+    "support": 5883.0
+  }
+}

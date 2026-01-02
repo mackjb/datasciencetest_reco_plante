@@ -44,6 +44,52 @@ def sidebar_choice():
 
     st.divider()
 
+    col_card_left, col_illustration, col_card_right = st.columns([3, 1, 3])
+
+    with col_card_left:
+        st.markdown(
+            """
+            <div class="card" style="background-color: #a2d2ff;">
+                <h4>Contexte</h4>
+                <p>
+                "Les plantes occupent une place essentielle dans notre vie quotidienne, que ce soit pour alimenter les populations, 
+                 protéger la biodiversité ou embellir nos paysages. Pourtant, leur santé est régulièrement menacée par des maladies, des 
+                 parasites ou des conditions climatiques défavorables, entraînant des pertes économiques colossales — estimées à plusieurs 
+                 centaines de milliards de dollars par an selon la FAO — et compromettant la sécurité alimentaire mondiale. En parallèle, 
+                 l’engouement du grand public pour la reconnaissance des espèces et la compréhension de leur état de santé ne cesse de croître, 
+                 comme le montre l’adoption massive d’outils collaboratifs tels que PlantNet."
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_illustration:
+        st.markdown(
+            """
+            <div style="display:flex; justify-content:center; align-items:center; height:100%; min-height:120px;">
+                <span style="font-size:64px; color:#e650aa; font-weight:700;">→</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_card_right:
+        st.markdown(
+            """
+            <div class="card" style="background-color: #caffbf;">
+                <h4>Mission</h4>
+                <p>
+                "Ce projet s’inscrit dans cette dynamique, développé dans le cadre d’une formation en data science."
+                "Il consiste à concevoir une solution basée sur des techniques d’intelligence artificielle pour identifier automatiquement" 
+                "les espèces végétales, évaluer leur santé et diagnostiquer d’éventuelles maladies."
+                "À travers ce travail, nous mettons en pratique des méthodes avancées d’apprentissage automatique tout en nous confrontant à des enjeux réels." 
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     # --- OBJECTIFS SPECIFIQUES ---
     st.markdown("## Objectifs du Projet")
     obj1, obj2, obj3 = st.columns(3)
@@ -56,7 +102,7 @@ def sidebar_choice():
 
     st.markdown(
             """
-    Notre projet s’inspire d’une revue systématique de 2024, qui confirme la supériorité du Deep Learning pour la reconnaissance 
+    Notre projet s’inspire d’[une revue systématique de 2024](https://www.researchgate.net/publication/384455442_A_systematic_review_of_deep_learning_techniques_for_plant_diseases), qui confirme la supériorité du Deep Learning pour la reconnaissance 
     des plantes. Nous avons cependant implémenté une baseline en Machine Learning classique, principalement pour appliquer les 
     méthodes enseignées dans le cursus Data Scientist.
     Cette approche ne vise pas à rivaliser avec le Deep Learning, que nous avons largement exploré et optimisé à travers différentes 

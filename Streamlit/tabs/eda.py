@@ -9,14 +9,14 @@ def sidebar_choice():
     tab1, tab2, tab3, tab4 = st.tabs(["Les Datasets", "PlantVillage", "Nettoyage", "Visualisation"])
     
     with tab1:
-        st.header("1. Les Datasets")
+        st.header("Les Datasets")
         st.markdown("""
         À partir des **6 datasets** proposés par DataScientest, nous avons effectué plusieurs
         sélections successives basées sur des explorations afin de n’en retenir qu’un : **PlantVillage**, détaillé dans l'onglet "PlantVillage".
         """)
 
         # --- 1ère partie : Datasets pour l'identification de l'espèce ---
-        st.markdown("### 1.1 Datasets pour l'identification de l'espèce")
+        st.markdown("### Datasets pour l'identification de l'espèce")
         st.markdown("""
         Trois premiers jeux de données sont dédiés à l’**identification de l’espèce** à partir
         d’images de plantes complètes dans des environnements variés :
@@ -70,7 +70,7 @@ def sidebar_choice():
         """)
 
         # --- 2ème partie : Datasets pour l'identification des plantes et des maladies ---
-        st.markdown("### 1.2 Datasets pour l'identification des plantes et des maladies")
+        st.markdown("### Datasets pour l'identification des plantes et des maladies")
         st.markdown("""
         Les trois autres jeux de données : **Plant Disease**, **New Plant Diseases** et **PlantVillage** sont tous centrés sur des **feuilles de plantes recadrées sur fond uni**,
         afin de faciliter la détection automatique des maladies.
@@ -98,13 +98,14 @@ def sidebar_choice():
         (environ 34 000 images supplémentaires). Notre analyse exploratoire a montré que certaines
         espèces majoritaires ont été augmentées plus que d’autres pour couvrir un objectif non
         précisé dans la littérature.
-
-        Notre choix se porte donc sur **PlantVillage**, qui cadre bien avec notre scénario.
-        Sa structure est détaillée dans l'onglet *PlantVillage*.
         """)
 
+        st.markdown("#### Sélection du dataset pour l'identification des plantes et des maladies")
+        st.warning("Notre choix se porte donc sur **PlantVillage**, qui cadre bien avec notre scénario.")
+        st.caption("Sa structure est détaillée dans l'onglet *PlantVillage*.")
+
     with tab2:
-        st.header("2. Le Dataset PlantVillage")
+        st.header("Le Dataset PlantVillage")
         
         c1, c2 = st.columns([8, 1])
         
@@ -126,25 +127,27 @@ def sidebar_choice():
             st.metric("   Espèces", "14")
             st.metric("   Maladies", "20")
 
-        col_color, col_seg = st.columns(2)
+        col_seg, col_color = st.columns(2)
+
+    with col_seg:
+        st.markdown("### Variante Segmented")
+        st.image(
+            "Streamlit/assets/dataset_overview_segmented_select.png",
+            caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage/segmented (fond noir)",
+            width=650,
+        )
 
     with col_color:
+        st.markdown("### Variante Color")
         st.image(
             "Streamlit/assets/dataset_overview_color_select.png",
             caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage / color (fond original)",
             width=650,
         )
 
-    with col_seg:
-        st.image(
-        "Streamlit/assets/dataset_overview_segmented_select.png",
-        caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage/segmented (fond noir)",
-        width=650,
-    )
-
             
     with tab3:
-        st.header("3. Pipeline de Preprocessing")
+        st.header(" Pipeline de Preprocessing")
         st.markdown("""
         Pour garantir la robustesse du modèle lors du passage en production (images réelles), nous avons appliqué un nettoyage strict.
         """)
@@ -157,7 +160,7 @@ def sidebar_choice():
         """)
         
     with tab4:
-        st.header("4. Visualisation des Données")
+        st.header(" Visualisation des Données")
         st.write("Exploration de la distribution des classes.")
         
         # Chargement des données réelles

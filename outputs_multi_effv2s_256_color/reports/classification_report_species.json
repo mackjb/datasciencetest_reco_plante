@@ -1,0 +1,99 @@
+{
+  "Apple": {
+    "precision": 0.9978540772532188,
+    "recall": 0.9810126582278481,
+    "f1-score": 0.9893617021276596,
+    "support": 474.0
+  },
+  "Blueberry": {
+    "precision": 0.9955947136563876,
+    "recall": 1.0,
+    "f1-score": 0.9977924944812362,
+    "support": 226.0
+  },
+  "Cherry_(including_sour)": {
+    "precision": 0.9964539007092199,
+    "recall": 0.9825174825174825,
+    "f1-score": 0.9894366197183099,
+    "support": 286.0
+  },
+  "Corn_(maize)": {
+    "precision": 0.9982698961937716,
+    "recall": 1.0,
+    "f1-score": 0.9991341991341991,
+    "support": 577.0
+  },
+  "Grape": {
+    "precision": 1.0,
+    "recall": 0.9983606557377049,
+    "f1-score": 0.9991796554552912,
+    "support": 610.0
+  },
+  "Orange": {
+    "precision": 0.9975845410628019,
+    "recall": 1.0,
+    "f1-score": 0.9987908101571947,
+    "support": 826.0
+  },
+  "Peach": {
+    "precision": 0.9875930521091811,
+    "recall": 1.0,
+    "f1-score": 0.9937578027465668,
+    "support": 398.0
+  },
+  "Pepper,_bell": {
+    "precision": 0.9893333333333333,
+    "recall": 0.9973118279569892,
+    "f1-score": 0.9933065595716198,
+    "support": 372.0
+  },
+  "Potato": {
+    "precision": 0.9692307692307692,
+    "recall": 0.9752321981424149,
+    "f1-score": 0.9722222222222222,
+    "support": 323.0
+  },
+  "Raspberry": {
+    "precision": 0.9821428571428571,
+    "recall": 1.0,
+    "f1-score": 0.990990990990991,
+    "support": 55.0
+  },
+  "Soybean": {
+    "precision": 0.9986824769433466,
+    "recall": 0.9921465968586387,
+    "f1-score": 0.9954038082731451,
+    "support": 764.0
+  },
+  "Squash": {
+    "precision": 1.0,
+    "recall": 0.9963636363636363,
+    "f1-score": 0.9981785063752276,
+    "support": 275.0
+  },
+  "Strawberry": {
+    "precision": 0.9957446808510638,
+    "recall": 0.9957446808510638,
+    "f1-score": 0.9957446808510638,
+    "support": 235.0
+  },
+  "Tomato": {
+    "precision": 0.9930377427629168,
+    "recall": 0.9944954128440368,
+    "f1-score": 0.9937660432709937,
+    "support": 2725.0
+  },
+  "accuracy": 0.9942302970783207,
+  "macro avg": {
+    "precision": 0.992965860089205,
+    "recall": 0.9937989392499869,
+    "f1-score": 0.9933618639554086,
+    "support": 8146.0
+  },
+  "weighted avg": {
+    "precision": 0.9942516948547019,
+    "recall": 0.9942302970783207,
+    "f1-score": 0.9942298858755336,
+    "support": 8146.0
+  }
+}

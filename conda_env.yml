@@ -26,3 +26,4 @@ dependencies:
       - streamlit
       - streamlit-lottie
       - requests
+      - streamlit-markmap==1.0.1

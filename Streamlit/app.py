@@ -1,5 +1,5 @@
 import streamlit as st
-from tabs import home, eda, modeling, machine_learning, deep_learning, proof_of_concept, conclusion
+from tabs import home, eda, modeling, machine_learning, deep_learning, proof_of_concept, conclusion, mindmap
 
 st.set_page_config(
     page_title="HerbI-Dent - Reconnaissance des Plantes & Maladies",
@@ -73,6 +73,7 @@ def main():
         "Le projet": home,
         "Les jeux de données": eda,
         "Méthodologie ML- DL": modeling,
+        "Mindmap": mindmap,
         "Machine Learning" : machine_learning,
         "Deep Learning" : deep_learning,
         "PoCs": proof_of_concept,

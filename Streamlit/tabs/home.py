@@ -17,11 +17,16 @@ def sidebar_choice():
         margin-bottom: 30px;
     }
     .card {
-        background-color: #f9f9f9;
+        background-color: #a2d2ff;
         padding: 20px;
         border-radius: 10px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         margin-bottom: 20px;
+    }
+    .stImage img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
     }
     </style>
     <h1 class='main-header'> DataScienceTest : Reco Plante</h1>
@@ -37,6 +42,62 @@ def sidebar_choice():
     """, unsafe_allow_html=True)
 
     st.divider()
+
+    col_card_left, col_illustration, col_card_right = st.columns(3)
+
+    with col_card_left:
+        st.markdown(
+            """
+            <div class="card" style="background-color: #a2d2ff;">
+                <h4>Contexte</h4>
+                <p>
+                "Les plantes occupent une place essentielle dans notre vie quotidienne, que ce soit pour alimenter les populations, 
+                 protéger la biodiversité ou embellir nos paysages. Pourtant, leur santé est régulièrement menacée par des maladies, des 
+                 parasites ou des conditions climatiques défavorables, entraînant des pertes économiques colossales — estimées à plusieurs 
+                 centaines de milliards de dollars par an selon la FAO — et compromettant la sécurité alimentaire mondiale. En parallèle, 
+                 l’engouement du grand public pour la reconnaissance des espèces et la compréhension de leur état de santé ne cesse de croître, 
+                 comme le montre l’adoption massive d’outils collaboratifs tels que PlantNet."
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_illustration:
+        st.markdown(
+            """
+            <div class="card" style="background-color: #ffffff; text-align:center;">
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.image(
+            "Streamlit/assets/implique.png",
+            width=80,
+        )
+
+        st.markdown(
+            """
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_card_right:
+        st.markdown(
+            """
+            <div class="card" style="background-color: #caffbf;">
+                <h4>Mission</h4>
+                <p>
+                "Ce projet s’inscrit dans cette dynamique, développé dans le cadre d’une formation en data science."
+                "Il consiste à concevoir une solution basée sur des techniques d’intelligence artificielle pour identifier automatiquement" 
+                "les espèces végétales, évaluer leur santé et diagnostiquer d’éventuelles maladies."
+                "À travers ce travail, nous mettons en pratique des méthodes avancées d’apprentissage automatique tout en nous confrontant à des enjeux réels." 
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # --- OBJECTIFS SPECIFIQUES ---
     st.markdown("## Objectifs du Projet")

@@ -114,7 +114,7 @@ def render_dl_content():
         """)
 
     # Onglets principaux DL
-    dl_tabs = st.tabs(["Architectures", "Performances"])
+    dl_tabs = st.tabs(["Architectures", "Performances", "Interprétabilité"])
     
     with dl_tabs[0]:
         st.header("Protocole expérimental commun pour les 9 Architectures")
@@ -330,7 +330,91 @@ def render_dl_content():
         - **Archi 9** : Conditionnement explicite, synergie maximale
         """)
 
+    # Onglet Interprétabilité (Grad-CAM)
+    with dl_tabs[2]:
+        st.header("Interprétabilité (Grad-CAM)")
+
+        # 1) Pertinence des prédictions en phase d'inférence
+        with st.expander("Pertinence des prédictions du modèle en phase d’inférence"):
+            st.markdown(
+                """
+                Cette section présente des exemples d’images correctement / incorrectement classées
+                avec leur carte Grad-CAM associée, afin de vérifier si le modèle se focalise bien sur
+                les lésions et zones pertinentes lors de l’inférence.
+                """
+            )
+
+            col_esp, col_malad = st.columns(2)
+
+            img_path_pred_ok_esp = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/pred_ok_esp.png"
+            img_path_pred_ok_malad = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/pred_ok_malad.png"
+            img_path_err_class = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/err_class.png"
+
+            with col_esp:
+                if os.path.exists(img_path_pred_ok_esp):
+                    st.image(img_path_pred_ok_esp, width=500, caption="Prédiction correcte - tête espèce")
+
+            with col_malad:
+                if os.path.exists(img_path_pred_ok_malad):
+                    st.image(img_path_pred_ok_malad, width=500, caption="Prédiction correcte - tête maladie")
+
+            if os.path.exists(img_path_err_class):
+                st.image(img_path_err_class, width=900, caption="Exemple d'erreur de classification")
+            
+        st.divider()
+
+        # 2) Comparaison de l’attention entre tâches
+        with st.expander("Comparaison de l’attention du réseau entre les tâches de classification"):
+            st.markdown(
+                """
+                Ici sont comparées les cartes Grad-CAM obtenues pour différentes têtes de
+                classification (espèce, santé, maladie) afin d’illustrer comment l’attention
+                du réseau varie selon la tâche optimisée.
+                """
+            )
+            img_path_err_class = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/attention_réseau.png"
+            if os.path.exists(img_path_err_class):
+                st.image(img_path_err_class, width=900, caption="Exemple d'erreur de classification")
+
+        st.divider()
+
+        # 3) Influence d'une couleur de fond différente
+        with st.expander("Analyse de l’influence d’une couleur de fond uni différente"):
+            st.markdown(
+                """
+                Des expériences de sensibilité au fond (fond noir vs fond uni coloré, etc.)
+                permettent de visualiser l’impact du background sur les activations Grad-CAM
+                et de mettre en évidence d’éventuels raccourcis pris par le modèle.
+                """
+            )
+            img_path_fond_esp = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/pre_correct_esp_fond.png"
+            img_path_fond_mala = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/pred_correct_mala_fond.png"
+
+            col_fond_esp, col_fond_mala = st.columns(2)
+
+            with col_fond_esp:
+                if os.path.exists(img_path_fond_esp):
+                    st.image(img_path_fond_esp, width=900, caption="Impact du fond uni - tête espèce")
+
+            with col_fond_mala:
+                if os.path.exists(img_path_fond_mala):
+                    st.image(img_path_fond_mala, width=900, caption="Impact du fond uni - tête maladie")
+
+        st.divider()
+
+        # 4) Inférence sur des images "in the wild"
+        with st.expander("Analyse de l’inférence sur de nouvelles photos « in wild »"):
+            st.markdown(
+                """
+                Enfin, cette partie montre des résultats Grad-CAM sur des photos terrain
+                (conditions réelles, non issues de PlantVillage) pour évaluer la robustesse
+                de l’attention du modèle en dehors du dataset d’entraînement.
+                """
+            )
+            img_path_in_wild = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/in_wild.png"
+            if os.path.exists(img_path_in_wild):
+                st.image(img_path_in_wild, width=900, caption="Exemples d'inférence sur photos in the wild")
+
 def sidebar_choice():
     st.title("Deep Learning")
     render_dl_content()
-

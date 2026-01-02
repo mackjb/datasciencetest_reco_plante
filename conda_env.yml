@@ -24,4 +24,5 @@ dependencies:
       - shap
       - joblib
       - streamlit
-    
+      - streamlit-lottie
+      - requests

@@ -338,6 +338,27 @@ conda env create -f conda_env.yml
 conda activate <nom_env>
 ```
 
+### 5.1 Lancer l’application Streamlit
+
+L’application Streamlit se trouve ici : `Streamlit/app.py`.
+
+Si tu viens de cloner le dépôt, la manière la plus simple est de **mettre à jour** l’environnement (idempotent) puis de lancer Streamlit via `conda run` (sans activation manuelle) :
+
+```bash
+conda env update -n conda_env -f conda_env.yml
+conda run -n conda_env streamlit run Streamlit/app.py
+```
+
+Ensuite ouvrir : `http://localhost:8501`.
+
+Si le port `8501` est déjà pris :
+
+```bash
+conda run -n conda_env streamlit run Streamlit/app.py --server.port 8503
+```
+
+Documentation détaillée : `Docs/STREAMLIT.md`.
+
 Les principales dépendances sont :
 
 - Python scientifique : `numpy`, `pandas`, `scikit-learn`, `matplotlib`, `seaborn`, `plotly` ;

@@ -4,6 +4,9 @@ import plotly.graph_objects as go
 import os
 
 from utils import render_mermaid
+import base64
+from streamlit_image_comparison import image_comparison
+import pandas as pd
 
 
 def render_dl_content():
@@ -213,6 +216,74 @@ def render_dl_content():
         
         # Présentation des architectures
         st.markdown("### 🏗️ Backbone Pré-entraîné Dédié à Chaque Objectif")
+        
+        # --- Comparateur d'Architectures ---
+        st.markdown("#### 🔍 Comparateur d'Architectures")
+        
+        col_comp1, col_comp2 = st.columns(2)
+        
+        # Options pour les selectboxes
+        arch_options = {
+            "Architecture 1": "figures/architectures_dl/archi1.png",
+            "Architecture 2": "figures/architectures_dl/archi2.png",
+            "Architecture 3": "figures/architectures_dl/archi3.png",
+            "Architecture 4": "figures/architectures_dl/archi4.png"
+        }
+        
+        # Dataframe des critères techniques
+        criteria_data = {
+            "Architecture": ["Architecture 1", "Architecture 2", "Architecture 3", "Architecture 4"],
+            "Backbone": ["ResNet-50", "EfficientNet-B0", "MobileNetV3", "VGG16"],
+            "Heads": ["Classification", "Classification", "Classification", "Classification"],
+            "Multitask": ["Non", "Non", "Non", "Non"],
+            "Paramètres (M)": [25.6, 5.3, 3.2, 138.4],
+            "Latence (ms)": [45, 25, 15, 80],
+            "Notes": ["Robuste, standard", "Efficient, léger", "Mobile, très rapide", "Lourd, historique"]
+        }
+        df_criteria = pd.DataFrame(criteria_data)
+
+        with col_comp1:
+            img_choice_1 = st.selectbox("Architecture gauche", list(arch_options.keys()), index=0)
+        
+        with col_comp2:
+            img_choice_2 = st.selectbox("Architecture droite", list(arch_options.keys()), index=1)
+
+        # Affichage du slider de comparaison
+        # On utilise width=700 ou plus pour bien voir
+        if os.path.exists(arch_options[img_choice_1]) and os.path.exists(arch_options[img_choice_2]):
+             image_comparison(
+                img1=arch_options[img_choice_1],
+                img2=arch_options[img_choice_2],
+                label1=img_choice_1,
+                label2=img_choice_2,
+                width=700,
+                starting_position=50,
+                show_labels=True,
+                make_responsive=True,
+                in_memory=True
+            )
+        else:
+            st.error("Images non trouvées pour la comparaison.")
+
+        st.divider()
+        
+        # Tableau Comparatif Filtré
+        st.subheader("📊 Comparaison Technique")
+        
+        # Filtrer le DF sur les 2 choix
+        df_filtered = df_criteria[df_criteria["Architecture"].isin([img_choice_1, img_choice_2])]
+        
+        st.dataframe(
+            df_filtered.style.highlight_max(axis=0, subset=["Paramètres (M)", "Latence (ms)"], color="#ffcdd2")
+                             .highlight_min(axis=0, subset=["Paramètres (M)", "Latence (ms)"], color="#c8e6c9"),
+            use_container_width=True,
+            hide_index=True
+        )
+
+        with st.expander("Voir le tableau complet des critères"):
+             st.dataframe(df_criteria, use_container_width=True, hide_index=True)
+
+
         
         arch_info_dedicated = [
             {

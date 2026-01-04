@@ -123,6 +123,7 @@ def render_mermaid(mindmap_data, height=800):
             startOnLoad: false, 
             securityLevel: 'loose',
             theme: 'base',
+            maxTextSize: 1000000, 
             mindmap: {{
                 useMaxWidth: false,
             }}

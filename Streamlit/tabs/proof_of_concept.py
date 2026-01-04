@@ -181,20 +181,39 @@ def render_dl_page():
                 st.info("Lancez l'analyse pour visualiser la carte de chaleur.")
 
     # =========================
-    # ARCHI 9 (utilise les mêmes images que Archi 3 pour éviter l'erreur)
+    # ARCHI 9 
     # =========================
     with tab_archi9:
-        st.markdown(
-            '''
-            <div class="card card--info" style="background-color:#FFE4C4;">
-              <div class="card__title">Scénario pour déploiement en Production standard – Applications professionnelles</div>
-              <div class="card__body" style="color:#0131B4;">Cas 2 : Diagnostic ciblé (espèce connue → maladie)</div>
-            </div>
-            ''',
-            unsafe_allow_html=True,
-        )
-        st.markdown("Démo Interactive : Archi 9")
-        st.write("Sélectionnez une image pour simuler l'inférence et visualiser l'attention du modèle (Grad-CAM).")
+        col_arch9_text, col_arch9_img = st.columns([1, 1])
+
+        with col_arch9_text:
+            st.markdown(
+                '''
+                <div class="card card--info" style="background-color:#FFE4C4;">
+                  <div class="card__title">Scénario pour déploiement en Production standard – Applications professionnelles</div>
+                  <div class="card__body" style="color:#0131B4;">Cas 2 : Diagnostic ciblé (espèce connue → maladie) - Archi 9 : Solution Production Cloud</div>
+                </div>
+                ''',
+                unsafe_allow_html=True,
+            )
+
+            st.markdown(
+                '''
+                <div class="card card--info" style="margin-top:5rem;background-color:#a2d2ff;">
+                  <div class="card__body" style="color:#0b090a; font-weight:bold; text-align:center;">
+                    Démo Interactive ↓<br>
+                    <span style="font-weight:normal; color:#0131B4;">Sélectionnez une image pour simuler l'inférence et visualiser l'attention du modèle (Grad-CAM).</span>
+                  </div>
+                </div>
+                ''',
+                unsafe_allow_html=True,
+            )
+
+        with col_arch9_img:
+            st.image(
+                "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/architectures/archi_9_bk.png",
+                width=500,
+            )
 
         examples_archi9 = [
             {
@@ -267,7 +286,7 @@ def render_dl_page():
                     st.session_state.selected_idx9 = i
                     st.session_state.analyzed9 = False
                     st.rerun()
-                st.image(ex["img_orig"], use_container_width=True)
+                st.image(ex["img_orig"], width=150)
                 st.markdown("</div>", unsafe_allow_html=True)
 
         st.divider()
@@ -276,10 +295,9 @@ def render_dl_page():
         c1, c2, c3 = st.columns([1, 0.8, 1])
         with c1:
             st.markdown("Entrée")
-            st.image(selected9["img_orig"], caption="Image originale", width=600)
+            st.image(selected9["img_orig"], caption="Image originale", width=300)
 
         with c2:
-            st.markdown("<br><br><br>", unsafe_allow_html=True)
             if st.button("Lancer l'Analyse Archi 9", type="primary", width=300, disabled=st.session_state.analyzed9):
                 with st.spinner("Inférence en cours..."):
                     time.sleep(1.2)
@@ -299,7 +317,7 @@ def render_dl_page():
         with c3:
             st.markdown("Interprétation")
             if st.session_state.analyzed9:
-                st.image(selected9["img_cam"], caption="Grad-CAM (zones influentes)", width=600)
+                st.image(selected9["img_cam"], caption="Grad-CAM (zones influentes)", width=300)
             else:
                 st.info("Lancez l'analyse pour visualiser la carte de chaleur.")
 
@@ -307,7 +325,7 @@ def render_dl_page():
 # SIDEBAR
 # =========================
 def sidebar_choice():
-    st.title("Deep Learning")
+    st.title("PoCs - Deep Learning")
     render_dl_page()
 
 # =========================

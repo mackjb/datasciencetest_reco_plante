@@ -5,6 +5,7 @@ import os
 import json
 import io
 import base64
+from utils import render_mermaid
 
 
 
@@ -159,13 +160,102 @@ def render_ml_content():
         </style>
         """, unsafe_allow_html=True)
         
-        center_col = st.columns([1, 2, 1])[1]
-        with center_col:
-            st.image(
-                "Streamlit/assets/Les datasets/Caractéristiques.drawio.png",
-                caption="Synthèse des catégories de descripteurs extraits",
-                width=750,
-            )
+        # Interactive Mindmap Data Definition for Features
+        mindmap_features = {
+            "id": "root",
+            "text": "Caractéristiques",
+            "children": [
+                {
+                    "id": "Metadonnees",
+                    "text": "Métadonnées",
+                    "children": [
+                        {"id": "ID_Image", "text": "ID_Image"},
+                        {"id": "Image_Path", "text": "Image_Path"},
+                        {"id": "Est_saine", "text": "Est_saine"},
+                        {"id": "nom_maladie", "text": "nom_maladie"},
+                        {"id": "nom_plante", "text": "nom_plante"},
+                        {"id": "outlier", "text": "outlier"}
+                    ]
+                },
+                {
+                    "id": "Feuille",
+                    "text": "Feuille",
+                    "children": [
+                        {
+                            "id": "Forme",
+                            "text": "Forme",
+                            "collapsed": True,
+                            "children": [
+                                {"id": "aire", "text": "aire"},
+                                {"id": "perimetre", "text": "périmètre"},
+                                {"id": "circularite", "text": "circularité"},
+                                {"id": "excentricite", "text": "excentricité"},
+                                {"id": "aspect_ratio", "text": "aspect_ratio"},
+                                {"id": "contour_density", "text": "contour_density"}
+                            ]
+                        },
+                        {
+                            "id": "Couleur",
+                            "text": "Couleur",
+                            "collapsed": True,
+                            "children": [
+                                {"id": "mean_V", "text": "mean_V"}, {"id": "mean_S", "text": "mean_S"}, {"id": "mean_H", "text": "mean_H"},
+                                {"id": "mean_R", "text": "mean_R"}, {"id": "std_R", "text": "std_R"},
+                                {"id": "mean_G", "text": "mean_G"}, {"id": "std_G", "text": "std_G"},
+                                {"id": "mean_B", "text": "mean_B"}, {"id": "std_B", "text": "std_B"}
+                            ]
+                        },
+                        {
+                            "id": "Texture",
+                            "text": "Texture",
+                            "collapsed": True,
+                            "children": [
+                                {"id": "energy", "text": "energy"},
+                                {"id": "homogeneity", "text": "homogeneity"},
+                                {"id": "dissimilarite", "text": "dissimilarité"},
+                                {"id": "correlation", "text": "correlation"},
+                                {"id": "contrast", "text": "contrast"},
+                                {"id": "nettete", "text": "netteté"}
+                            ]
+                        },
+                        {
+                            "id": "Moments_Hu", 
+                            "text": "Moments de Hu",
+                            "collapsed": True,
+                            "children": [
+                                {"id": "hu_1", "text": "hu_1"}, {"id": "hu_2", "text": "hu_2"},
+                                {"id": "hu_3", "text": "hu_3"}, {"id": "hu_4", "text": "hu_4"},
+                                {"id": "hu_5", "text": "hu_5"}, {"id": "hu_6", "text": "hu_6"},
+                                {"id": "hu_7", "text": "hu_7"}
+                            ]
+                        },
+                        {
+                            "id": "FFT", 
+                            "text": "FFT",
+                            "collapsed": True,
+                            "children": [
+                                {"id": "fft_energy", "text": "fft_energy"},
+                                {"id": "fft_entropy", "text": "fft_entropy"},
+                                {"id": "low_freq", "text": "low_freq_power"},
+                                {"id": "high_freq", "text": "high_freq_power"}
+                            ]
+                        },
+                        {
+                            "id": "HOG", 
+                            "text": "HOG",
+                            "collapsed": True,
+                            "children": [
+                                {"id": "hog_mean", "text": "hog_mean"},
+                                {"id": "hog_std", "text": "hog_std"},
+                                {"id": "hog_entropy", "text": "hog_entropy"}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        render_mermaid(mindmap_features, height=600)
 
         st.markdown("""
         **Catégories extraites :**

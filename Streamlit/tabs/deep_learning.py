@@ -3,12 +3,16 @@ import pandas as pd
 import plotly.graph_objects as go
 import os
 
+from utils import render_mermaid
+
 
 def render_dl_content():
     st.markdown("""
     Le Deep Learning permet d'apprendre automatiquement les features directement à partir des pixels, 
     contrairement au Machine Learning classique qui nécessite une extraction manuelle de descripteurs.
     """)
+
+
     
     # --- Phase d'exploration individuelle ---
     with st.expander("👥 Phase d'Exploration Individuelle", expanded=True):
@@ -82,6 +86,83 @@ def render_dl_content():
         - **Précision Top-5** de 96,7%, idéale pour des tâches de classification exigeantes
         - Adapté à nos travaux nécessitant rapidité avec des ressources limitées
         """)
+
+        # Mindmap Théorie du Fine-Tuning
+        # Interactive Mindmap Data Definition for Fine-Tuning
+        mindmap_ft = {
+            "id": "root",
+            "text": "Théorie du<br/>Fine-Tuning",
+            "children": [
+                {
+                    "id": "Fondements", 
+                    "text": "<b>1. Fondements techniques</b><br/>Transfer Learning",
+                    "collapsed": True,
+                    "children": [
+                        {"id": "Connaissances", "text": "Transfert de connaissances : Exploiter des modèles pré-entraînés sur des millions d'images <i>ImageNet</i>"},
+                        {"id": "Motifs", "text": "Détection de motifs génériques : Bords, textures, formes géométriques de base"},
+                        {"id": "Efficience", "text": "Gain de temps et de ressources de calcul"}
+                    ]
+                },
+                {
+                    "id": "Processus", 
+                    "text": "<b>2. Déroulement en 2 Phases</b><br/>Stratégie standard",
+                    "collapsed": True,
+                    "children": [
+                        {
+                            "id": "Phase_1", 
+                            "text": "Phase 1 : Échauffement<br/><i>Warm-up</i>",
+                            "children": [
+                                {"id": "Gel", "text": "Backbone gelé : On ne modifie pas les poids de l'extracteur de caractéristiques"},
+                                {"id": "Entrainement_Tete", "text": "Entraînement de la tête uniquement : Adaptation aux nouvelles classes"}
+                            ]
+                        },
+                        {
+                            "id": "Phase_2", 
+                            "text": "Phase 2 : Ajustement fin<br/><i>Fine-tuning</i>",
+                            "children": [
+                                {"id": "Degel", "text": "Dégel partiel : Déblocage des couches supérieures du backbone"},
+                                {"id": "Adaptation", "text": "Spécialisation : Les features génériques deviennent spécifiques aux pathologies végétales"}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "Parametres", 
+                    "text": "<b>3. Paramètres & Mécanismes clés</b>",
+                    "collapsed": True,
+                    "children": [
+                        {"id": "Backbone", "text": "Backbone pré-entraîné : ex. EfficientNetV2-S choisi pour son équilibre performance/latence"},
+                        {"id": "Learning_Rate", "text": "Learning Rate réduit : Indispensable en Phase 2 pour ne pas détruire les poids pré-entraînés"},
+                        {"id": "Regularisation", "text": "Label Smoothing & Gradient Clipping : Stabilisation de l'apprentissage"},
+                        {"id": "Optimisation", "text": "Poids de classes : Pour gérer le déséquilibre du dataset"}
+                    ]
+                },
+                {
+                    "id": "Gains", 
+                    "text": "<b>4. Gains & Bénéfices</b>",
+                    "collapsed": True,
+                    "children": [
+                        {"id": "Performance", "text": "Précision accrue : Atteint des scores >99% inaccessibles sans fine-tuning"},
+                        {"id": "Convergence", "text": "Vitesse : Convergence plus rapide qu'un entraînement <i>from scratch</i>"},
+                        {"id": "Robustesse", "text": "Adaptation au domaine : Passage de l'image générale à la lésion spécifique"}
+                    ]
+                },
+                {
+                    "id": "Risques", 
+                    "text": "<b>5. Points de vigilance</b>",
+                    "collapsed": True,
+                    "children": [
+                        {"id": "Overfitting", "text": "Sur-apprentissage : Si le modèle mémorise au lieu de généraliser"},
+                        {"id": "Features_Generiques", "text": "Features trop génériques : Si le fine-tuning n'est pas activé, la perte peut être catastrophique"},
+                        {"id": "Desequilibre", "text": "Déséquilibre des classes : Biais vers les classes majoritaires"},
+                        {"id": "Fragilite_Wild", "text": "Fragilité 'In-Wild' : Chute de performance hors fond uniforme"}
+                    ]
+                }
+            ]
+        }
+
+        render_mermaid(mindmap_ft, height=600)
+        st.caption("Figure : Principes et stratégie de Fine-Tuning appliqués au projet")
     
     # --- Méthodologie ---
     with st.expander("🎯 Méthodologie & Critères de Sélection", expanded=True):

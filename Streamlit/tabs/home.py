@@ -2,6 +2,7 @@ import streamlit as st
 import os
 
 def sidebar_choice():
+
     # --- HEADER ---
     st.markdown("""
     <style>
@@ -14,7 +15,7 @@ def sidebar_choice():
         text-align: center; 
         font-size: 1.2em; 
         color: #555;
-        margin-bottom: 30px;
+        margin-bottom: 5px;
     }
     .card {
         background-color: #f9f9f9;
@@ -28,12 +29,6 @@ def sidebar_choice():
     """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    
-    ''' col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        logo_path = "Streamlit/assets/logo_datascientest.png"
-        if os.path.exists(logo_path):
-            st.image(logo_path, width=350) '''
 
     st.markdown("""
     <div class='sub-text'>
@@ -44,51 +39,33 @@ def sidebar_choice():
 
     st.divider()
 
-    col_card_left, col_illustration, col_card_right = st.columns([3, 1, 3])
+    col_card_left, col_illustration, col_card_right = st.columns([5, 1, 5])
 
     with col_card_left:
-        st.markdown(
-            """
-            <div class="card" style="background-color: #a2d2ff;">
-                <h4>Contexte</h4>
-                <p>
-                "Les plantes occupent une place essentielle dans notre vie quotidienne, que ce soit pour alimenter les populations, 
-                 protéger la biodiversité ou embellir nos paysages. Pourtant, leur santé est régulièrement menacée par des maladies, des 
-                 parasites ou des conditions climatiques défavorables, entraînant des pertes économiques colossales — estimées à plusieurs 
-                 centaines de milliards de dollars par an selon la FAO — et compromettant la sécurité alimentaire mondiale. En parallèle, 
-                 l’engouement du grand public pour la reconnaissance des espèces et la compréhension de leur état de santé ne cesse de croître, 
-                 comme le montre l’adoption massive d’outils collaboratifs tels que PlantNet."
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.info("#### Contexte\n\n"
+                "Les plantes occupent une place essentielle dans notre vie quotidienne, que ce soit pour alimenter les populations, "
+                "protéger la biodiversité ou embellir nos paysages. Pourtant, leur santé est régulièrement menacée par des maladies, des "
+                "parasites ou des conditions climatiques défavorables, entraînant des pertes économiques colossales — estimées à plusieurs "
+                "centaines de milliards de dollars par an selon la FAO — et compromettant la sécurité alimentaire mondiale. En parallèle, "
+                "l’engouement du grand public pour la reconnaissance des espèces et la compréhension de leur état de santé ne cesse de croître, "
+                "comme le montre l’adoption massive d’outils collaboratifs tels que PlantNet.")
 
     with col_illustration:
         st.markdown(
             """
             <div style="display:flex; justify-content:center; align-items:center; height:100%; min-height:120px;">
-                <span style="font-size:64px; color:#e650aa; font-weight:700;">→</span>
+                <span style="font-size:64px; color:#555; font-weight:700;">→</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
     with col_card_right:
-        st.markdown(
-            """
-            <div class="card" style="background-color: #caffbf;">
-                <h4>Mission</h4>
-                <p>
-                "Ce projet s’inscrit dans cette dynamique, développé dans le cadre d’une formation en data science."
-                "Il consiste à concevoir une solution basée sur des techniques d’intelligence artificielle pour identifier automatiquement" 
-                "les espèces végétales, évaluer leur santé et diagnostiquer d’éventuelles maladies."
-                "À travers ce travail, nous mettons en pratique des méthodes avancées d’apprentissage automatique tout en nous confrontant à des enjeux réels." 
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.success("#### Mission\n\n"
+                   "Ce projet s’inscrit dans cette dynamique, développé dans le cadre d’une formation en data science. "
+                   "Il consiste à concevoir une solution basée sur des techniques d’intelligence artificielle pour identifier automatiquement "
+                   "les espèces végétales, évaluer leur santé et diagnostiquer d’éventuelles maladies. "
+                   "À travers ce travail, nous mettons en pratique des méthodes avancées d’apprentissage automatique tout en nous confrontant à des enjeux réels.")
 
     # --- OBJECTIFS SPECIFIQUES ---
     st.markdown("## Objectifs du Projet")
@@ -111,16 +88,16 @@ def sidebar_choice():
         )
 
     # --- L'ÉQUIPE PROJET ---
-    col_team, col_env = st.columns(2)
+    col_team, col_env = st.columns([1.58, 1.84])
     with col_team:
         st.markdown("## L'Équipe Projet")
-        st.image("Streamlit/assets/equipe.png", width=600)
+        st.image("Streamlit/assets/equipe.png", use_container_width=True)
 
     # --- ENVIRONNEMENT DE DÉVELOPPEMENT ---
     with col_env:
         st.markdown("## Environnement de développement")
-        st.image("Streamlit/assets/env_dev.png", width=800)
+        st.image("Streamlit/assets/env_dev.png", use_container_width=True)
 
-    st.divider()
+
 
     

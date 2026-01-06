@@ -201,14 +201,40 @@ def sidebar_choice():
             # On filtre pour ne voir que les anomalies dans le graph
             fig_out = px.pie(outliers[outliers['Type'] != 'Valides'], values='Nombre', names='Type',
                            color_discrete_sequence=px.colors.sequential.RdBu)
+            
+            # La sélection sur Pie Chart n'étant pas nativement supportée par st.plotly_chart en mode simple,
+            # nous utilisons un expander pour l'interaction.
             st.plotly_chart(fig_out, use_container_width=True)
+
+            # Style CSS pour le zoom au survol (uniquement dans les expanders/details)
+            st.markdown("""
+            <style>
+            details [data-testid="stImage"] img {
+                transition: transform 0.3s ease;
+            }
+            details [data-testid="stImage"] img:hover {
+                transform: scale(2.0); /* Zoom x2 */
+                z-index: 1000;
+                cursor: zoom-in;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            # Interaction améliorée : Expander au lieu de Checkbox
             st.markdown("<h5 style='text-align: center;'>Répartition des anomalies détectées</h5>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; color: grey; font-size: 0.8em;'>Zoom sur les 44 images écartées lors de l'audit technique.</p>", unsafe_allow_html=True)
+
+            # Interaction améliorée : Expander au lieu de Checkbox
+            with st.expander("Voir les 18 'Images Sombres' écartées"):
+                st.image("Streamlit/assets/images_noires.png", 
+                       caption="Aperçu des 18 images sombres (Survolez pour zoomer)", 
+                       use_container_width=True)
 
         st.markdown("---")
         
         with tab3:
-            st.header(" Visualisation des Données - Exploration de la distribution des classes")
+            st.header(" Exploration de la distribution des classes")
   
 
         st.markdown("#### Analyse de l'Équilibre Saine vs Malade")

@@ -43,11 +43,7 @@ def render_approach_content():
     </style>
 
     <div style="font-size: 1.2rem; text-align: justify;">
-    Notre projet s’inspire d’une revue systématique de 2024, qui confirme la supériorité du Deep Learning pour la reconnaissance 
-    des plantes. Nous avons cependant implémenté une baseline en Machine Learning classique, principalement pour appliquer les 
-    méthodes enseignées dans le cursus Data Scientist.
-    Cette approche ne vise pas à rivaliser avec le Deep Learning, que nous avons largement exploré et optimisé à travers différentes 
-    techniques pour en améliorer significativement les performances.
+    Voici une vue d'ensemble comparative de nos deux approches méthodologiques : la baseline <b>Machine Learning</b> et l'architecture <b>Deep Learning</b>.
     </div>
     """, unsafe_allow_html=True)
     
@@ -65,7 +61,7 @@ def render_approach_content():
         st.markdown("<h3 style='text-align:center;'>Machine Learning</h3>", unsafe_allow_html=True)
         st.image(
             "Streamlit/assets/WF_ML.png",
-            use_container_width=True,
+            width="stretch",
         )
 
     with col_anim:
@@ -78,7 +74,7 @@ def render_approach_content():
         st.markdown("<h3 style='text-align:center;'>Deep Learning</h3>", unsafe_allow_html=True)
         st.image(
             "Streamlit/assets/WF_DL.png",
-            use_container_width=True,
+            width="stretch",
         )
 
 #########################

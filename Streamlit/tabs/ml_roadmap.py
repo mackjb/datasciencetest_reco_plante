@@ -50,12 +50,14 @@ def render_roadmap():
     if 'ml_step' not in st.session_state:
         st.session_state['ml_step'] = 1
 
+    # Define the 6 steps of the user's pipeline
     steps = {
-        1: "Collecte",
-        2: "Extraction",
-        3: "Nettoyage",
-        4: "Scaling",
-        5: "Modélisation"
+        1: "Extraction",
+        2: "Split",
+        3: "Rééchantillonnage",
+        4: "Pré-traitements",
+        5: "Modélisation",
+        6: "Évaluation"
     }
     
     # Custom CSS to make arrows vertical-align
@@ -90,22 +92,20 @@ def render_roadmap():
 
     
     # Create a dynamic layout: Button -> Arrow -> Button ...
-    # 5 steps + 4 arrows = 9 columns
+    # 6 steps + 5 arrows = 11 columns
     # We tweak ratios: Buttons (2), Arrows (0.5)
-    cols = st.columns([2, 0.5, 2, 0.5, 2, 0.5, 2, 0.5, 2])
+    cols = st.columns([2, 0.5, 2, 0.5, 2, 0.5, 2, 0.5, 2, 0.5, 2])
     
     for idx, (step_id, step_label) in enumerate(steps.items()):
-        # Calculate column index for button: 0, 2, 4, 6, 8
+        # Calculate column index for button: 0, 2, 4, 6, 8, 10
         col_idx = idx * 2
         
         with cols[col_idx]:
             is_active = (st.session_state['ml_step'] == step_id)
-            # Use emoji in label for flair
-            label_map = {1: "", 2: "", 3: "", 4: "", 5: ""}
             full_label = f"{step_label}"
             
             # Primary type for active, Secondary for inactive
-            if st.button(full_label, key=f"flow_btn_{step_id}", type="primary" if is_active else "secondary", use_container_width=True):
+            if st.button(full_label, key=f"flow_btn_{step_id}", type="primary" if is_active else "secondary", width="stretch"):
                 st.session_state['ml_step'] = step_id
                 st.rerun()
         
@@ -119,30 +119,124 @@ def render_roadmap():
     # Content Rendering
     current = st.session_state['ml_step']
 
+    # --- STEP 1: EXTRACTION ---
     if current == 1:
-        st.header("1. Collecte & Préparation Initiale")
+        st.header("1. Extraction de Features (Handcrafted)")
+        c_text, c_img = st.columns([1, 2])
+        with c_text:
+            st.markdown("""
+            Calcul de **34 descripteurs numériques** via **OpenCV**, **NumPy** et **skimage.feature**.
+            Cette étape transforme les pixels bruts en vecteurs d'information exploitables.
+            """)
+            st.markdown("""
+            - **Méthodes utilisées :**
+                - **Morphologie** : Forme de la feuille (Aire, périmètre, circularité).
+                - **Couleur** : Statistiques RGB/HSV (Moyennes, Écarts-types).
+                - **Texture** : Matrices de co-occurrence (Haralick/GLCM), contraste, uniformité.
+                - **Fréquences** : Spectre de Fourier (FFT).
+            """)
+        
+        with c_img:
+            st.image("Streamlit/assets/Les datasets/Caractéristiques.drawio.png", caption="Synthèse des Features", width=900)
+            
+        ranking_path = "results/feature_ranking.csv"
+        if os.path.exists(ranking_path):
+            st.divider()
+            st.markdown("### Importance des Features")
+            df_rank = pd.read_csv(ranking_path).head(15).sort_values(by="final_score", ascending=True)
+            fig_rank = px.bar(df_rank, x="final_score", y="feature", orientation="h",
+                               title="Top 15 des Features les plus discriminantes",
+                               color="final_score", color_continuous_scale="GnBu")
+            st.plotly_chart(fig_rank, width="stretch")
+
+    # --- STEP 2: SPLIT ---
+    elif current == 2:
+        st.header("2. Division du Dataset (Split)")
         st.info("Stratégie : Créer une base solide et représentative pour l'entraînement.")
         
-        c1, c2 = st.columns([1, 1])
-        with c1:
-            st.markdown("""
-            **Données & Split :**
-            - Provenance : Datasets publics (PlanteNet).
-            - **Split Stratifié : 80 / 10 / 10**
-                - **Train** : Pour l'entraînement.
-                - **Validation** : Pour le tuning des hyperparamètres.
-                - **Test** : Pour l'évaluation finale objective.
-            """)
-            
-        with c2:
-            st.markdown("""
-            **Objectifs :**
-            - Images nettes et représentatives.
-            - Equilibrage des classes via rééchantillonnage (sur Train uniquement).
-            """)
+        st.markdown("""
+        **Split Stratifié : 80 / 10 / 10**
+        
+        Afin de garantir une distribution équitable des classes dans chaque sous-ensemble, nous avons opté pour une division stratifiée :
+        
+        - **Train (80%)** : Données utilisées pour l'entraînement des modèles.
+        - **Validation (10%)** : Données utilisées pour le réglage des hyperparamètres (tuning).
+        - **Test (10%)** : Données "jamais vues" pour l'évaluation finale et objective.
+        """)
+        
+        # Simple visualization of split
+        split_data = pd.DataFrame({
+            "Split": ["Train", "Validation", "Test"],
+            "Pourcentage": [80, 10, 10],
+            "Rôle": ["Entraînement", "Tuning", "Évaluation"]
+        })
+        fig_split = px.pie(split_data, values="Pourcentage", names="Split", hole=0.4, color_discrete_sequence=px.colors.qualitative.Set3)
+        st.plotly_chart(fig_split, width="stretch")
 
+
+    # --- STEP 3: RÉÉCHANTILLONNAGE ---
+    elif current == 3:
+        st.header("3. Rééchantillonnage (Train uniquement)")
+        
+        st.warning("Problème initial : Certaines classes étaient sous-représentées par rapport à d'autres.")
+        
+        st.markdown("""
+        **Solution : Équilibrage des classes**
+        
+        Nous avons appliqué des techniques de rééchantillonnage (Oversampling / Undersampling) **uniquement sur le jeu d'entraînement** pour éviter de biaiser la validation et le test.
+        
+        Cela permet aux modèles d'apprendre à reconnaître toutes les espèces et maladies avec la même attention, sans favoriser les classes majoritaires.
+        """)
+
+
+    # --- STEP 4: PRÉ-TRAITEMENTS ---
+    # --- STEP 4: PRÉ-TRAITEMENTS ---
+    elif current == 4:
+        st.header("4. Pré-traitements (Train)")
+        
+        # 4.1 Data Augmentation (Top Row)
+        st.subheader("4.1. Data Augmentation")
+        c_aug_text, c_aug_stat = st.columns([2, 1])
+        with c_aug_text:
+            st.markdown("""
+            **Enrichissement artificiel** pour réduire l'overfitting et améliorer la robustesse.
+            - **Techniques** : Rotations, Flips, Bruit gaussien, Translations.
+            """)
+        with c_aug_stat:
+            st.metric("Train Initial", "43 445", help="80% du dataset original")
+            st.metric("Train Après Augm.", "91 770", delta="+111%")
+            
+        st.divider()
+
+        # 4.2 Scaling
+        st.subheader("4.2. Scaling")
+        st.info("**RobustScaler**")
+        st.markdown("""
+        **Justification :**
+        
+        Gestion des **40% d'outliers** présents dans nos données (features).
+        """)
 
         st.divider()
+
+        # 4.3 Selection
+        st.subheader("4.3. Sélection")
+        st.info("**SHAP Analysis**")
+        st.write("Sélection des descripteurs les plus pertinents pour le modèle.")
+        
+        shap_global_path = "figures/shap_analysis/1_global_importance.png"
+        if os.path.exists(shap_global_path):
+             st.image(shap_global_path, caption="Top Features (SHAP)", width="stretch")
+
+
+    # --- STEP 5: MODÉLISATION ---
+    elif current == 5:
+        st.header("5. Modélisation")
+        
+        st.markdown("""
+        Notre approche a consisté à tester plusieurs familles d'algorithmes pour trouver le meilleur compromis performance/complexité.
+        """)
+        
         st.write("### Exploration par l'équipe")
         cols_team = st.columns(4)
         team_data = [
@@ -154,77 +248,12 @@ def render_roadmap():
         for idx, (algo, author) in enumerate(team_data):
             with cols_team[idx]:
                 st.info(f"**{algo}**\n\n*{author}*")
-            
-    elif current == 2:
-        st.header("2. Extraction de Features (Handcrafted)")
-        c_text, c_img = st.columns([1, 2])
-        with c_text:
-            st.markdown("""
-            Calcul de **34 descripteurs numériques** via **OpenCV**, **NumPy** et **skimage.feature**.
-            Cette étape transforme les pixels bruts en vecteurs d'information exploitables par des modèles classiques.
-            """)
-            st.markdown("""
-            - **Méthodes utilisées :**
-                - **Morphologie** : Forme de la feuille (Aire, périmètre, circularité).
-                - **Couleur** : Statistiques RGB/HSV (Moyennes, Écarts-types).
-                - **Texture** : Matrices de co-occurrence (Haralick/GLCM), contraste, uniformité.
-                - **Fréquences** : Spectre de Fourier (FFT).
-            """)
-        
-        with c_img:
-            st.image("Streamlit/assets/Les datasets/Caractéristiques.drawio.png", caption="Synthèse des Features", width=700)
-            
-        ranking_path = "results/feature_ranking.csv"
-        if os.path.exists(ranking_path):
-            st.divider()
-            st.markdown("### Importance des Features")
-            df_rank = pd.read_csv(ranking_path).head(15).sort_values(by="final_score", ascending=True)
-            fig_rank = px.bar(df_rank, x="final_score", y="feature", orientation="h",
-                               title="Top 15 des Features les plus discriminantes",
-                               color="final_score", color_continuous_scale="GnBu")
-            st.plotly_chart(fig_rank, use_container_width=True)
 
-    elif current == 3:
-        st.header("3. Nettoyage & Augmentation")
+    # --- STEP 6: ÉVALUATION ---
+    elif current == 6:
+        st.header("6. Évaluation & Résultats")
         
-        col_aug1, col_aug2 = st.columns(2)
-        with col_aug1:
-            st.subheader("Pré-traitements")
-            st.write("Suppression des images corrompues ou générant des valeurs NaN après extraction.")
-            
-        with col_aug2:
-            st.subheader("Data Augmentation")
-            st.markdown("""
-            **Enrichissement du dataset (sur Train uniquement) :**
-            - Rotations, Flips, Bruit gaussien.
-            - **Volume final** : 91 770 images.
-            """)
-            st.info("Permet de renforcer la robustesse du modèle face aux variations.")
-
-    elif current == 4:
-        st.header("4. Scaling & Sélection")
-        
-        st.markdown("### Standardisation")
-        st.write("Utilisation de **RobustScaler** pour normaliser les caractéristiques.")
-        st.success("**Pourquoi ?** Pour gérer efficacement les **40% d'outliers** détectés dans les distributions de features.")
-        
-        st.divider()
-        
-        st.markdown("### Sélection de Features (SHAP)")
-        st.write("Identification des features les plus informatives pour réduire la dimensionnalité sans perdre de précision.")
-        
-        shap_global_path = "figures/shap_analysis/1_global_importance.png"
-        if os.path.exists(shap_global_path):
-             st.image(shap_global_path, caption="Importance Globale des Features (SHAP)", use_container_width=True)
-
-    elif current == 5:
-        st.header("5. Modélisation & Évaluation")
-        
-        st.markdown("""
-        Entraînement sur le **Train Set**, validation sur le **Valid Set**, et verdict final sur le **Test Set**.
-        """)
-        
-        with st.expander("Définitions des Métriques", expanded=False):
+        with st.expander("Rappel des Métriques", expanded=False):
             st.markdown("""
             - **Accuracy** : % de prédictions correctes.
             - **Précision** : Capacité à éviter les faux positifs (fiabilité).
@@ -232,13 +261,9 @@ def render_roadmap():
             - **F1-score** : Moyenne harmonique (équilibre) entre précision et rappel.
             """)
         
-
-
         st.divider()
         st.success("**Résultats sur le Test Set**")
         
-        # Reuse logic for reports logic...
-
         # Données complètes (Source: machine_learning.py)
         full_perf_data = {
             "Modèle": ["SVM (RBF)", "XGBoost", "Reg. Logistique", "Extra-Trees"],
@@ -255,7 +280,7 @@ def render_roadmap():
                         text_auto='.2f', color_discrete_sequence=px.colors.qualitative.Pastel)
         fig_full.update_layout(yaxis_range=[0.7, 1.0], margin=dict(t=0, b=0, l=0, r=0), 
                                legend=dict(orientation="h", y=1.1))
-        st.plotly_chart(fig_full, use_container_width=True)
+        st.plotly_chart(fig_full, width="stretch")
         
         st.divider()
         st.subheader("Détail par classe & Matrices de Confusion")
@@ -289,6 +314,18 @@ def render_roadmap():
                     if os.path.exists(paths["report"]):
                         df_report = parse_classification_report(paths["report"])
                         if df_report is not None:
+                            # --- Fix for XGBoost which uses numeric class labels ---
+                            if df_report["Classe"].iloc[0] in ["0", 0, "0.0"]: 
+                                class_mapping = {
+                                    "0": "Apple", "1": "Blueberry", "2": "Cherry_(sour)", 
+                                    "3": "Corn_(maize)", "4": "Grape", "5": "Orange", 
+                                    "6": "Peach", "7": "Pepper,_bell", "8": "Potato", 
+                                    "9": "Raspberry", "10": "Soybean", "11": "Squash", 
+                                    "12": "Strawberry", "13": "Tomato"
+                                }
+                                df_report["Classe"] = df_report["Classe"].astype(str).map(class_mapping).fillna(df_report["Classe"])
+                            # -----------------------------------------------------
+
                             df_display = df_report.copy()
                             for col in ["Précision", "Rappel", "F1-score"]:
                                 df_display[col] = df_display[col].apply(lambda x: f"{x:.2f}")
@@ -296,12 +333,12 @@ def render_roadmap():
                             st.caption("Rapport de Classification")
                             img_buf = render_df_as_image(df_display, title=None)
                             if img_buf:
-                                st.image(img_buf, use_container_width=True)
+                                st.image(img_buf, width="stretch")
                     
                     # 2. Confusion Matrix
                     if os.path.exists(paths["plot"]):
                         st.caption("Matrice de Confusion")
-                        st.image(paths["plot"], use_container_width=True)
+                        st.image(paths["plot"], width="stretch")
                     else:
                         st.warning("Matrice de confusion introuvable")
 

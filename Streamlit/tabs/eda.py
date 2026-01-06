@@ -158,6 +158,62 @@ def sidebar_choice():
 
             
     with tab3:
+        st.header(" Exploration de la distribution des classes")
+  
+
+        st.markdown("#### Analyse de l'équilibre Saine vs Malade")
+        
+        csv_full_path = "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all.csv"
+        if os.path.exists(csv_full_path):
+            df_full = pd.read_csv(csv_full_path)
+            
+            # --- Chart 1: Saine vs Malade par Espèce ---
+            df_state = df_full.groupby(['nom_plante', 'Est_Saine']).size().reset_index(name='count')
+            df_state['Etat'] = df_state['Est_Saine'].map({True: 'Saine', False: 'Malade'})
+            
+            fig1 = px.bar(df_state, x='nom_plante', y='count', color='Etat', barmode='group',
+                         labels={'nom_plante': "Espèce", 'count': "Nombre d'images"},
+                         color_discrete_map={'Saine': '#FF4B4B', 'Malade': '#636EFA'}) # Couleurs proches de l'image
+            st.plotly_chart(fig1, use_container_width=True)
+            st.markdown("#### Répartition des images saines vs malades par espèce")
+            
+            # --- Charts 2 & 3: Distributions séparées ---
+            colA, colB = st.columns(2)
+            
+            with colA:
+                df_healthy = df_full[df_full['Est_Saine'] == True].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
+                df_healthy['class'] = df_healthy['nom_plante'] + " " + df_healthy['nom_maladie']
+                df_healthy = df_healthy.sort_values('count', ascending=False)
+                fig2 = px.bar(df_healthy, x='class', y='count', 
+                             labels={'class': "Classe (espèce saine)", 'count': "Nombre d'images"},
+                             color_discrete_sequence=['#636EFA'])
+                st.plotly_chart(fig2, use_container_width=True)
+                st.markdown("<h5 style='text-align: center;'>Distribution des classes saines</h5>", unsafe_allow_html=True)
+                
+            with colB:
+                df_disease = df_full[df_full['Est_Saine'] == False].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
+                df_disease['class'] = df_disease['nom_plante'] + " " + df_disease['nom_maladie']
+                df_disease = df_disease.sort_values('count', ascending=False)
+                fig3 = px.bar(df_disease, x='class', y='count', 
+                             labels={'class': "Classe (espèce)", 'count': "Nombre d'images"},
+                             color_discrete_sequence=['#636EFA'])
+                st.plotly_chart(fig3, use_container_width=True)
+                st.markdown("<h5 style='text-align: center;'>Distribution des classes malades</h5>", unsafe_allow_html=True)
+
+            st.markdown("""
+            **Analyse de l'équilibre** : 
+            *   La **Tomate** domine largement le dataset avec plus de 15 000 images, dont une grande partie est affectée par le virus *Yellow Leaf Curl*.
+            *   Certaines espèces comme le **Soybean** sont principalement représentées en état sain, tandis que d'autres (Orange, Squash) n'apparaissent qu'en état pathologique dans cet inventaire.
+            *   Ce déséquilibre est un défi majeur : le modèle pourrait avoir tendance à prédire plus facilement les classes sur-représentées.
+            """)
+        else:
+            st.warning("Données sources introuvables pour les graphiques interactifs.")
+            st.image("Streamlit/assets/class_distribution_analysis.png", caption="Répartition détaillée (version statique)", use_container_width=True)
+        
+        st.info(" Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
+
+        st.divider()
+
         st.header(" Pipeline de Preprocessing")
         st.markdown("""
         Pour garantir la robustesse du modèle lors du passage en production (images réelles), nous avons appliqué un nettoyage strict.
@@ -230,62 +286,5 @@ def sidebar_choice():
                 st.image("Streamlit/assets/images_noires.png", 
                        caption="Aperçu des 18 images sombres (Survolez pour zoomer)", 
                        use_container_width=True)
-
-        st.markdown("---")
-        
-        with tab3:
-            st.header(" Exploration de la distribution des classes")
-  
-
-        st.markdown("#### Analyse de l'Équilibre Saine vs Malade")
-        
-        csv_full_path = "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all.csv"
-        if os.path.exists(csv_full_path):
-            df_full = pd.read_csv(csv_full_path)
-            
-            # --- Chart 1: Saine vs Malade par Espèce ---
-            df_state = df_full.groupby(['nom_plante', 'Est_Saine']).size().reset_index(name='count')
-            df_state['Etat'] = df_state['Est_Saine'].map({True: 'Saine', False: 'Malade'})
-            
-            fig1 = px.bar(df_state, x='nom_plante', y='count', color='Etat', barmode='group',
-                         labels={'nom_plante': "Espèce", 'count': "Nombre d'images"},
-                         color_discrete_map={'Saine': '#FF4B4B', 'Malade': '#636EFA'}) # Couleurs proches de l'image
-            st.plotly_chart(fig1, use_container_width=True)
-            st.markdown("<h5 style='text-align: center;'>Répartition des images saines vs malades par espèce</h5>", unsafe_allow_html=True)
-            
-            # --- Charts 2 & 3: Distributions séparées ---
-            colA, colB = st.columns(2)
-            
-            with colA:
-                df_healthy = df_full[df_full['Est_Saine'] == True].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
-                df_healthy['class'] = df_healthy['nom_plante'] + " " + df_healthy['nom_maladie']
-                df_healthy = df_healthy.sort_values('count', ascending=False)
-                fig2 = px.bar(df_healthy, x='class', y='count', 
-                             labels={'class': "Classe (espèce saine)", 'count': "Nombre d'images"},
-                             color_discrete_sequence=['#636EFA'])
-                st.plotly_chart(fig2, use_container_width=True)
-                st.markdown("<h5 style='text-align: center;'>Distribution des classes saines</h5>", unsafe_allow_html=True)
-                
-            with colB:
-                df_disease = df_full[df_full['Est_Saine'] == False].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
-                df_disease['class'] = df_disease['nom_plante'] + " " + df_disease['nom_maladie']
-                df_disease = df_disease.sort_values('count', ascending=False)
-                fig3 = px.bar(df_disease, x='class', y='count', 
-                             labels={'class': "Classe (espèce)", 'count': "Nombre d'images"},
-                             color_discrete_sequence=['#636EFA'])
-                st.plotly_chart(fig3, use_container_width=True)
-                st.markdown("<h5 style='text-align: center;'>Distribution des classes malades</h5>", unsafe_allow_html=True)
-
-            st.markdown("""
-            **Analyse de l'Équilibre** : 
-            *   La **Tomate** domine largement le dataset avec plus de 15 000 images, dont une grande partie est affectée par le virus *Yellow Leaf Curl*.
-            *   Certaines espèces comme le **Soybean** sont principalement représentées en état sain, tandis que d'autres (Orange, Squash) n'apparaissent qu'en état pathologique dans cet inventaire.
-            *   Ce déséquilibre est un défi majeur : le modèle pourrait avoir tendance à prédire plus facilement les classes sur-représentées.
-            """)
-        else:
-            st.warning("Données sources introuvables pour les graphiques interactifs.")
-            st.image("Streamlit/assets/class_distribution_analysis.png", caption="Répartition détaillée (version statique)", use_container_width=True)
-        
-        st.info(" ==> Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
 
 

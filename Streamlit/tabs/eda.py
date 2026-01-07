@@ -83,23 +83,18 @@ def sidebar_choice():
         )
 
         # Convertir en HTML avec style forcé
-        html = df_comparison.style.set_properties(**{
-            'background-color': 'white',
-            'color': 'black',
-            'border-color': 'black',
-            'font-size': '14px'  # Police plus petite
-        }).set_table_styles([
-            {
-                'selector': 'th',
-                'props': [
-                    ('background-color', '#a2d2ff'),  # Couleur bleu clair pour l'entête
-                    ('color', 'black'),
-                    ('font-size', '14px'),
-                    ('border', '1px solid black')
-                ]
-            }
-        ]).applymap(lambda x: 'background-color: #d6eaf8; font-weight: bold', subset=['Caractéristiques']).hide(axis="index").to_html()
-        st.markdown(html, unsafe_allow_html=True)
+        numeric_cols = df_comparison.select_dtypes(include="number").columns.tolist()
+        df_styled = df_comparison.style.hide(axis="index")
+        if numeric_cols:
+            df_styled = df_styled.highlight_max(axis=0, color='lightgreen', subset=numeric_cols).format("{:.4f}", subset=numeric_cols)
+
+        df_styled = df_styled.set_properties(**{
+            "white-space": "pre-wrap",
+            "word-break": "break-word",
+        })
+
+        html = df_styled.to_html()
+        st.markdown(f"<div style='overflow-x:auto'>{html}</div>", unsafe_allow_html=True)
 
         st.markdown("""
         **Plant Disease** est éliminé car, pour un même ordre de grandeur du nombre d’images,

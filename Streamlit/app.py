@@ -3,7 +3,7 @@ import streamlit as st
 from tabs import home, eda, modeling, machine_learning, deep_learning, proof_of_concept, conclusion
 
 st.set_page_config(
-    page_title="HerbI-Dent - Reconnaissance des Plantes & Maladies",
+    page_title="Reco-Plante",
     page_icon="🌿",
     layout="wide"
 )
@@ -32,7 +32,6 @@ st.markdown("""
     [data-testid="stSidebar"] h1 {
         font-size: 2rem !important;
         color: white !important;
-        border-bottom: 2px solid rgba(255,255,255,0.3);
         margin-bottom: 20px;
     }
     /* Modern Card styling */
@@ -67,7 +66,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def main():
-    st.sidebar.title("Navigation")
+    # Icône en haut de la navigation
+    st.sidebar.markdown("<h1 style='text-align: center; font-size: 4rem;'>🌿</h1>", unsafe_allow_html=True)
+    
+    
     
     # Dictionnaire des pages
     pages = {
@@ -81,7 +83,7 @@ def main():
     }
     
     # Création du menu radios
-    selection = st.sidebar.radio("Aller à", list(pages.keys()))
+    selection = st.sidebar.radio("Aller à", list(pages.keys()), label_visibility="collapsed")
 
     logo_path = "Streamlit/assets/logo_datascientest.png"
     if os.path.exists(logo_path):

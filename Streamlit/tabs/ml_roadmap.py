@@ -6,6 +6,7 @@ import io
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import streamlit.components.v1 as components
 
 # Helper functions for reporting (reused)
 def parse_classification_report(file_path):
@@ -139,9 +140,18 @@ def render_roadmap():
         with c_img:
             st.image("Streamlit/assets/Les datasets/Caractéristiques.drawio.png", caption="Synthèse des Features", width=900)
             
+        # --- Histogram Integration ---
+        histo_path = "features_engineering/analyse_exploratoire/objectif1_histos.html"
+        if os.path.exists(histo_path):
+            st.divider()
+            st.markdown("### Distribution des Features (Objectif 1)")
+            with open(histo_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+                components.html(html_content, height=450, scrolling=True)
+        # -----------------------------
+
         ranking_path = "results/feature_ranking.csv"
         if os.path.exists(ranking_path):
-            st.divider()
             st.markdown("### Importance des Features")
             df_rank = pd.read_csv(ranking_path).head(15).sort_values(by="final_score", ascending=True)
             fig_rank = px.bar(df_rank, x="final_score", y="feature", orientation="h",

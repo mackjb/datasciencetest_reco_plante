@@ -20,7 +20,7 @@ def render_dl_page():
     </style>
     """, unsafe_allow_html=True)
 
-    st.subheader("🏗️ Architectures Sélectionnées")
+    st.subheader("Architectures Sélectionnées")
     tab_archi3, tab_archi9 = st.tabs([
         "📱 Archi 3 : Solution Edge/Mobile",
         "🏆 Archi 9 : Solution Production Cloud"
@@ -118,7 +118,7 @@ def render_dl_page():
 
         with c2:
             st.markdown("<br><br><br>", unsafe_allow_html=True)
-            if st.button("🚀 Lancer l'Analyse Archi 3", type="primary", use_container_width=True, disabled=st.session_state.analyzed3):
+            if st.button("Lancer l'Analyse Archi 3", type="primary", use_container_width=True, disabled=st.session_state.analyzed3):
                 with st.spinner("Inférence en cours..."):
                     time.sleep(1.2)
                     st.session_state.analyzed3 = True
@@ -232,7 +232,7 @@ def render_dl_page():
 
         with c2:
             st.markdown("<br><br><br>", unsafe_allow_html=True)
-            if st.button("🚀 Lancer l'Analyse Archi 9", type="primary", use_container_width=True, disabled=st.session_state.analyzed9):
+            if st.button("Lancer l'Analyse Archi 9", type="primary", use_container_width=True, disabled=st.session_state.analyzed9):
                 with st.spinner("Inférence en cours..."):
                     time.sleep(1.2)
                     st.session_state.analyzed9 = True
@@ -259,7 +259,7 @@ def render_dl_page():
 # SIDEBAR
 # =========================
 def sidebar_choice():
-    st.title("🧠 Deep Learning")
+    st.title("Deep Learning")
     render_dl_page()
 
 # =========================

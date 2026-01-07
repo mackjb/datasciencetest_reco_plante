@@ -1,9 +1,8 @@
 import streamlit as st
-from tabs import home, eda, modeling, machine_learning, deep_learning, proof_of_concept, conclusion, ml_roadmap
+from tabs import home, eda, modeling, machine_learning, deep_learning, dl_exploration, proof_of_concept, conclusion, ml_roadmap
 
 st.set_page_config(
     page_title="HerbI-Dent - Reconnaissance des Plantes & Maladies",
-    page_icon="🌿",
     layout="wide"
 )
 
@@ -75,7 +74,8 @@ def main():
         "Méthodologie ML- DL": modeling,
         "Machine Learning" : machine_learning,
         "Machine Learning (Roadmap)": ml_roadmap,
-        "Deep Learning" : deep_learning,
+        "Deep Learning": dl_exploration,
+        "Deep Learning (Architectures)": deep_learning,
         "PoCs": proof_of_concept,
         "Conclusion & Perspectives": conclusion,
     }

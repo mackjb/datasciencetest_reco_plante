@@ -2,11 +2,12 @@ import streamlit as st
 import pandas as pd
 import os
 import plotly.express as px
+import streamlit.components.v1 as components
 
 def sidebar_choice():
-    st.title("🔎 Analyse Exploratoire & Preprocessing")
+    st.title("Analyse Exploratoire & Preprocessing")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📂 Les Datasets", "📊 PlantVillage", "🧹 Nettoyage", "📈 Visualisation"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Les Datasets", "PlantVillage", "Nettoyage", "Visualisation"])
     
     with tab1:
         st.header("1. Les Datasets")
@@ -134,7 +135,7 @@ def sidebar_choice():
         Pour garantir la robustesse du modèle lors du passage en production (images réelles), nous avons appliqué un nettoyage strict.
         """)
         
-        st.markdown("### 🛠 Étapes Clés du Nettoyage")
+        st.markdown("### Étapes Clés du Nettoyage")
         st.markdown("""
         1.  **Suppression des Images Inexploitables** : 18 images détectées comme presque noires ont été retirées.
         2.  **Détection de Doublons** : 21 doublons d'images ont été supprimés pour éviter tout biais.
@@ -168,7 +169,7 @@ def sidebar_choice():
             st.warning(f"⚠️ Fichier de données introuvable : {cnt_path}")
             
         st.divider()
-        st.markdown("### 📊 Statistiques de Nettoyage & Qualité")
+        st.markdown("### Statistiques de Nettoyage & Qualité")
         
         v1, v2 = st.columns(2)
         
@@ -199,7 +200,7 @@ def sidebar_choice():
             st.caption("Zoom sur les 44 images écartées lors de l'audit technique.")
 
         st.markdown("---")
-        st.markdown("#### 🔄 Impact du Pipeline de Nettoyage")
+        st.markdown("#### Impact du Pipeline de Nettoyage")
         
         # Un petit graphique de progression pour le volume de données
         steps = ["Initial", "Après Doublons", "Après Outliers Noirs", "Dataset Final"]
@@ -210,7 +211,7 @@ def sidebar_choice():
         fig_steps.update_traces(line_color='#2E8B57', line_width=4)
         st.plotly_chart(fig_steps, use_container_width=True)
         st.markdown("---")
-        st.markdown("#### ⚖️ Analyse de l'Équilibre Saine vs Malade (Interactif)")
+        st.markdown("#### Analyse de l'Équilibre Saine vs Malade (Interactif)")
         
         csv_full_path = "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all.csv"
         if os.path.exists(csv_full_path):
@@ -259,6 +260,43 @@ def sidebar_choice():
             st.warning("Données sources introuvables pour les graphiques interactifs.")
             st.image("Streamlit/assets/class_distribution_analysis.png", caption="Répartition détaillée (version statique)", use_container_width=True)
         
-        st.info("💡 **Insight Expert** : Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
+        st.info("**Insight Expert** : Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
+
+        st.divider()
+        st.header("5. Exploration des Features (Engineering)")
+        st.markdown("""
+        Cette section présente les visualisations générées lors de la phase d'ingénierie des fonctionnalités.
+        En raison de la complexité et du volume de données, certains graphiques peuvent être lourds à charger.
+        """)
+        
+        feature_graphs = {
+            "Objectif 1 (Histos)": "features_engineering/analyse_exploratoire/objectif1_histos.html",
+            "Objectif 2 (Histos)": "features_engineering/analyse_exploratoire/objectif2_histos.html",
+            "Objectif 3 (Histos)": "features_engineering/analyse_exploratoire/objectif3_histos.html",
+            "Heatmap Features": "features_engineering/analyse_exploratoire/heatmap_features_grouped.html",
+            "Distributions Globales (Lourd - 67Mo)": "features_engineering/analyse_exploratoire/distributions_features_targets.html",
+            "Outliers par Feature": "features_engineering/analyse_exploratoire/outliers_par_feature.html"
+        }
+        
+        selected_graph = st.selectbox("Choisir une visualisation", list(feature_graphs.keys()))
+        
+        if st.button("Charger la visualisation"):
+            # Base path assumes running from project root
+            base_dir = os.getcwd() 
+            graph_path = os.path.join(base_dir, feature_graphs[selected_graph])
+            
+            if os.path.exists(graph_path):
+                with open(graph_path, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+                    # Adjust height based on content type roughly
+                    height = 800
+                    if "distributions" in graph_path:
+                        height = 1200
+                        st.warning("⚠️ Ce fichier est volumineux, le rendu peut prendre quelques secondes.")
+                    
+                    components.html(html_content, height=height, scrolling=True)
+            else:
+                st.error(f"Fichier introuvable : {graph_path}")
+                st.code(f"Chemin cherché : {graph_path}")
 
 

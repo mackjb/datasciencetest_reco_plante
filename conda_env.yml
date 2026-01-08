@@ -25,4 +25,8 @@ dependencies:
       - joblib
       - streamlit
       - openpyxl
+      - streamlit-lottie
+      - requests
+      - streamlit-markmap==1.0.1
+      - streamlit-image-comparison
     

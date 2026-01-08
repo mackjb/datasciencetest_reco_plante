@@ -1,6 +1,8 @@
 import streamlit as st
 import os
 
+from utils import render_mermaid
+
 def sidebar_choice():
 
     # --- HEADER ---
@@ -96,7 +98,66 @@ def sidebar_choice():
     # --- ENVIRONNEMENT DE DÉVELOPPEMENT ---
     with col_env:
         st.markdown("## Environnement de développement")
-        st.image("Streamlit/assets/env_dev.png", use_container_width=True)
+        
+        # Interactive Mindmap Data Definition for Dev Environment
+        mindmap_env = {
+            "id": "root",
+            "text": "Environnements de<br/>développement",
+            "children": [
+                {
+                    "id": "Env_Execution",
+                    "text": "Environnements<br/>d'exécution",
+                    "children": [
+                        {"id": "Codespaces", "text": "GitHub Codespaces reproductible"},
+                        {"id": "Local_GPU", "text": "Docker + Machines locales<br/>avec GPU"},
+                        {"id": "Compute AML", "text": "Compute AML avec GPU"}
+                    ]
+                },
+                {
+                    "id": "Outils",
+                    "text": "Outils",
+                    "children": [
+                        {"id": "Windsurf", "text": "Windsurf"},
+                        {"id": "VSCode", "text": "Visual Studio Code"},
+                        {"id": "Git", "text": "Git"}
+                    ]
+                },
+                {
+                    "id": "Pratique",
+                    "text": "Pratique de<br/>développement",
+                    "children": [
+                        {"id": "Py", "text": ".py"}
+                    ]
+                },
+                {
+                    "id": "Suivi",
+                    "text": "Suivi des<br/>expérimentations",
+                    "children": [
+                        {"id": "MLFlow", "text": "MLFlow déployé<br/>sur Azure"}
+                    ]
+                },
+                {
+                    "id": "Gestion_Dep",
+                    "text": "Gestion des<br/>dépendances",
+                    "children": [
+                        {"id": "Conda", "text": "Conda : fichier env,<br/>Python 3.11"},
+                        {
+                            "id": "Librairies",
+                            "text": "Librairies",
+                            "children": [
+                                {"id": "Pandas", "text": "pandas"},
+                                {"id": "Matplotlib", "text": "matplotlib"},
+                                {"id": "Scikit", "text": "scikit-learn"},
+                                {"id": "Tensorflow", "text": "TensorFlow, ..."},
+                                {"id": "Versions_GPU", "text": "versions adaptées<br/>aux GPUs récents"}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+        
+        render_mermaid(mindmap_env, height=600)
 
 
 

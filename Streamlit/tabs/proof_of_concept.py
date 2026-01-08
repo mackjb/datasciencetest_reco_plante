@@ -47,6 +47,25 @@ def render_dl_page():
     .card--success { border-color: rgba(46, 204, 113, 0.35); }
     .card--warning { border-color: rgba(241, 196, 15, 0.40); }
     .card--info    { border-color: rgba(52, 152, 219, 0.40); }
+
+    /* Clickable Card Overlay CSS */
+    div[data-testid="column"] {
+        position: relative;
+    }
+    div[data-testid="column"]:hover .demo-img-container {
+        transform: scale(1.02);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    /* Target the button inside the specific POC columns */
+    .stButton button.full-overlay-btn {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 5;
+        opacity: 0;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -158,13 +177,65 @@ def render_dl_page():
         for i, ex in enumerate(examples_archi3):
             with cols[i]:
                 border = "5px solid #2E8B57" if st.session_state.selected_idx3 == i else "2px solid #ddd"
+                
+                # Image + Container visual
                 st.markdown(f"<div class='demo-img-container' style='border: {border};'>", unsafe_allow_html=True)
-                if st.button(f"Sélect. {ex['id']}", key=f"btn3_{ex['id']}"):
-                    st.session_state.selected_idx3 = i
-                    st.session_state.analyzed3 = False
-                    st.rerun()
                 st.image(ex["img_orig"], use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
+
+                # Invisible overlay button
+                # We inject custom CSS class via JavaScript hack or just rely on 'key' targeting? 
+                # Actually Streamlit 1.12+ supports type="primary" etc but not custom classes on buttons easily without args.
+                # I'll use a specific key based approach or insert style block right here.
+                # HACK: Using a label that we can target or just absolute positioning the *next* element if I swap order.
+                # Better: Use CSS targeting the button by order if possible.
+                # Let's try the absolute positioning on ALL buttons in these columns by scoping.
+                
+                # To make the button act as overlay, we render it AND apply the class via inline JS or CSS check.
+                # Simplified: standard button with custom CSS class 'full-overlay-btn' if possible? No.
+                # Workaround: st.markdown with style block that targets the Specific widget ID is hard given dynamic IDs.
+                # I will use the negative margin trick which is robust.
+                
+                st.markdown("""
+                <style>
+                div.row-widget.stButton > button {
+                    width: 100%;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                # The button needs to be drawn *after* the image but moved UP.
+                if st.button(f"Sélectionner {ex['id']}", key=f"btn3_{ex['id']}", use_container_width=True):
+                    st.session_state.selected_idx3 = i
+                    st.session_state.analyzed3 = True
+                    st.rerun()
+
+                # Move the button up to cover the image
+                st.markdown("""
+                <script>
+                // JavaScript attempt to add class? No, Streamlit prevents script execution often.
+                </script>
+                <style>
+                /* Target the button with specific key hash? No. 
+                   Target the LAST button in the column? */
+                div[data-testid="column"] > div.stButton {
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 100%;
+                    width: 100%;
+                    z-index: 10;
+                    opacity: 0;
+                }
+                /* Enable pointer events on the button */
+                div[data-testid="column"] > div.stButton > button {
+                    height: 100%;
+                    width: 100%;
+                }
+                </style>
+                """, unsafe_allow_html=True)
 
         st.divider()
         selected3 = examples_archi3[st.session_state.selected_idx3]
@@ -176,11 +247,9 @@ def render_dl_page():
 
         with c2:
             st.markdown("<br><br><br>", unsafe_allow_html=True)
-            if st.button("Lancer l'Analyse Archi 3", type="primary", use_container_width=True, disabled=st.session_state.analyzed3):
-                with st.spinner("Inférence en cours..."):
-                    time.sleep(1.2)
-                    st.session_state.analyzed3 = True
-
+            st.markdown("<br><br><br>", unsafe_allow_html=True)
+            # Bouton supprimé car l'analyse se fait au clic sur la sélection
+            
             if st.session_state.analyzed3:
                 st.markdown(f"""
                 <div style='background-color:#f1f8e9;padding:20px;border-radius:15px;border:1px solid #c5e1a5;text-align:center;'>
@@ -300,13 +369,37 @@ def render_dl_page():
         for i, ex in enumerate(examples_archi9):
             with cols[i]:
                 border = "5px solid #2E8B57" if st.session_state.selected_idx9 == i else "2px solid #ddd"
+                
+                # Image + Container visual
                 st.markdown(f"<div class='demo-img-container' style='border: {border};'>", unsafe_allow_html=True)
-                if st.button(f"Sélect. {ex['id']}", key=f"btn9_{ex['id']}"):
-                    st.session_state.selected_idx9 = i
-                    st.session_state.analyzed9 = False
-                    st.rerun()
-                st.image(ex["img_orig"], width=150)
+                st.image(ex["img_orig"],  use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
+
+                if st.button(f"Sélectionner {ex['id']}", key=f"btn9_{ex['id']}", use_container_width=True):
+                    st.session_state.selected_idx9 = i
+                    st.session_state.analyzed9 = True
+                    st.rerun()
+                
+                # Apply CSS overlay to this column's button
+                st.markdown("""
+                <style>
+                div[data-testid="column"] > div.stButton {
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 100%;
+                    width: 100%;
+                    z-index: 10;
+                    opacity: 0;
+                }
+                 div[data-testid="column"] > div.stButton > button {
+                    height: 100%;
+                    width: 100%;
+                 }
+                </style>
+                """, unsafe_allow_html=True)
 
         st.divider()
         selected9 = examples_archi9[st.session_state.selected_idx9]
@@ -317,11 +410,8 @@ def render_dl_page():
             st.image(selected9["img_orig"], caption="Image originale", width=300)
 
         with c2:
-            if st.button("Lancer l'Analyse Archi 9", type="primary", width=300, disabled=st.session_state.analyzed9):
-                with st.spinner("Inférence en cours..."):
-                    time.sleep(1.2)
-                    st.session_state.analyzed9 = True
-
+            # Bouton supprimé
+            
             if st.session_state.analyzed9:
                 st.markdown(f"""
                 <div style='background-color:#f1f8e9;padding:20px;border-radius:15px;border:1px solid #c5e1a5;text-align:center;'>

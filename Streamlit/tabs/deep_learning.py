@@ -51,85 +51,12 @@ def _render_loss_hover(loss_path: str, arch_num: str) -> None:
 
 def render_dl_content():
     st.markdown("""
-    Le Deep Learning permet d'apprendre automatiquement les features directement à partir des pixels, 
-    contrairement au Machine Learning classique qui nécessite une extraction manuelle de descripteurs.
+    Cette section détaille les **9 architectures** que nous avons conçues et testées.
+    L'objectif était de comparer différentes stratégies (mono-modèle, multi-tâches, cascade) pour répondre aux 3 cas d'usage métier.
     """)
-    
-    # --- Phase d'exploration individuelle ---
-    with st.expander("Phase d'Exploration Individuelle", expanded=False):
-        st.markdown("""
-        Dans le cadre de notre formation, **chaque membre de l'équipe a d'abord exploré individuellement 
-        un modèle pré-entraîné** pour se familiariser avec les techniques de Deep Learning et comprendre 
-        les différents défis liés à :
-        """)
 
-        col_img, col_txt = st.columns([1.3, 2])
-
-        with col_img:
-            st.image(
-                os.path.join(ASSETS_DIR, "leviers_DL.png"),
-                use_container_width=True,
-            )
-
-        with col_txt:
-            st.markdown("""
-            - Le choix du backbone (architecture du réseau)
-            - Le fine-tuning et le transfer learning
-            - La gestion du déséquilibre des classes
-            - L'optimisation des hyperparamètres
-            - L'interprétabilité des modèles
-            """)
-
-        st.markdown("""
-        Cette phase exploratoire nous a permis de **confronter la théorie à la pratique** et d'acquérir 
-        une compréhension approfondie des leviers disponibles avant de nous lancer dans l'exploration 
-        structurée des 9 architectures.
-        """)
-
-        st.subheader("Transfer Learning et Comparaison des Modèles")
-        
-        st.markdown("""
-        Nous avons choisi d'utiliser le **transfert d'apprentissage** car les modèles sont déjà entraînés 
-        sur des millions d'images pour détecter des motifs génériques (contours, textures, formes). 
-        C'est un **gain de temps et de ressources** considérable.
-        """)
-        
-        st.markdown("**Comparatif des Modèles Pré-entraînés Explorés :**")
-        
-        models_comparison = {
-            "Caractéristique": ["Année", "Auteurs/Org", "Paramètres (M)", "Taille modèle (MB)", 
-                               "GFLOPs (224×224)", "GFLOPs (256×256)", "Taille vecteur sortie",
-                               "Top-1 Acc ImageNet", "Top-5 Acc ImageNet", "Latence CPU (ms)", 
-                               "Latence GPU (ms)", "Taille entrée", "Profondeur (layers)"],
-            "EfficientNetV2-S": [2021, "Google Brain", 21.5, "~86", 8.4, "~10.8", 1280, 
-                                "83.9%", "96.7%", "60-80", "5-8", "384×384 (optim.)", "~150"],
-            "ResNet50": [2015, "Microsoft Research", 25.6, "~102", 4.1, "~5.3", 2048,
-                        "76.1%", "93.0%", "40-50", "3-5", "224×224", "50"],
-            "YOLOv8n-cls*": [2023, "Ultralytics", 2.7, "~11", 4.2, "~5.4", 1024,
-                           "69.0%", "88.3%", "25-35", "2-4", "224×224", "~100"],
-            "DenseNet-121": [2017, "Cornell/Facebook", 8.0, "~32", 2.9, "~3.7", 1024,
-                           "74.4%", "92.0%", "30-40", "3-5", "224×224", "121"]
-        }
-        df_models = pd.DataFrame(models_comparison)
-        
-        # Transposer pour avoir les modèles en colonnes
-        df_models_t = df_models.set_index("Caractéristique").T
-        
-        st.dataframe(df_models_t, use_container_width=True)
-        
-        st.success("""
-        **Choix retenu pour l'exploration des architectures : EfficientNetV2S**
-        
-        EfficientNetV2S offre un **excellent compromis entre performance et efficacité** :
-        - **Précision Top-1** de 83,9% sur ImageNet, surpassant ResNet50 (76,1%) et DenseNet-121 (74,4%)
-        - **21,5M paramètres** : moins que ResNet50 (25,6M) mais plus que DenseNet-121 (8M)
-        - **Efficacité computationnelle** remarquable : latence GPU réduite (5-8 ms)
-        - **Précision Top-5** de 96,7%, idéale pour des tâches de classification exigeantes
-        - Adapté à nos travaux nécessitant rapidité avec des ressources limitées
-        """)
-    
     # --- Méthodologie ---
-    with st.expander("Méthodologie & Critères de Sélection", expanded=False):
+    with st.expander("Rappel : Méthodologie & Critères", expanded=False):
         st.markdown("""
         ### Démarche structurée en 3 étapes :
         
@@ -153,13 +80,14 @@ def render_dl_content():
         
         st.info("""
         **Les 3 cas d'usage :**
+        **Les 3 cas d'usage :**
         - **Cas 1** : Identification d'espèce uniquement
         - **Cas 2** : Diagnostic ciblé (espèce connue → maladie)
         - **Cas 3** : Diagnostic complet (espèce + maladie inconnues)
         """)
 
     # Onglets principaux DL
-    dl_tabs = st.tabs(["Architectures", "Performances", "Interprétabilité"])
+    dl_tabs = st.tabs(["Architectures", "Performances"])
     
     with dl_tabs[0]:
         st.header("Protocole expérimental commun pour les 9 Architectures")
@@ -173,13 +101,9 @@ def render_dl_content():
         """)
 
         st.divider()
-
-        #--------------Les architectures -----------------------
-        # Marqueur 1 : début de la zone architectures 1 à 4 (vert)
-        st.markdown('<div class="dl-arch-marker-1"></div>', unsafe_allow_html=True)
-
-        # Présentation des architectures 1 à 4 (fond vert)
-        st.subheader("Backbone Pré-entraîné Dédié à Chaque Objectif")
+        
+        # Présentation des architectures
+        st.markdown("### Backbone Pré-entraîné Dédié à Chaque Objectif")
         
         arch_info_dedicated = [
             {
@@ -220,63 +144,22 @@ def render_dl_content():
             }
         ]
         
-        # Affichage des 4 architectures dédiées en grille 2x2
-        row1_cols = st.columns(2)
-        row2_cols = st.columns(2)
-
-        # Première ligne : architectures 1 et 2
-        for col, arch in zip(row1_cols, arch_info_dedicated[:2]):
-            with col:
-                with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                    left_col, right_col = st.columns(2)
-
-                    # Colonne gauche : schéma
-                    with left_col:
-                        if os.path.exists(arch['img']):
-                            st.image(arch['img'], use_container_width=True)
-
-                    # Colonne droite : survol pour la courbe de loss
-                    with right_col:
-                        loss_path = os.path.join(ASSETS_DIR, f"architectures/loss_archi_{arch['num']}.png")
-                        _render_loss_hover(loss_path, arch['num'])
-
-                    # Détails de l'architecture (en dessous des deux colonnes)
-                    with st.expander("Détails de l'architecture"):
-                        st.markdown(f"**Description** : {arch['desc']}")
-                        st.markdown(f"**Workflow** : {arch['workflow']}")
-                        st.markdown(f"**Avantages** : {arch['avantages']}")
-                        st.markdown(f"**Limites** : {arch['limites']}")
-
-        # Deuxième ligne : architectures 3 et 4
-        for col, arch in zip(row2_cols, arch_info_dedicated[2:]):
-            with col:
-                with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                    left_col, right_col = st.columns(2)
-
-                    # Colonne gauche : schéma
-                    with left_col:
-                        if os.path.exists(arch['img']):
-                            st.image(arch['img'], use_container_width=True)
-
-                    # Colonne droite : survol pour la courbe de loss
-                    with right_col:
-                        loss_path = os.path.join(ASSETS_DIR, f"architectures/loss_archi_{arch['num']}.png")
-                        _render_loss_hover(loss_path, arch['num'])
-
-                    # Détails de l'architecture (en dessous des deux colonnes)
-                    with st.expander("Détails de l'architecture"):
-                        st.markdown(f"**Description** : {arch['desc']}")
-                        st.markdown(f"**Workflow** : {arch['workflow']}")
-                        st.markdown(f"**Avantages** : {arch['avantages']}")
-                        st.markdown(f"**Limites** : {arch['limites']}")
+        for arch in arch_info_dedicated:
+            with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
+                col1, col2 = st.columns([1.2, 1])
+                
+                with col1:
+                    st.markdown(f"**Description** : {arch['desc']}")
+                    st.markdown(f"**Workflow** : {arch['workflow']}")
+                    st.markdown(f"**Avantages** : {arch['avantages']}")
+                    st.markdown(f"**Limites** : {arch['limites']}")
+                
+                with col2:
+                    if os.path.exists(arch['img']):
+                        st.image(arch['img'], caption=f"Schéma Architecture {arch['num']}", use_container_width=True)
         
         st.divider()
-
-        # Marqueur 2 : début de la zone architectures 5 à 9 (rose/bleu)
-        st.markdown('<div class="dl-arch-marker-2"></div>', unsafe_allow_html=True)
-
-        # Architectures 5 à 9 (fond bleu/rose)
-        st.subheader("Backbone Pré-entraîné Partagé Entre Plusieurs Objectifs")
+        st.markdown("### Backbone Pré-entraîné Partagé Entre Plusieurs Objectifs")
         
         arch_info_shared = [
             {
@@ -325,34 +208,21 @@ def render_dl_content():
                 "img": os.path.join(ASSETS_DIR, "architectures/archi_9_bk.png")
             }
         ]
-
-        # Affichage des architectures avec backbone partagé en grille 2xN (2 colonnes par ligne)
-        shared_archs = arch_info_shared
-        for i in range(0, len(shared_archs), 2):
-            row_cols = st.columns(2)
-            for col, arch in zip(row_cols, shared_archs[i:i+2]):
-                with col:
-                    with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                        left_col, right_col = st.columns(2)
-
-                        # Colonne gauche : schéma
-                        with left_col:
-                            if os.path.exists(arch['img']):
-                                st.image(arch['img'], use_container_width=True)
-
-                        # Colonne droite : survol pour la courbe de loss (sauf archi 5 où l'image n'existe pas)
-                        with right_col:
-                            loss_path = os.path.join(ASSETS_DIR, f"architectures/loss_archi_{arch['num']}.png")
-                            if arch['num'] != "5":
-                                _render_loss_hover(loss_path, arch['num'])
-
-                        # Détails de l'architecture (en dessous des deux colonnes)
-                        with st.expander("Détails de l'architecture"):
-                            st.markdown(f"**Description** : {arch['desc']}")
-                            st.markdown(f"**Workflow** : {arch['workflow']}")
-                            st.markdown(f"**Avantages** : {arch['avantages']}")
-                            st.markdown(f"**Limites** : {arch['limites']}")
-
+        
+        for arch in arch_info_shared:
+            with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
+                col1, col2 = st.columns([1.2, 1])
+                
+                with col1:
+                    st.markdown(f"**Description** : {arch['desc']}")
+                    st.markdown(f"**Workflow** : {arch['workflow']}")
+                    st.markdown(f"**Avantages** : {arch['avantages']}")
+                    st.markdown(f"**Limites** : {arch['limites']}")
+                
+                with col2:
+                    if os.path.exists(arch['img']):
+                        st.image(arch['img'], caption=f"Schéma Architecture {arch['num']}", use_container_width=True)
+    
     with dl_tabs[1]:
         st.header("Synthèse des Performances")
 
@@ -371,6 +241,20 @@ def render_dl_content():
         st.dataframe(df_perf_dl.style.highlight_max(subset=["Species Macro-F1", "Species Accuracy", "Disease Accuracy"], axis=0))
         
         st.divider()
+        
+        st.markdown("""
+        ### Décisions et Exclusions
+        
+        **Architectures exclues :**
+        - **Archi 4** : Cascade complexe sans gain tangible, risque de propagation d'erreurs
+        - **Archi 6** : En retrait sur la maladie (0.975 vs ≥0.989 pour les autres)
+        - **Archi 8** : Pas de bénéfice mesurable vs Archi 7/9
+        
+        **Architectures retenues pour recommandation :**
+        - **Archi 3** : Excellente simplicité de déploiement (1 modèle, 1 inférence)
+        - **Archi 7** : Bon compromis performance/efficience
+        - **Archi 9** : Conditionnement explicite, synergie maximale
+        """)
         
         # Graphique comparatif
         fig_comp = go.Figure()
@@ -573,5 +457,5 @@ def render_dl_content():
                 st.image(img_path_in_wild, use_container_width=True, caption="Exemples d'inférence sur photos in the wild")
 
 def sidebar_choice():
-    st.title("Deep Learning")
+    st.title("Deep Learning - Architectures")
     render_dl_content()

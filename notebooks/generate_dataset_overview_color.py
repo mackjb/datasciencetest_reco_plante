@@ -1,5 +1,6 @@
 from pathlib import Path
 import random
+import csv
 from PIL import Image
 import matplotlib.pyplot as plt
 
@@ -54,17 +55,56 @@ def pick_color_for_species(prefixes, max_images):
     return imgs[:max_images]
 
 
-def pick_segmented_for_species(prefixes, max_images):
-    """Sélectionne des images SEGMENTED pour une espèce donnée (indépendamment de COLOR)."""
+def pick_color_with_segmented(prefixes, max_images):
+    """Sélectionne des images COLOR qui ont un équivalent SEGMENTED (même base de nom)."""
+    seg_idx = _segmented_index_for_prefixes(prefixes)
+
     imgs = []
+    for d in COLOR_ROOT.iterdir():
+        if not d.is_dir():
+            continue
+        if any(d.name.startswith(p) for p in prefixes):
+            files = list(d.glob("*.jpg")) + list(d.glob("*.JPG")) + list(d.glob("*.png"))
+            imgs.extend([p for p in files if p.stem in seg_idx])
+
+    random.shuffle(imgs)
+    return imgs[:max_images]
+
+
+def _segmented_index_for_prefixes(prefixes):
+    """Indexe les fichiers segmented pour une espèce, pour retrouver un équivalent par nom."""
+    index = {}
     for d in SEG_ROOT.iterdir():
         if not d.is_dir():
             continue
         if any(d.name.startswith(p) for p in prefixes):
             files = list(d.glob("*.png")) + list(d.glob("*.jpg")) + list(d.glob("*.JPG"))
-            imgs.extend(files)
-    random.shuffle(imgs)
-    return imgs[:max_images]
+            for p in files:
+                stem = p.stem
+                base = stem[:-13] if stem.endswith("_final_masked") else stem
+                index.setdefault(base, []).append(p)
+
+    for base in index:
+        index[base] = sorted(index[base])
+    return index
+
+
+def pick_segmented_matching_color(prefixes, color_imgs):
+    """Pour chaque image COLOR sélectionnée, récupère l'image SEGMENTED correspondante (même base de nom)."""
+    idx = _segmented_index_for_prefixes(prefixes)
+
+    seg_imgs = []
+    for c in color_imgs:
+        base = c.stem
+        candidates = idx.get(base)
+        if not candidates:
+            continue
+
+        # Priorité à *_final_masked.png si présent
+        final_masked = [p for p in candidates if p.stem == f"{base}_final_masked"]
+        seg_imgs.append(final_masked[0] if final_masked else candidates[0])
+
+    return seg_imgs
 
 
 # Préparer les listes d'images par espèce
@@ -72,11 +112,21 @@ species_color = []
 species_seg = []
 
 for title, prefixes in SPECIES_CONFIG:
-    c_imgs = pick_color_for_species(prefixes, n_rows)
-    s_imgs = pick_segmented_for_species(prefixes, n_rows)
+    c_imgs = pick_color_with_segmented(prefixes, n_rows)
+    s_imgs = pick_segmented_matching_color(prefixes, c_imgs)
     print(f"{title}: {len(c_imgs)} color, {len(s_imgs)} segmented")
     species_color.append((title, c_imgs))
     species_seg.append((title, s_imgs))
+
+
+def write_manifest(species_images, manifest_path):
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(manifest_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["output", "species_title", "row", "image_path"])
+        for title, imgs in species_images:
+            for i, p in enumerate(imgs):
+                writer.writerow([manifest_path.stem, title, i, str(p)])
 
 
 def build_grid(species_images, output_path, title_suffix=""):
@@ -123,3 +173,12 @@ def build_grid(species_images, output_path, title_suffix=""):
 # Générer les deux grilles
 build_grid(species_color, OUT_COLOR)
 build_grid(species_seg, OUT_SEG)
+
+write_manifest(
+    species_color,
+    PROJECT_ROOT / "Streamlit/assets/dataset_overview_color_select_manifest.csv",
+)
+write_manifest(
+    species_seg,
+    PROJECT_ROOT / "Streamlit/assets/dataset_overview_segmented_select_manifest.csv",
+)

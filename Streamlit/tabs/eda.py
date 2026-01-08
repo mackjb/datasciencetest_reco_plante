@@ -6,17 +6,17 @@ import plotly.express as px
 def sidebar_choice():
     st.title("Analyse Exploratoire & Preprocessing")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["Les Datasets", "PlantVillage", "Nettoyage", "Visualisation"])
+    tab1, tab2, tab3 = st.tabs(["Les Datasets", "PlantVillage", "Visualisation et nettoyage"])
     
     with tab1:
-        st.header("1. Les Datasets")
+        st.header("Les Datasets")
         st.markdown("""
         À partir des **6 datasets** proposés par DataScientest, nous avons effectué plusieurs
         sélections successives basées sur des explorations afin de n’en retenir qu’un : **PlantVillage**, détaillé dans l'onglet "PlantVillage".
         """)
 
         # --- 1ère partie : Datasets pour l'identification de l'espèce ---
-        st.markdown("### 1.1 Datasets pour l'identification de l'espèce")
+        st.markdown("### Datasets pour l'identification de l'espèce")
         st.markdown("""
         Trois premiers jeux de données sont dédiés à l’**identification de l’espèce** à partir
         d’images de plantes complètes dans des environnements variés :
@@ -70,25 +70,31 @@ def sidebar_choice():
         """)
 
         # --- 2ème partie : Datasets pour l'identification des plantes et des maladies ---
-        st.markdown("### 1.2 Datasets pour l'identification des plantes et des maladies")
+        st.subheader("""Datasets pour l'identification des plantes et des maladies""")
         st.markdown("""
         Les trois autres jeux de données : **Plant Disease**, **New Plant Diseases** et **PlantVillage** sont tous centrés sur des **feuilles de plantes recadrées sur fond uni**,
-        afin de faciliter la détection automatique des maladies.
-        PlantVillage constitue le **dataset de référence**, tandis que **Plant Disease** enrichit le nombre
+        afin de faciliter la détection automatique des maladies. PlantVillage constitue le **dataset de référence** pour les 2 autres datasets, tandis que **Plant Disease** enrichit le nombre
         de maladies pour un volume d’images comparable et que **New Plant Diseases** est une **extension
         de PlantVillage par augmentation de données hors ligne** (environ 34 000 images supplémentaires).
-
-        Le tableau suivant compare ces 3 datasets permettant la **détection des maladies**.
         """)
 
-        # st.subheader("Figure 4 – Comparatif des datasets")
-        col_left, col_img = st.columns([1, 4])  # ratio 1 / 4 a ajuster si besoin
-        with col_img:
-            st.image(
-                "Streamlit/assets/Les datasets/datasets_comparison_table.png",
-            caption="Comparatif des datasets",
-            width=700,
+        df_comparison = pd.read_excel(
+            "Streamlit/assets/Les datasets/dataset_comparison.xlsx",
         )
+
+        # Convertir en HTML avec style forcé
+        numeric_cols = df_comparison.select_dtypes(include="number").columns.tolist()
+        df_styled = df_comparison.style.hide(axis="index")
+        if numeric_cols:
+            df_styled = df_styled.highlight_max(axis=0, color='lightgreen', subset=numeric_cols).format("{:.4f}", subset=numeric_cols)
+
+        df_styled = df_styled.set_properties(**{
+            "white-space": "pre-wrap",
+            "word-break": "break-word",
+        })
+
+        html = df_styled.to_html()
+        st.markdown(f"<div style='overflow-x:auto'>{html}</div>", unsafe_allow_html=True)
 
         st.markdown("""
         **Plant Disease** est éliminé car, pour un même ordre de grandeur du nombre d’images,
@@ -98,13 +104,14 @@ def sidebar_choice():
         (environ 34 000 images supplémentaires). Notre analyse exploratoire a montré que certaines
         espèces majoritaires ont été augmentées plus que d’autres pour couvrir un objectif non
         précisé dans la littérature.
-
-        Notre choix se porte donc sur **PlantVillage**, qui cadre bien avec notre scénario.
-        Sa structure est détaillée dans l'onglet *PlantVillage*.
         """)
 
+        st.markdown("#### Sélection du dataset pour l'identification des plantes et des maladies")
+        st.warning("Notre choix se porte donc sur **PlantVillage**, qui cadre bien avec notre scénario.")
+        st.caption("Sa structure est détaillée dans l'onglet *PlantVillage*.")
+
     with tab2:
-        st.header("2. Le Dataset PlantVillage")
+        st.header("Le Dataset PlantVillage")
         
         c1, c2 = st.columns([8, 1])
         
@@ -126,25 +133,83 @@ def sidebar_choice():
             st.metric("   Espèces", "14")
             st.metric("   Maladies", "20")
 
-        col_color, col_seg = st.columns(2)
+        col_seg, col_color = st.columns(2)
+
+    with col_seg:
+        st.markdown("### Variante Segmented")
+        st.image(
+            "Streamlit/assets/dataset_overview_segmented_select.png",
+            caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage/segmented (fond noir)",
+            width=650,
+        )
 
     with col_color:
+        st.markdown("### Variante Color")
         st.image(
             "Streamlit/assets/dataset_overview_color_select.png",
             caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage / color (fond original)",
             width=650,
         )
 
-    with col_seg:
-        st.image(
-        "Streamlit/assets/dataset_overview_segmented_select.png",
-        caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage/segmented (fond noir)",
-        width=650,
-    )
-
             
     with tab3:
-        st.header("3. Pipeline de Preprocessing")
+        st.header(" Exploration de la distribution des classes")
+  
+
+        st.markdown("#### Analyse de l'équilibre Saine vs Malade")
+        
+        csv_full_path = "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all.csv"
+        if os.path.exists(csv_full_path):
+            df_full = pd.read_csv(csv_full_path)
+            
+            # --- Chart 1: Saine vs Malade par Espèce ---
+            df_state = df_full.groupby(['nom_plante', 'Est_Saine']).size().reset_index(name='count')
+            df_state['Etat'] = df_state['Est_Saine'].map({True: 'Saine', False: 'Malade'})
+            
+            fig1 = px.bar(df_state, x='nom_plante', y='count', color='Etat', barmode='group',
+                         labels={'nom_plante': "Espèce", 'count': "Nombre d'images"},
+                         color_discrete_map={'Saine': '#FF4B4B', 'Malade': '#636EFA'}) # Couleurs proches de l'image
+            st.plotly_chart(fig1, use_container_width=True)
+            st.markdown("#### Répartition des images saines vs malades par espèce")
+            
+            # --- Charts 2 & 3: Distributions séparées ---
+            colA, colB = st.columns(2)
+            
+            with colA:
+                df_healthy = df_full[df_full['Est_Saine'] == True].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
+                df_healthy['class'] = df_healthy['nom_plante'] + " " + df_healthy['nom_maladie']
+                df_healthy = df_healthy.sort_values('count', ascending=False)
+                fig2 = px.bar(df_healthy, x='class', y='count', 
+                             labels={'class': "Classe (espèce saine)", 'count': "Nombre d'images"},
+                             color_discrete_sequence=['#636EFA'])
+                st.plotly_chart(fig2, use_container_width=True)
+                st.markdown("<h5 style='text-align: center;'>Distribution des classes saines</h5>", unsafe_allow_html=True)
+                
+            with colB:
+                df_disease = df_full[df_full['Est_Saine'] == False].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
+                df_disease['class'] = df_disease['nom_plante'] + " " + df_disease['nom_maladie']
+                df_disease = df_disease.sort_values('count', ascending=False)
+                fig3 = px.bar(df_disease, x='class', y='count', 
+                             labels={'class': "Classe (espèce)", 'count': "Nombre d'images"},
+                             color_discrete_sequence=['#636EFA'])
+                st.plotly_chart(fig3, use_container_width=True)
+                st.markdown("<h5 style='text-align: center;'>Distribution des classes malades</h5>", unsafe_allow_html=True)
+
+            st.markdown("""
+            **Analyse de l'équilibre** : 
+            *   La **Tomate** domine largement le dataset avec plus de 15 000 images, dont une grande partie est affectée par le virus *Yellow Leaf Curl*.
+            *   Certaines espèces comme le **Soybean** sont principalement représentées en état sain, tandis que d'autres (Orange, Squash) n'apparaissent qu'en état pathologique dans cet inventaire.
+            *   Ce déséquilibre est un défi majeur : le modèle pourrait avoir tendance à prédire plus facilement les classes sur-représentées.
+            """)
+        else:
+            st.warning("Données sources introuvables pour les graphiques interactifs.")
+            st.image("Streamlit/assets/class_distribution_analysis.png", caption="Répartition détaillée (version statique)", use_container_width=True)
+        
+        st.info(" Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
+
+        st.divider()
+
+        st.header(" Pipeline de Preprocessing")
         st.markdown("""
         Pour garantir la robustesse du modèle lors du passage en production (images réelles), nous avons appliqué un nettoyage strict.
         """)
@@ -156,31 +221,9 @@ def sidebar_choice():
         3.  **Redimensionnement** : Uniformisation de toutes les images en **256 x 256 pixels**.
         """)
         
-    with tab4:
-        st.header("4. Visualisation des Données")
-        st.write("Exploration de la distribution des classes.")
+
         
-        # Chargement des données réelles
-        cnt_path = "results/Deep_Learning/archi1_outputs_mono_disease_effv2s_256_color_split/class_counts.csv"
-        
-        if os.path.exists(cnt_path):
-            df_counts = pd.read_csv(cnt_path)
-            # Nettoyage des noms de classes pour l'affichage
-            df_counts['class_name'] = df_counts['class'].apply(lambda x: x.replace("___", " - ").replace("_", " ").title())
-            
-            fig = px.bar(df_counts, x='count', y='class_name', orientation='h', 
-                         title="Distribution du nombre d'images par Classe",
-                         labels={'count': "Nombre d'images", 'class_name': "Classe"},
-                         color='count', color_continuous_scale='Viridis')
-            
-            fig.update_layout(height=800, showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
-            
-            st.markdown("---")
-            st.metric("Total Images (Train)", df_counts['count'].sum())
-            
-        else:
-            st.warning(f"Fichier de données introuvable : {cnt_path}")
+
             
         st.divider()
         st.markdown("### Statistiques de Nettoyage & Qualité")
@@ -195,10 +238,10 @@ def sidebar_choice():
                 'Occurrences': [45000, 5000, 2000, 18, 1000, 500, 200, 100, 50, 10]
             })
             fig_size = px.histogram(size_data, x="Largeur", y="Occurrences", 
-                                  title="Répartition des dimensions (avant uniformisation)",
                                   color_discrete_sequence=['#2E8B57'])
             st.plotly_chart(fig_size, use_container_width=True)
-            st.caption("La majorité des images sont déjà en 256x256, mais des variations existent.")
+            st.markdown("<h5 style='text-align: center;'>Répartition des dimensions (avant uniformisation)</h5>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: grey; font-size: 0.8em;'>La majorité des images sont déjà en 256x256, mais des variations existent.</p>", unsafe_allow_html=True)
 
         with v2:
             st.markdown("#### Focus sur les Outliers")
@@ -208,72 +251,35 @@ def sidebar_choice():
             })
             # On filtre pour ne voir que les anomalies dans le graph
             fig_out = px.pie(outliers[outliers['Type'] != 'Valides'], values='Nombre', names='Type',
-                           title="Répartition des anomalies détectées",
                            color_discrete_sequence=px.colors.sequential.RdBu)
+            
+            # La sélection sur Pie Chart n'étant pas nativement supportée par st.plotly_chart en mode simple,
+            # nous utilisons un expander pour l'interaction.
             st.plotly_chart(fig_out, use_container_width=True)
-            st.caption("Zoom sur les 44 images écartées lors de l'audit technique.")
 
-        st.markdown("---")
-        st.markdown("#### Impact du Pipeline de Nettoyage")
-        
-        # Un petit graphique de progression pour le volume de données
-        steps = ["Initial", "Après Doublons", "Après Outliers Noirs", "Dataset Final"]
-        counts = [54306, 54285, 54267, 54267]
-        
-        fig_steps = px.line(x=steps, y=counts, title="Évolution de la volumétrie pendant le preprocessing",
-                          markers=True, labels={'x': 'Étape', 'y': "Nombre d'images"})
-        fig_steps.update_traces(line_color='#2E8B57', line_width=4)
-        st.plotly_chart(fig_steps, use_container_width=True)
-        st.markdown("---")
-        st.markdown("#### Analyse de l'Équilibre Saine vs Malade")
-        
-        csv_full_path = "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all.csv"
-        if os.path.exists(csv_full_path):
-            df_full = pd.read_csv(csv_full_path)
-            
-            # --- Chart 1: Saine vs Malade par Espèce ---
-            df_state = df_full.groupby(['nom_plante', 'Est_Saine']).size().reset_index(name='count')
-            df_state['Etat'] = df_state['Est_Saine'].map({True: 'Saine', False: 'Malade'})
-            
-            fig1 = px.bar(df_state, x='nom_plante', y='count', color='Etat', barmode='group',
-                         title="Répartition des images saines vs malades par espèce",
-                         labels={'nom_plante': "Espèce", 'count': "Nombre d'images"},
-                         color_discrete_map={'Saine': '#FF4B4B', 'Malade': '#636EFA'}) # Couleurs proches de l'image
-            st.plotly_chart(fig1, use_container_width=True)
-            
-            # --- Charts 2 & 3: Distributions séparées ---
-            colA, colB = st.columns(2)
-            
-            with colA:
-                df_healthy = df_full[df_full['Est_Saine'] == True].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
-                df_healthy['class'] = df_healthy['nom_plante'] + " " + df_healthy['nom_maladie']
-                df_healthy = df_healthy.sort_values('count', ascending=False)
-                fig2 = px.bar(df_healthy, x='class', y='count', 
-                             title="Distribution des classes saines",
-                             labels={'class': "Classe (espèce saine)", 'count': "Nombre d'images"},
-                             color_discrete_sequence=['#636EFA'])
-                st.plotly_chart(fig2, use_container_width=True)
-                
-            with colB:
-                df_disease = df_full[df_full['Est_Saine'] == False].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
-                df_disease['class'] = df_disease['nom_plante'] + " " + df_disease['nom_maladie']
-                df_disease = df_disease.sort_values('count', ascending=False)
-                fig3 = px.bar(df_disease, x='class', y='count', 
-                             title="Distribution des classes malades",
-                             labels={'class': "Classe (espèce)", 'count': "Nombre d'images"},
-                             color_discrete_sequence=['#636EFA'])
-                st.plotly_chart(fig3, use_container_width=True)
-
+            # Style CSS pour le zoom au survol (uniquement dans les expanders/details)
             st.markdown("""
-            **Analyse de l'Équilibre** : 
-            *   La **Tomate** domine largement le dataset avec plus de 15 000 images, dont une grande partie est affectée par le virus *Yellow Leaf Curl*.
-            *   Certaines espèces comme le **Soybean** sont principalement représentées en état sain, tandis que d'autres (Orange, Squash) n'apparaissent qu'en état pathologique dans cet inventaire.
-            *   Ce déséquilibre est un défi majeur : le modèle pourrait avoir tendance à prédire plus facilement les classes sur-représentées.
-            """)
-        else:
-            st.warning("Données sources introuvables pour les graphiques interactifs.")
-            st.image("Streamlit/assets/class_distribution_analysis.png", caption="Répartition détaillée (version statique)", use_container_width=True)
-        
-        st.info("💡 Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
+            <style>
+            details [data-testid="stImage"] img {
+                transition: transform 0.3s ease;
+            }
+            details [data-testid="stImage"] img:hover {
+                transform: scale(2.0); /* Zoom x2 */
+                z-index: 1000;
+                cursor: zoom-in;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            # Interaction améliorée : Expander au lieu de Checkbox
+            st.markdown("<h5 style='text-align: center;'>Répartition des anomalies détectées</h5>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: grey; font-size: 0.8em;'>Zoom sur les 44 images écartées lors de l'audit technique.</p>", unsafe_allow_html=True)
+
+            # Interaction améliorée : Expander au lieu de Checkbox
+            with st.expander("Voir les 18 'Images Sombres' écartées"):
+                st.image("Streamlit/assets/images_noires.png", 
+                       caption="Aperçu des 18 images sombres (Survolez pour zoomer)", 
+                       use_container_width=True)
 
 

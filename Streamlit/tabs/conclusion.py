@@ -1,4 +1,5 @@
 import streamlit as st
+from utils import render_mermaid
 
 def sidebar_choice():
     st.title("Conclusion & Perspectives")
@@ -54,77 +55,91 @@ def sidebar_choice():
             """
         )
 
-        # --- Limites & Perspectives côte à côte ---
-        col_lim, col_persp = st.columns(2)
+        st.divider()
 
-        with col_lim:
-            st.markdown('<div id="expander-limites">', unsafe_allow_html=True)
-            with st.expander("Limites"):
+        # --- Limites (Mindmap) ---
+        st.subheader("Limites")
+        
+        mindmap_limites = {
+            "id": "root",
+            "text": "Limites",
+            "children": [
+                {
+                    "id": "validation_terrain",
+                    "text": "Validation terrain absente",
+                    "children": [
+                        {"id": "terrain_details", "text": "Test en conditions agricoles réelles, validation par experts, pilote terrain non réalisés."},
+                        {"id": "terrain_cq", "text": "Conséquence : performances = borne supérieure en conditions contrôlées."}
+                    ]
+                },
+                {
+                    "id": "validation_stat",
+                    "text": "Validation statistique limitée",
+                    "children": [
+                        {"id": "stat_details", "text": "5 runs sur Archi 7, 1 seul run sur les autres."},
+                        {"id": "stat_cq", "text": "Conséquence : variation possible des résultats (±0.1–0.2 %)."}
+                    ]
+                },
+                {
+                    "id": "biais_dataset",
+                    "text": "Biais du dataset PlantVillage",
+                    "children": [
+                        {"id": "biais_details", "text": "Fond uniforme, éclairage contrôlé, feuilles isolées."},
+                        {"id": "biais_cq", "text": "Conséquence : chute estimée de −5% à −15% en conditions réelles."}
+                    ]
+                },
+                {
+                    "id": "classes_difficiles",
+                    "text": "Classes maladies difficiles",
+                    "children": [
+                        {"id": "faux_neg", "text": "Faux négatifs : maladie rare non détectée → propagation."},
+                        {"id": "faux_pos", "text": "Faux positifs : sur-traitement inutile (coût + écologie)."}
+                    ]
+                }
+            ]
+        }
+        render_mermaid(mindmap_limites, height=600)
 
-                # Injection du CSS des cartes pour la page Conclusion
-                st.markdown('''
-                <style>
-                    /* Cards */
-                    .card {
-                    border: 1px solid rgba(255,255,255,0.12);
-                    border-radius: 18px;
-                    padding: 16px 16px 14px 16px;
-                    background: #cddafd;
-                    margin: 0.25rem 0 0.9rem 0;
-                    box-shadow: 0 8px 22px rgba(0,0,0,0.12);
-                    }
-                    [data-theme="light"] .card {
-                    border: 1px solid rgba(0,0,0,0.08);
-                    background: #8eecf5;
-                    box-shadow: 0 8px 22px rgba(0,0,0,0.06);
-                    }
-                    .card__title {
-                    font-weight: 800;
-                    font-size: 1.05rem;
-                    margin-bottom: 0.35rem;
-                    }
-                    .card__body {
-                    color: rgba(0,0,0,0.82);
-                    font-size: 0.95rem;
-                    line-height: 1.35;
-                    }
-                    .card--success { border-color: rgba(46, 204, 113, 0.35); }
-                    .card--warning { border-color: rgba(241, 196, 15, 0.40); }
-                    .card--info    { border-color: rgba(52, 152, 219, 0.40); }
-                    </style>
-                ''', unsafe_allow_html=True)
+        st.divider()
 
-                st.markdown(
-                    """
-                    **Validation terrain absente**  
-                    Test en conditions agricoles réelles, validation par experts botanistes, pilote terrain avec agriculteurs, feedback utilisateurs finaux non réalisés.  
-                    → Conséquence : les performances présentées constituent une borne supérieure en conditions contrôlées.
+        # --- Acquis & Perspectives ---
+        # Injection CSS pour les cards (déplacé ici ou global)
+        st.markdown('''
+        <style>
+            .card {
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px;
+            padding: 16px 16px 14px 16px;
+            background: #cddafd;
+            margin: 0.25rem 0 0.9rem 0;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+            }
+            [data-theme="light"] .card {
+            border: 1px solid rgba(0,0,0,0.08);
+            background: #8eecf5;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+            }
+            .card__title {
+            font-weight: 800;
+            font-size: 1.05rem;
+            margin-bottom: 0.35rem;
+            }
+            .card__body {
+            color: rgba(0,0,0,0.82);
+            font-size: 0.95rem;
+            line-height: 1.35;
+            }
+            .card--success { border-color: rgba(46, 204, 113, 0.35); }
+            .card--warning { border-color: rgba(241, 196, 15, 0.40); }
+            .card--info    { border-color: rgba(52, 152, 219, 0.40); }
+        </style>
+        ''', unsafe_allow_html=True)
 
-                    ---
+        # --- Acquis & Perspectives ---
+        col_acquis, col_persp = st.columns(2)
 
-                    **Validation statistique limitée**  
-                    5 runs sur l’architecture 7 uniquement pour des problèmes de performances, les résultats montrent un modèle robuste.  
-                    Pour les autres architectures : 1 seul run par architecture, seed aléatoire unique, pas de test statistique (test de significativité, p_value < 0,05).  
-                    → Conséquence : les résultats exacts peuvent varier (±0.1–0.2 %).
-
-                    ---
-
-                    **Biais du dataset PlantVillage**  
-                    Fond uniforme, éclairage contrôlé, feuilles isolées, angles standardisés.  
-                    → Conséquence : prévoir une chute de performance d’environ −5 % à −15 % en conditions réelles.
-
-                    ---
-
-                    **Classes maladies difficiles**  
-                    Faux négatifs : maladie rare non détectée → propagation de la maladie.  
-                    Faux positifs : maladie rare erronée → sur-traitement inutile (coût + écologie).
-                    """
-                )
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            # Acquis dans la même colonne que Limites (version cards)
-            with st.expander("Acquis"):
+        with col_acquis:
+            with st.expander("Acquis", expanded=True):
                 st.markdown(
                     """
                     <div class="card card--success">
@@ -152,9 +167,7 @@ def sidebar_choice():
                 )
 
         with col_persp:
-            st.markdown('<div id="expander-persp">', unsafe_allow_html=True)
-            with st.expander("Perspectives & Améliorations"):
-
+            with st.expander("Perspectives & Améliorations", expanded=True):
                 # Image centrée en haut via colonnes
                 col_img_left, col_img_center, col_img_right = st.columns([1, 2, 1])
                 with col_img_center:
@@ -168,13 +181,10 @@ def sidebar_choice():
                 st.write("Diversifier, casser corrélation espèce–maladie, dataset conditions 'Wild'.")
 
                 st.write("**Modèles Pré-entrainés**")
-                st.write("Effectuer une sélection plus poussée des modèles pré-entraînés: (ex. ResNet, ConvNeXt, Swin Transformer…) pour identifier celui qui offre le meilleur compromis entre précision, généralisation et ressource.")
-                st.write("Expérimenter avec des architectures alternatives :**Vision Transformer (ViT)** pour capter des dépendances plus fines.")
+                st.write("Effectuer une sélection plus poussée (ex. ResNet, ConvNeXt, Swin Transformer…). Expérimenter avec **Vision Transformer (ViT)**.")
 
                 st.write("**Architecture**")
-                st.write("Ajuster les têtes de classification repenser la décomposition des tâches, modifier le nombre ou le type de têtes, ajuster les pertes associées aux têtes) afin que le modèle se concentre sur les caractéristiques pertinentes, indépendamment des biais du dataset.")
+                st.write("Ajuster les têtes de classification, repenser la décomposition des tâches.")
 
                 st.write("**Entrainement**")
-                st.write("Valider la robustesse des architectures : Effectuer plusieurs runs multiples avec des statistiques (moyenne, écart-type) pour vérifier la stabilité et la reproductibilité des performances des architectures retenues.")
-
-            st.markdown("</div>", unsafe_allow_html=True)
+                st.write("Valider la robustesse : Runs multiples avec statistiques pour vérifier la stabilité.")

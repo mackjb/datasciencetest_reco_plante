@@ -154,7 +154,7 @@ def render_mermaid(mindmap_data, height=800):
             
             if (depth === 0) {{
                 // Root node styling
-                line = `${{indent}}root((<b>${{label}}</b>))`; 
+                line = `${{indent}}root("<b>${{label}}</b>")`; 
             }} else {{
                 // Child styling. Can check node type/shape if provided
                 // Using generic brackets for clarity, or plain text

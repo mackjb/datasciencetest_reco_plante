@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import os
 import time
 import requests
-from tabs import deep_learning
+
 
 try:
     from streamlit_lottie import st_lottie
@@ -85,8 +85,7 @@ def render_approach_content():
 #########################
 # CONTENU DEEP LEARNING
 #########################
-def render_dl_content():
-    deep_learning.render_dl_content()
+
 
 # =========================
 # FONCTION PRINCIPALE

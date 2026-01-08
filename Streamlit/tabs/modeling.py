@@ -5,7 +5,12 @@ import plotly.graph_objects as go
 import os
 import time
 import requests
-from streamlit_lottie import st_lottie
+from tabs import deep_learning
+
+try:
+    from streamlit_lottie import st_lottie
+except ModuleNotFoundError:
+    st_lottie = None
 
 def load_lottieurl(url: str):
     r = requests.get(url)
@@ -67,7 +72,7 @@ def render_approach_content():
     with col_anim:
         # Centrage vertical approximatif pour l'animation
         st.markdown("<br>" * 3, unsafe_allow_html=True) 
-        if lottie_json:
+        if lottie_json and st_lottie is not None:
             st_lottie(lottie_json, speed=1, height=150, key="initial") # Taille réduite pour s'intégrer
 
     with col_dl:

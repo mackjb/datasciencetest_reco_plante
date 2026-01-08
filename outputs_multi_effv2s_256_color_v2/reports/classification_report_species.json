@@ -1,0 +1,99 @@
+{
+  "Apple": {
+    "precision": 0.9978586723768736,
+    "recall": 0.9831223628691983,
+    "f1-score": 0.9904357066950054,
+    "support": 474.0
+  },
+  "Blueberry": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1-score": 1.0,
+    "support": 226.0
+  },
+  "Cherry_(including_sour)": {
+    "precision": 1.0,
+    "recall": 0.9790209790209791,
+    "f1-score": 0.9893992932862191,
+    "support": 286.0
+  },
+  "Corn_(maize)": {
+    "precision": 0.9965457685664939,
+    "recall": 1.0,
+    "f1-score": 0.9982698961937716,
+    "support": 577.0
+  },
+  "Grape": {
+    "precision": 1.0,
+    "recall": 0.9983606557377049,
+    "f1-score": 0.9991796554552912,
+    "support": 610.0
+  },
+  "Orange": {
+    "precision": 0.9987908101571947,
+    "recall": 1.0,
+    "f1-score": 0.999395039322444,
+    "support": 826.0
+  },
+  "Peach": {
+    "precision": 0.9900497512437811,
+    "recall": 1.0,
+    "f1-score": 0.995,
+    "support": 398.0
+  },
+  "Pepper,_bell": {
+    "precision": 0.9893617021276596,
+    "recall": 1.0,
+    "f1-score": 0.9946524064171123,
+    "support": 372.0
+  },
+  "Potato": {
+    "precision": 0.9811912225705329,
+    "recall": 0.9690402476780186,
+    "f1-score": 0.9750778816199377,
+    "support": 323.0
+  },
+  "Raspberry": {
+    "precision": 0.9821428571428571,
+    "recall": 1.0,
+    "f1-score": 0.990990990990991,
+    "support": 55.0
+  },
+  "Soybean": {
+    "precision": 0.9986842105263158,
+    "recall": 0.993455497382199,
+    "f1-score": 0.9960629921259843,
+    "support": 764.0
+  },
+  "Squash": {
+    "precision": 1.0,
+    "recall": 0.9963636363636363,
+    "f1-score": 0.9981785063752276,
+    "support": 275.0
+  },
+  "Strawberry": {
+    "precision": 0.9957446808510638,
+    "recall": 0.9957446808510638,
+    "f1-score": 0.9957446808510638,
+    "support": 235.0
+  },
+  "Tomato": {
+    "precision": 0.9923245614035088,
+    "recall": 0.9963302752293578,
+    "f1-score": 0.9943233839956052,
+    "support": 2725.0
+  },
+  "accuracy": 0.994844095261478,
+  "macro avg": {
+    "precision": 0.9944781597833059,
+    "recall": 0.9936741667951542,
+    "f1-score": 0.9940507452377609,
+    "support": 8146.0
+  },
+  "weighted avg": {
+    "precision": 0.9948560362442509,
+    "recall": 0.994844095261478,
+    "f1-score": 0.9948360099859487,
+    "support": 8146.0
+  }
+}

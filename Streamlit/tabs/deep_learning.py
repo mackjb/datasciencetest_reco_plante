@@ -55,7 +55,7 @@ def render_dl_content():
     """)
     
     # --- Phase d'exploration individuelle ---
-    with st.expander("Phase d'Exploration Individuelle", expanded=True):
+    with st.expander("Phase d'Exploration Individuelle", expanded=False):
         st.markdown("""
         Dans le cadre de notre formation, **chaque membre de l'équipe a d'abord exploré individuellement 
         un modèle pré-entraîné** pour se familiariser avec les techniques de Deep Learning et comprendre 
@@ -128,7 +128,7 @@ def render_dl_content():
         """)
     
     # --- Méthodologie ---
-    with st.expander("Méthodologie & Critères de Sélection", expanded=True):
+    with st.expander("Méthodologie & Critères de Sélection", expanded=False):
         st.markdown("""
         ### Démarche structurée en 3 étapes :
         
@@ -427,15 +427,15 @@ def render_dl_content():
 
             with col_esp:
                 if os.path.exists(img_path_pred_ok_esp):
-                    st.image(img_path_pred_ok_esp, width=500, caption="Prédiction correcte - tête espèce")
+                    st.image(img_path_pred_ok_esp, use_container_width=True, caption="Prédiction correcte - tête espèce")
 
             with col_malad:
                 if os.path.exists(img_path_pred_ok_malad):
-                    st.image(img_path_pred_ok_malad, width=500, caption="Prédiction correcte - tête maladie")
+                    st.image(img_path_pred_ok_malad, use_container_width=True, caption="Prédiction correcte - tête maladie")
 
             with col_err_class:
                 if os.path.exists(img_path_err_class):
-                    st.image(img_path_err_class, width=700, caption="Exemple d'erreur de classification")
+                    st.image(img_path_err_class, use_container_width=True, caption="Exemple d'erreur de classification")
             
         st.divider()
 
@@ -450,7 +450,7 @@ def render_dl_content():
             )
             img_path_err_class = os.path.join(ASSETS_DIR, "Interpretability/attention_réseau.png")
             if os.path.exists(img_path_err_class):
-                st.image(img_path_err_class, width=900, caption="GRAD-CAM Espèce-maladie")
+                st.image(img_path_err_class, use_container_width=True, caption="GRAD-CAM Espèce-maladie")
 
         st.divider()
 
@@ -470,11 +470,11 @@ def render_dl_content():
 
             with col_fond_esp:
                 if os.path.exists(img_path_fond_esp):
-                    st.image(img_path_fond_esp, width=900, caption="Impact du fond uni - tête espèce")
+                    st.image(img_path_fond_esp, use_container_width=True, caption="Impact du fond uni - tête espèce")
 
             with col_fond_mala:
                 if os.path.exists(img_path_fond_mala):
-                    st.image(img_path_fond_mala, width=900, caption="Impact du fond uni - tête maladie")
+                    st.image(img_path_fond_mala, use_container_width=True, caption="Impact du fond uni - tête maladie")
 
         st.divider()
 
@@ -489,7 +489,7 @@ def render_dl_content():
             )
             img_path_in_wild = os.path.join(ASSETS_DIR, "Interpretability/in_wild.png")
             if os.path.exists(img_path_in_wild):
-                st.image(img_path_in_wild, width=900, caption="Exemples d'inférence sur photos in the wild")
+                st.image(img_path_in_wild, use_container_width=True, caption="Exemples d'inférence sur photos in the wild")
 
 def sidebar_choice():
     st.title("Deep Learning")

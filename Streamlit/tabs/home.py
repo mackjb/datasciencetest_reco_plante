@@ -1,6 +1,8 @@
 import streamlit as st
 import os
 
+ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+
 def sidebar_choice():
     # --- HEADER ---
     st.markdown("""
@@ -72,7 +74,7 @@ def sidebar_choice():
         )
 
         st.image(
-            "Streamlit/assets/implique.png",
+            os.path.join(ASSETS_DIR, "implique.png"),
             width=80,
         )
 
@@ -113,12 +115,12 @@ def sidebar_choice():
     col_team, col_env = st.columns(2)
     with col_team:
         st.markdown("## L'Équipe Projet")
-        st.image("Streamlit/assets/equipe.png", width=600)
+        st.image(os.path.join(ASSETS_DIR, "equipe.png"), width=600)
 
     # --- ENVIRONNEMENT DE DÉVELOPPEMENT ---
     with col_env:
         st.markdown("## Environnement de développement")
-        st.image("Streamlit/assets/env_dev.png", width=800)
+        st.image(os.path.join(ASSETS_DIR, "env_dev.png"), width=800)
 
 
 

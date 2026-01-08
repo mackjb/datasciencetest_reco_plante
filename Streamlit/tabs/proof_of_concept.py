@@ -1,6 +1,8 @@
 import streamlit as st
 import time
+import os
 
+ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
 # =========================
 # FONCTION PRINCIPALE
 # =========================
@@ -85,7 +87,7 @@ def render_dl_page():
 
         with col_arch3_img:
             st.image(
-                "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/architectures/archi_3_bk.png",
+                os.path.join(ASSETS_DIR, "architectures/archi_3_bk.png"),
                 width=500,
             )
 
@@ -228,7 +230,7 @@ def render_dl_page():
 
         with col_arch9_img:
             st.image(
-                "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/architectures/archi_9_bk.png",
+                os.path.join(ASSETS_DIR, "architectures/archi_9_bk.png"),
                 width=500,
             )
 

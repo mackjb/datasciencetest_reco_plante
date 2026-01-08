@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.express as px
 import os
 
+ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+
 
 def render_ml_content():
     st.markdown("""
@@ -52,7 +54,7 @@ def render_ml_content():
         with col_p1:
             st.subheader(" ")       
             st.image(
-                "Streamlit/assets/Les datasets/Caractéristiques.drawio.png",
+                os.path.join(ASSETS_DIR, "Les datasets/Caractéristiques.drawio.png"),
                 caption="Synthèse des catégories de descripteurs extraits",
                 width=700,
             )

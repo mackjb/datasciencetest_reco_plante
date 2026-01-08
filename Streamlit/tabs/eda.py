@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import plotly.express as px
 
+ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+
 def sidebar_choice():
     st.title("Analyse Exploratoire & Preprocessing")
     
@@ -26,15 +28,15 @@ def sidebar_choice():
         species_examples = {
 
             "COCO": [
-                "Streamlit/assets/Les datasets/coco_1.png",
-                "Streamlit/assets/Les datasets/coco_2.png",
+                os.path.join(ASSETS_DIR, "Les datasets/coco_1.png"),
+                os.path.join(ASSETS_DIR, "Les datasets/coco_2.png"),
             ],
             "Open Images V6": [
-                "Streamlit/assets/Les datasets/open_images_v6_1.png",
+                os.path.join(ASSETS_DIR, "Les datasets/open_images_v6_1.png"),
             ],
             "V2 Plant Seedlings": [
-                "Streamlit/assets/Les datasets/v2_plant_seedlings_1.png",
-                "Streamlit/assets/Les datasets/v2_plant_seedlings_2.png",
+                os.path.join(ASSETS_DIR, "Les datasets/v2_plant_seedlings_1.png"),
+                os.path.join(ASSETS_DIR, "Les datasets/v2_plant_seedlings_2.png"),
             ],
         }
 
@@ -81,7 +83,7 @@ def sidebar_choice():
         """)
 
         df_comparison = pd.read_excel(
-            "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Les datasets/dataset_comparison.xlsx",
+            os.path.join(ASSETS_DIR, "Les datasets/dataset_comparison.xlsx"),
             index_col=0,
         )
 
@@ -208,10 +210,10 @@ def sidebar_choice():
         col_seg, col_col = st.columns([8, 8])
         with col_seg:
             st.subheader("Variante Segmented")
-            st.image("Streamlit/assets/Les datasets/dataset_overview_segmented_select.png", width=600)
+            st.image(os.path.join(ASSETS_DIR, "Les datasets/dataset_overview_segmented_select.png"), width=600)
         with col_col:
             st.subheader("Variante Color")
-            st.image("Streamlit/assets/Les datasets/dataset_overview_color_select.png", width=600)
+            st.image(os.path.join(ASSETS_DIR, "Les datasets/dataset_overview_color_select.png"), width=600)
 
 # ---------------- Partie Nettoyage ----------------
     with tab3:
@@ -343,7 +345,7 @@ def sidebar_choice():
             """)
         else:
             st.warning("Données sources introuvables pour les graphiques interactifs.")
-            st.image("Streamlit/assets/class_distribution_analysis.png", caption="Répartition détaillée (version statique)", use_container_width=True)
+            st.image(os.path.join(ASSETS_DIR, "class_distribution_analysis.png"), caption="Répartition détaillée (version statique)", use_container_width=True)
         
         st.info("💡 **Insight Expert** : Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
 

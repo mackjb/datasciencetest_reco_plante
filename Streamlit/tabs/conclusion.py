@@ -1,4 +1,7 @@
 import streamlit as st
+import os
+
+ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
 
 def sidebar_choice():
     st.title("Conclusion & Perspectives")
@@ -28,14 +31,14 @@ def sidebar_choice():
     with col_prod:
         st.markdown("<h4>Ce qu'on a produit</h4>", unsafe_allow_html=True)
         st.image(
-            "Streamlit/assets/produit.png",
+            os.path.join(ASSETS_DIR, "produit.png"),
             width=900,
         )
 
     with col_ret:
         st.markdown("<h4>Ce qu'on a retenu</h4>", unsafe_allow_html=True)
         st.image(
-            "Streamlit/assets/retenu.png",
+            os.path.join(ASSETS_DIR, "retenu.png"),
             width=900,
         )
 
@@ -159,7 +162,7 @@ def sidebar_choice():
                 col_img_left, col_img_center, col_img_right = st.columns([1, 2, 1])
                 with col_img_center:
                     st.image(
-                        "Streamlit/assets/perspectives.png",
+                        os.path.join(ASSETS_DIR, "perspectives.png"),
                         width=500,
                     )
 

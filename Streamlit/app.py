@@ -1,4 +1,7 @@
 import streamlit as st
+import os
+
+ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 from tabs import home, eda, modeling, machine_learning, deep_learning, proof_of_concept, conclusion
 
 st.set_page_config(
@@ -85,7 +88,7 @@ def main():
     # Création du menu radios
     selection = st.sidebar.radio("Aller à", list(pages.keys()))
     st.sidebar.markdown("<br><br>", unsafe_allow_html=True)
-    st.sidebar.image("Streamlit/assets/logo-2021.png", use_container_width=True)
+    st.sidebar.image(os.path.join(ASSETS_DIR, "logo-2021.png"), use_container_width=True)
 
     # Appel de la fonction de la page sélectionnée
     page = pages[selection]

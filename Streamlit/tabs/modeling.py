@@ -6,6 +6,8 @@ import os
 import time
 from tabs import deep_learning
 
+ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+
 def render_approach_content():
     st.markdown("""
     
@@ -23,7 +25,7 @@ def render_approach_content():
         inner_ml = st.columns([1, 2, 1])[1]
         with inner_ml:
             st.image(
-                "Streamlit/assets/WF_ML.png",
+                os.path.join(ASSETS_DIR, "WF_ML.png"),
                 use_container_width=True,
             )
 
@@ -32,7 +34,7 @@ def render_approach_content():
         inner_dl = st.columns([1, 2, 1])[1]
         with inner_dl:
             st.image(
-                "Streamlit/assets/WF_DL.png",
+                os.path.join(ASSETS_DIR, "WF_DL.png"),
                 width=600,
             )
 

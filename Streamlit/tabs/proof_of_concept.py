@@ -58,8 +58,10 @@ def render_dl_page():
     # ARCHI 3
     # =========================
     with tab_archi3:
+        col_arch3_text, col_arch3_img = st.columns([1, 1])
 
-        st.markdown(
+        with col_arch3_text:
+            st.markdown(
             '''
             <div class="card card--info" style="background-color:#FFE4C4;">
               <div class="card__title">Scénario pour un déploiement sur Applications mobiles / Edge computing :</div>
@@ -67,10 +69,25 @@ def render_dl_page():
             </div>
             ''',
             unsafe_allow_html=True,
-        )
+            )
 
-        st.markdown("Démo Interactive : Archi 3")
-        st.write("Sélectionnez une image pour simuler l'inférence et visualiser l'attention du modèle (Grad-CAM).")
+            st.markdown(
+                '''
+                <div class="card card--info" style="margin-top:5rem;background-color:#a2d2ff;">
+                  <div class="card__body" style="color:#0b090a; font-weight:bold; text-align:center;">
+                    Démo Interactive ↓<br>
+                    <span style="font-weight:normal; color:#0131B4;">Sélectionnez une image pour simuler l'inférence et visualiser l'attention du modèle (Grad-CAM).</span>
+                  </div>
+                </div>
+                ''',
+                unsafe_allow_html=True,
+            )
+
+        with col_arch3_img:
+            st.image(
+                "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/architectures/archi_3_bk.png",
+                width=500,
+            )
 
         examples_archi3 = [
             {

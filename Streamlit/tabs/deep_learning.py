@@ -2,6 +2,49 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import os
+import base64
+
+
+def _render_loss_hover(loss_path: str, arch_num: str) -> None:
+    if not os.path.exists(loss_path):
+        return
+
+    with open(loss_path, "rb") as f:
+        loss_data = base64.b64encode(f.read()).decode("utf-8")
+
+    st.markdown(
+        f"""
+        <style>
+        .loss-hover-box {{
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }}
+        .loss-hover-content {{
+            display: none;
+            position: absolute;
+            top: 120%;
+            left: 0;
+            background-color: #ffffff;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            z-index: 1000;
+        }}
+        .loss-hover-box:hover .loss-hover-content {{
+            display: block;
+        }}
+        </style>
+
+        <div class="loss-hover-box">
+          <span>Survoler pour voir la courbe de loss - Archi {arch_num}</span>
+          <div class="loss-hover-content">
+            <img src="data:image/png;base64,{loss_data}" style="max-width:700px;width:100%;height:auto;" />
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def render_dl_content():
@@ -183,9 +226,19 @@ def render_dl_content():
         for col, arch in zip(row1_cols, arch_info_dedicated[:2]):
             with col:
                 with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                    if os.path.exists(arch['img']):
-                        st.image(arch['img'], width=500)
+                    left_col, right_col = st.columns(2)
 
+                    # Colonne gauche : schéma
+                    with left_col:
+                        if os.path.exists(arch['img']):
+                            st.image(arch['img'], use_container_width=True)
+
+                    # Colonne droite : survol pour la courbe de loss
+                    with right_col:
+                        loss_path = f"Streamlit/assets/architectures/loss_archi_{arch['num']}.png"
+                        _render_loss_hover(loss_path, arch['num'])
+
+                    # Détails de l'architecture (en dessous des deux colonnes)
                     with st.expander("Détails de l'architecture"):
                         st.markdown(f"**Description** : {arch['desc']}")
                         st.markdown(f"**Workflow** : {arch['workflow']}")
@@ -196,9 +249,19 @@ def render_dl_content():
         for col, arch in zip(row2_cols, arch_info_dedicated[2:]):
             with col:
                 with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                    if os.path.exists(arch['img']):
-                        st.image(arch['img'], width=500)
+                    left_col, right_col = st.columns(2)
 
+                    # Colonne gauche : schéma
+                    with left_col:
+                        if os.path.exists(arch['img']):
+                            st.image(arch['img'], use_container_width=True)
+
+                    # Colonne droite : survol pour la courbe de loss
+                    with right_col:
+                        loss_path = f"Streamlit/assets/architectures/loss_archi_{arch['num']}.png"
+                        _render_loss_hover(loss_path, arch['num'])
+
+                    # Détails de l'architecture (en dessous des deux colonnes)
                     with st.expander("Détails de l'architecture"):
                         st.markdown(f"**Description** : {arch['desc']}")
                         st.markdown(f"**Workflow** : {arch['workflow']}")
@@ -268,9 +331,20 @@ def render_dl_content():
             for col, arch in zip(row_cols, shared_archs[i:i+2]):
                 with col:
                     with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                        if os.path.exists(arch['img']):
-                            st.image(arch['img'], width=500)
+                        left_col, right_col = st.columns(2)
 
+                        # Colonne gauche : schéma
+                        with left_col:
+                            if os.path.exists(arch['img']):
+                                st.image(arch['img'], use_container_width=True)
+
+                        # Colonne droite : survol pour la courbe de loss (sauf archi 5 où l'image n'existe pas)
+                        with right_col:
+                            loss_path = f"Streamlit/assets/architectures/loss_archi_{arch['num']}.png"
+                            if arch['num'] != "5":
+                                _render_loss_hover(loss_path, arch['num'])
+
+                        # Détails de l'architecture (en dessous des deux colonnes)
                         with st.expander("Détails de l'architecture"):
                             st.markdown(f"**Description** : {arch['desc']}")
                             st.markdown(f"**Workflow** : {arch['workflow']}")
@@ -344,7 +418,7 @@ def render_dl_content():
                 """
             )
 
-            col_esp, col_malad = st.columns(2)
+            col_esp, col_malad, col_err_class = st.columns([2,2,3])
 
             img_path_pred_ok_esp = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/pred_ok_esp.png"
             img_path_pred_ok_malad = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/pred_ok_malad.png"
@@ -358,8 +432,9 @@ def render_dl_content():
                 if os.path.exists(img_path_pred_ok_malad):
                     st.image(img_path_pred_ok_malad, width=500, caption="Prédiction correcte - tête maladie")
 
-            if os.path.exists(img_path_err_class):
-                st.image(img_path_err_class, width=900, caption="Exemple d'erreur de classification")
+            with col_err_class:
+                if os.path.exists(img_path_err_class):
+                    st.image(img_path_err_class, width=700, caption="Exemple d'erreur de classification")
             
         st.divider()
 
@@ -374,7 +449,7 @@ def render_dl_content():
             )
             img_path_err_class = "/home/vscode/worktrees/bga_dl_experiments/Streamlit/assets/Interpretability/attention_réseau.png"
             if os.path.exists(img_path_err_class):
-                st.image(img_path_err_class, width=900, caption="Exemple d'erreur de classification")
+                st.image(img_path_err_class, width=900, caption="GRAD-CAM Espèce-maladie")
 
         st.divider()
 

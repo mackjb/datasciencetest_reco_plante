@@ -3,13 +3,11 @@ import pandas as pd
 import os
 import plotly.express as px
 
-ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
-
 def sidebar_choice():
     st.title("Analyse Exploratoire & Preprocessing")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["Les Datasets", "PlantVillage", "Nettoyage", "Visualisation"])
-# ---------------- Partie Les Datasets ----------------    
+    tab1, tab2, tab3 = st.tabs(["Les Datasets", "PlantVillage", "Visualisation et nettoyage"])
+    
     with tab1:
         st.header("Les Datasets")
         st.markdown("""
@@ -18,7 +16,7 @@ def sidebar_choice():
         """)
 
         # --- 1ère partie : Datasets pour l'identification de l'espèce ---
-        st.subheader("""Datasets pour l'identification de l'espèce""")
+        st.markdown("### Datasets pour l'identification de l'espèce")
         st.markdown("""
         Trois premiers jeux de données sont dédiés à l’**identification de l’espèce** à partir
         d’images de plantes complètes dans des environnements variés :
@@ -28,22 +26,22 @@ def sidebar_choice():
         species_examples = {
 
             "COCO": [
-                os.path.join(ASSETS_DIR, "Les datasets/coco_1.png"),
-                os.path.join(ASSETS_DIR, "Les datasets/coco_2.png"),
+                "Streamlit/assets/Les datasets/coco_1.png",
+                "Streamlit/assets/Les datasets/coco_2.png",
             ],
             "Open Images V6": [
-                os.path.join(ASSETS_DIR, "Les datasets/open_images_v6_1.png"),
+                "Streamlit/assets/Les datasets/open_images_v6_1.png",
             ],
             "V2 Plant Seedlings": [
-                os.path.join(ASSETS_DIR, "Les datasets/v2_plant_seedlings_1.png"),
-                os.path.join(ASSETS_DIR, "Les datasets/v2_plant_seedlings_2.png"),
+                "Streamlit/assets/Les datasets/v2_plant_seedlings_1.png",
+                "Streamlit/assets/Les datasets/v2_plant_seedlings_2.png",
             ],
         }
 
         # Trois boîtes (une par dataset), empilées verticalement et alignées à gauche ;
         # les images ne s'affichent que si l'on clique dessus
 
-        col_c, _ = st.columns([1, 1])
+        col_c, col_o, col_v = st.columns(3)
         with col_c:
             with st.expander("COCO"):
                 coco_imgs = species_examples["COCO"]
@@ -51,7 +49,6 @@ def sidebar_choice():
                 for i, img_path in enumerate(coco_imgs):
                     coco_cols[i].image(img_path, width=300)
 
-        col_o, _ = st.columns([1, 1])
         with col_o:
             with st.expander("Open Images V6"):
                 open_imgs = species_examples["Open Images V6"]
@@ -59,7 +56,6 @@ def sidebar_choice():
                 for i, img_path in enumerate(open_imgs):
                     open_cols[i].image(img_path, width=300)
 
-        col_v, _ = st.columns([1, 1])
         with col_v:
             with st.expander("V2 Plant Seedlings"):
                 v2_imgs = species_examples["V2 Plant Seedlings"]
@@ -83,46 +79,22 @@ def sidebar_choice():
         """)
 
         df_comparison = pd.read_excel(
-            os.path.join(ASSETS_DIR, "Les datasets/dataset_comparison.xlsx"),
-            index_col=0,
+            "Streamlit/assets/Les datasets/dataset_comparison.xlsx",
         )
 
-        styled_comparison = (
-            df_comparison.style
-            .set_table_styles(
-                [
-                    {
-                        "selector": "table",
-                        "props": [
-                            ("width", "20%"),
-                        ],
-                    },
-                    {
-                        "selector": "th",
-                        "props": [
-                            ("background-color", "#a2d2ff"),
-                            ("font-weight", "bold"),
-                            ("border", "1px solid #00b4d8"),
-                        ],
-                    },
-                    {
-                        "selector": "td",
-                        "props": [
-                            ("border", "1px solid #00b4d8"),
-                        ],
-                    },
-                    {
-                        "selector": "th.row_heading",
-                        "props": [
-                            ("font-weight", "bold"),
-                        ],
-                    },
-                ]
-            )
-            .set_properties(border="1px solid #00b4d8")
-        )
+        # Convertir en HTML avec style forcé
+        numeric_cols = df_comparison.select_dtypes(include="number").columns.tolist()
+        df_styled = df_comparison.style.hide(axis="index")
+        if numeric_cols:
+            df_styled = df_styled.highlight_max(axis=0, color='lightgreen', subset=numeric_cols).format("{:.4f}", subset=numeric_cols)
 
-        st.table(styled_comparison)
+        df_styled = df_styled.set_properties(**{
+            "white-space": "pre-wrap",
+            "word-break": "break-word",
+        })
+
+        html = df_styled.to_html()
+        st.markdown(f"<div style='overflow-x:auto'>{html}</div>", unsafe_allow_html=True)
 
         st.markdown("""
         **Plant Disease** est éliminé car, pour un même ordre de grandeur du nombre d’images,
@@ -134,59 +106,14 @@ def sidebar_choice():
         précisé dans la littérature.
         """)
 
-        st.subheader("""Sélection du dataset pour l'identification des plantes et des maladies""")
+        st.markdown("#### Sélection du dataset pour l'identification des plantes et des maladies")
+        st.warning("Notre choix se porte donc sur **PlantVillage**, qui cadre bien avec notre scénario.")
+        st.caption("Sa structure est détaillée dans l'onglet *PlantVillage*.")
 
-        # Styles de "card" réutilisés depuis la page Conclusion (onglet Limites)
-        st.markdown(
-            '''
-        <style>
-        .card {
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 18px;
-        padding: 16px 16px 14px 16px;
-        background: rgba(255,255,255,0.03);
-        margin: 0.25rem 0 0.9rem 0;
-        box-shadow: 0 8px 22px rgba(0,0,0,0.12);
-        }
-        [data-theme="light"] .card {
-        border: 1px solid rgba(0,0,0,0.08);
-        background: rgba(0,0,0,0.02);
-        box-shadow: 0 8px 22px rgba(0,0,0,0.06);
-        }
-        .card__title {
-        font-weight: 800;
-        font-size: 1.05rem;
-        margin-bottom: 0.35rem;
-        }
-        .card__body {
-        color: rgba(255,255,255,0.82);
-        font-size: 0.95rem;
-        line-height: 1.35;
-        }
-        [data-theme="light"] .card__body { color: rgba(0,0,0,0.74); }
-        .card--success { border-color: rgba(46, 204, 113, 0.35); }
-        .card--warning { border-color: rgba(241, 196, 15, 0.40); }
-        .card--info    { border-color: rgba(52, 152, 219, 0.40); }
-        </style>
-        ''',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            '''
-        <div class="card card--success" style="background-color:#FFE4C4;">
-            <div class="card__body" style="color:#0353a4;">
-                Notre choix se porte donc sur <b>PlantVillage</b>, qui cadre bien avec notre scénario.<br/>
-            </div>
-        </div>
-        ''',
-            unsafe_allow_html=True,
-        )
-# ---------------- Partie PlantVillage ----------------
     with tab2:
         st.header("Le Dataset PlantVillage")
         
-        c1, c2 = st.columns([7, 1])
+        c1, c2 = st.columns([8, 1])
         
         with c1:
             st.markdown("""
@@ -201,62 +128,105 @@ def sidebar_choice():
             """)
 
         with c2:
-            st.metric("Poids total "," 593 Mo")
-            st.metric("Images "," 54306")
-            st.metric("Espèces "," 14")
-            st.metric("Maladies "," 20")
+            st.metric("   Poids total", "593 Mo")
+            st.metric("   Images", "54306")
+            st.metric("   Espèces", "14")
+            st.metric("   Maladies", "20")
+
+        col_seg, col_color = st.columns(2)
+
+    with col_seg:
+        st.markdown("### Variante Segmented")
+        st.image(
+            "Streamlit/assets/dataset_overview_segmented_select.png",
+            caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage/segmented (fond noir)",
+            width=650,
+        )
+
+    with col_color:
+        st.markdown("### Variante Color")
+        st.image(
+            "Streamlit/assets/dataset_overview_color_select.png",
+            caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage / color (fond original)",
+            width=650,
+        )
+
+            
+    with tab3:
+        st.header(" Exploration de la distribution des classes")
+  
+
+        st.markdown("#### Analyse de l'équilibre Saine vs Malade")
+        
+        csv_full_path = "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all.csv"
+        if os.path.exists(csv_full_path):
+            df_full = pd.read_csv(csv_full_path)
+            
+            # --- Chart 1: Saine vs Malade par Espèce ---
+            df_state = df_full.groupby(['nom_plante', 'Est_Saine']).size().reset_index(name='count')
+            df_state['Etat'] = df_state['Est_Saine'].map({True: 'Saine', False: 'Malade'})
+            
+            fig1 = px.bar(df_state, x='nom_plante', y='count', color='Etat', barmode='group',
+                         labels={'nom_plante': "Espèce", 'count': "Nombre d'images"},
+                         color_discrete_map={'Saine': '#FF4B4B', 'Malade': '#636EFA'}) # Couleurs proches de l'image
+            st.plotly_chart(fig1, use_container_width=True)
+            st.markdown("#### Répartition des images saines vs malades par espèce")
+            
+            # --- Charts 2 & 3: Distributions séparées ---
+            colA, colB = st.columns(2)
+            
+            with colA:
+                df_healthy = df_full[df_full['Est_Saine'] == True].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
+                df_healthy['class'] = df_healthy['nom_plante'] + " " + df_healthy['nom_maladie']
+                df_healthy = df_healthy.sort_values('count', ascending=False)
+                fig2 = px.bar(df_healthy, x='class', y='count', 
+                             labels={'class': "Classe (espèce saine)", 'count': "Nombre d'images"},
+                             color_discrete_sequence=['#636EFA'])
+                st.plotly_chart(fig2, use_container_width=True)
+                st.markdown("<h5 style='text-align: center;'>Distribution des classes saines</h5>", unsafe_allow_html=True)
+                
+            with colB:
+                df_disease = df_full[df_full['Est_Saine'] == False].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
+                df_disease['class'] = df_disease['nom_plante'] + " " + df_disease['nom_maladie']
+                df_disease = df_disease.sort_values('count', ascending=False)
+                fig3 = px.bar(df_disease, x='class', y='count', 
+                             labels={'class': "Classe (espèce)", 'count': "Nombre d'images"},
+                             color_discrete_sequence=['#636EFA'])
+                st.plotly_chart(fig3, use_container_width=True)
+                st.markdown("<h5 style='text-align: center;'>Distribution des classes malades</h5>", unsafe_allow_html=True)
+
+            st.markdown("""
+            **Analyse de l'équilibre** : 
+            *   La **Tomate** domine largement le dataset avec plus de 15 000 images, dont une grande partie est affectée par le virus *Yellow Leaf Curl*.
+            *   Certaines espèces comme le **Soybean** sont principalement représentées en état sain, tandis que d'autres (Orange, Squash) n'apparaissent qu'en état pathologique dans cet inventaire.
+            *   Ce déséquilibre est un défi majeur : le modèle pourrait avoir tendance à prédire plus facilement les classes sur-représentées.
+            """)
+        else:
+            st.warning("Données sources introuvables pour les graphiques interactifs.")
+            st.image("Streamlit/assets/class_distribution_analysis.png", caption="Répartition détaillée (version statique)", use_container_width=True)
+        
+        st.info(" Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
+
         st.divider()
 
-        col_seg, col_col = st.columns([8, 8])
-        with col_seg:
-            st.subheader("Variante Segmented")
-            st.image(os.path.join(ASSETS_DIR, "Les datasets/dataset_overview_segmented_select.png"), width=600)
-        with col_col:
-            st.subheader("Variante Color")
-            st.image(os.path.join(ASSETS_DIR, "Les datasets/dataset_overview_color_select.png"), width=600)
-
-# ---------------- Partie Nettoyage ----------------
-    with tab3:
-        st.header("Pipeline de Preprocessing")
+        st.header(" Pipeline de Preprocessing")
         st.markdown("""
         Pour garantir la robustesse du modèle lors du passage en production (images réelles), nous avons appliqué un nettoyage strict.
         """)
         
+        st.markdown("### Étapes Clés du Nettoyage")
         st.markdown("""
         1.  **Suppression des Images Inexploitables** : 18 images détectées comme presque noires ont été retirées.
         2.  **Détection de Doublons** : 21 doublons d'images ont été supprimés pour éviter tout biais.
         3.  **Redimensionnement** : Uniformisation de toutes les images en **256 x 256 pixels**.
         """)
+        
 
-# ---------------- Partie Visualisation ----------------
-    with tab4:
-        st.header("Visualisation des Données")
-        st.write("Exploration de la distribution des classes.")
         
-        # Chargement des données réelles
-        cnt_path = "results/Deep_Learning/archi1_outputs_mono_disease_effv2s_256_color_split/class_counts.csv"
-        
-        if os.path.exists(cnt_path):
-            df_counts = pd.read_csv(cnt_path)
-            # Nettoyage des noms de classes pour l'affichage
-            df_counts['class_name'] = df_counts['class'].apply(lambda x: x.replace("___", " - ").replace("_", " ").title())
-            
-            fig = px.bar(df_counts, x='count', y='class_name', orientation='h', 
-                         title="Distribution du nombre d'images par Classe",
-                         labels={'count': "Nombre d'images", 'class_name': "Classe"},
-                         color='count', color_continuous_scale='Viridis')
-            
-            fig.update_layout(height=800, showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
-            
-            st.markdown("---")
-            st.metric("Total Images (Train)", df_counts['count'].sum())
-            
-        else:
-            st.warning(f"Fichier de données introuvable : {cnt_path}")
+
             
         st.divider()
-        st.markdown("###Statistiques de Nettoyage & Qualité")
+        st.markdown("### Statistiques de Nettoyage & Qualité")
         
         v1, v2 = st.columns(2)
         
@@ -268,10 +238,10 @@ def sidebar_choice():
                 'Occurrences': [45000, 5000, 2000, 18, 1000, 500, 200, 100, 50, 10]
             })
             fig_size = px.histogram(size_data, x="Largeur", y="Occurrences", 
-                                  title="Répartition des dimensions (avant uniformisation)",
                                   color_discrete_sequence=['#2E8B57'])
             st.plotly_chart(fig_size, use_container_width=True)
-            st.caption("La majorité des images sont déjà en 256x256, mais des variations existent.")
+            st.markdown("<h5 style='text-align: center;'>Répartition des dimensions (avant uniformisation)</h5>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: grey; font-size: 0.8em;'>La majorité des images sont déjà en 256x256, mais des variations existent.</p>", unsafe_allow_html=True)
 
         with v2:
             st.markdown("#### Focus sur les Outliers")
@@ -281,72 +251,35 @@ def sidebar_choice():
             })
             # On filtre pour ne voir que les anomalies dans le graph
             fig_out = px.pie(outliers[outliers['Type'] != 'Valides'], values='Nombre', names='Type',
-                           title="Répartition des anomalies détectées",
                            color_discrete_sequence=px.colors.sequential.RdBu)
+            
+            # La sélection sur Pie Chart n'étant pas nativement supportée par st.plotly_chart en mode simple,
+            # nous utilisons un expander pour l'interaction.
             st.plotly_chart(fig_out, use_container_width=True)
-            st.caption("Zoom sur les 44 images écartées lors de l'audit technique.")
 
-        st.markdown("---")
-        st.markdown("####Impact du Pipeline de Nettoyage")
-        
-        # Un petit graphique de progression pour le volume de données
-        steps = ["Initial", "Après Doublons", "Après Outliers Noirs", "Dataset Final"]
-        counts = [54306, 54285, 54267, 54267]
-        
-        fig_steps = px.line(x=steps, y=counts, title="Évolution de la volumétrie pendant le preprocessing",
-                          markers=True, labels={'x': 'Étape', 'y': "Nombre d'images"})
-        fig_steps.update_traces(line_color='#2E8B57', line_width=4)
-        st.plotly_chart(fig_steps, use_container_width=True)
-        st.markdown("---")
-        st.markdown("####Analyse de l'Équilibre Saine vs Malade (Interactif)")
-        
-        csv_full_path = "dataset/plantvillage/csv/clean_data_plantvillage_segmented_all.csv"
-        if os.path.exists(csv_full_path):
-            df_full = pd.read_csv(csv_full_path)
-            
-            # --- Chart 1: Saine vs Malade par Espèce ---
-            df_state = df_full.groupby(['nom_plante', 'Est_Saine']).size().reset_index(name='count')
-            df_state['Etat'] = df_state['Est_Saine'].map({True: 'Saine', False: 'Malade'})
-            
-            fig1 = px.bar(df_state, x='nom_plante', y='count', color='Etat', barmode='group',
-                         title="Répartition des images saines vs malades par espèce",
-                         labels={'nom_plante': "Espèce", 'count': "Nombre d'images"},
-                         color_discrete_map={'Saine': '#FF4B4B', 'Malade': '#636EFA'}) # Couleurs proches de l'image
-            st.plotly_chart(fig1, use_container_width=True)
-            
-            # --- Charts 2 & 3: Distributions séparées ---
-            colA, colB = st.columns(2)
-            
-            with colA:
-                df_healthy = df_full[df_full['Est_Saine'] == True].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
-                df_healthy['class'] = df_healthy['nom_plante'] + " " + df_healthy['nom_maladie']
-                df_healthy = df_healthy.sort_values('count', ascending=False)
-                fig2 = px.bar(df_healthy, x='class', y='count', 
-                             title="Distribution des classes saines",
-                             labels={'class': "Classe (espèce saine)", 'count': "Nombre d'images"},
-                             color_discrete_sequence=['#636EFA'])
-                st.plotly_chart(fig2, use_container_width=True)
-                
-            with colB:
-                df_disease = df_full[df_full['Est_Saine'] == False].groupby(['nom_plante', 'nom_maladie']).size().reset_index(name='count')
-                df_disease['class'] = df_disease['nom_plante'] + " " + df_disease['nom_maladie']
-                df_disease = df_disease.sort_values('count', ascending=False)
-                fig3 = px.bar(df_disease, x='class', y='count', 
-                             title="Distribution des classes malades",
-                             labels={'class': "Classe (espèce)", 'count': "Nombre d'images"},
-                             color_discrete_sequence=['#636EFA'])
-                st.plotly_chart(fig3, use_container_width=True)
-
+            # Style CSS pour le zoom au survol (uniquement dans les expanders/details)
             st.markdown("""
-            **Analyse de l'Équilibre** : 
-            *   La **Tomate** domine largement le dataset avec plus de 15 000 images, dont une grande partie est affectée par le virus *Yellow Leaf Curl*.
-            *   Certaines espèces comme le **Soybean** sont principalement représentées en état sain, tandis que d'autres (Orange, Squash) n'apparaissent qu'en état pathologique dans cet inventaire.
-            *   Ce déséquilibre est un défi majeur : le modèle pourrait avoir tendance à prédire plus facilement les classes sur-représentées.
-            """)
-        else:
-            st.warning("Données sources introuvables pour les graphiques interactifs.")
-            st.image(os.path.join(ASSETS_DIR, "class_distribution_analysis.png"), caption="Répartition détaillée (version statique)", use_container_width=True)
-        
-        st.info("💡 **Insight Expert** : Pour pallier ces disparités, nous utilisons des techniques de pondération des classes (*Class Weights*) lors de l'entraînement et nous priorisons le **F1-Score macro** pour l'évaluation finale.")
+            <style>
+            details [data-testid="stImage"] img {
+                transition: transform 0.3s ease;
+            }
+            details [data-testid="stImage"] img:hover {
+                transform: scale(2.0); /* Zoom x2 */
+                z-index: 1000;
+                cursor: zoom-in;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            # Interaction améliorée : Expander au lieu de Checkbox
+            st.markdown("<h5 style='text-align: center;'>Répartition des anomalies détectées</h5>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: grey; font-size: 0.8em;'>Zoom sur les 44 images écartées lors de l'audit technique.</p>", unsafe_allow_html=True)
+
+            # Interaction améliorée : Expander au lieu de Checkbox
+            with st.expander("Voir les 18 'Images Sombres' écartées"):
+                st.image("Streamlit/assets/images_noires.png", 
+                       caption="Aperçu des 18 images sombres (Survolez pour zoomer)", 
+                       use_container_width=True)
 
 

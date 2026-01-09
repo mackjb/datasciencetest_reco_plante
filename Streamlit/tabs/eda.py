@@ -74,8 +74,9 @@ def sidebar_choice():
         st.subheader("""Datasets pour l'identification des plantes et des maladies""")
         st.markdown("""
         Les trois autres jeux de données : **Plant Disease**, **New Plant Diseases** et **PlantVillage** sont tous centrés sur des **feuilles de plantes recadrées sur fond uni**,
-        afin de faciliter la détection automatique des maladies. PlantVillage constitue le **dataset de référence** pour les 2 autres datasets, tandis que **Plant Disease** enrichit le nombre
-        de maladies pour un volume d’images comparable et que **New Plant Diseases** est une **extension
+        afin de faciliter la détection automatique des maladies. PlantVillage constitue le **dataset de référence** pour les 2 autres datasets, tandis que **Plant Disease** correspond à une 
+        redistribution et une réorganisation de PlantVillage sur Kaggle, sans ajout de nouvelles espèces, maladies ou informations visuelles.
+        **New Plant Diseases** est quant à lui une **extension
         de PlantVillage par augmentation de données hors ligne** (environ 34 000 images supplémentaires).
         """)
 
@@ -98,11 +99,11 @@ def sidebar_choice():
         st.markdown(f"<div style='overflow-x:auto'>{html}</div>", unsafe_allow_html=True)
 
         st.markdown("""
-        **Plant Disease** est éliminé car, pour un même ordre de grandeur du nombre d’images,
-        il fournit un plus grand nombre de types de maladies, ce qui n’apporte rien à notre scénario.
+        Le dataset **Plant Disease** est éliminé car, pour un volume d’images comparable à PlantVillage,
+         il n’apporte pas de diversité supplémentaire pertinente pour notre scénario.
 
-        **New Plant Diseases** est créé à l’aide d’une **augmentation hors ligne de PlantVillage**
-        (environ 34 000 images supplémentaires). Notre analyse exploratoire a montré que certaines
+        **New Plant Diseases** a également été écarté. Bien qu’il contienne un plus grand nombre d’images
+         grâce à l’augmentation artificielle, notre analyse exploratoire a montré que certaines
         espèces majoritaires ont été augmentées plus que d’autres pour couvrir un objectif non
         précisé dans la littérature.
         """)

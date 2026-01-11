@@ -246,14 +246,26 @@ def render_roadmap():
                 components.html(html_content, height=450, scrolling=True)
         # -----------------------------
 
-        ranking_path = "results/feature_ranking.csv"
-        if os.path.exists(ranking_path):
-            st.markdown("### Importance des Features")
-            df_rank = pd.read_csv(ranking_path).head(15).sort_values(by="final_score", ascending=True)
-            fig_rank = px.bar(df_rank, x="final_score", y="feature", orientation="h",
-                               title="Top 15 des Features les plus discriminantes",
-                               color="final_score", color_continuous_scale="GnBu")
-            st.plotly_chart(fig_rank, width="stretch")
+        # --- Graphs Integration (Side-by-Side) ---
+        st.divider()
+        col_img, col_rank = st.columns([0.9, 1.1], gap="small")
+
+        # Left Column: Top Features by Class (Image)
+        with col_img:
+            img_path = "figures/shap_analysis/3_top_features_by_class.png"
+            if os.path.exists(img_path):
+                st.markdown("### Top Features par Classe")
+                st.image(img_path, width="stretch")
+
+        # Right Column: Feature Importance (Global)
+        with col_rank:
+            ranking_path = "results/feature_ranking.csv"
+            if os.path.exists(ranking_path):
+                st.markdown("### Importance des Features")
+                df_rank = pd.read_csv(ranking_path).head(15).sort_values(by="final_score", ascending=True)
+                fig_rank = px.bar(df_rank, x="final_score", y="feature", orientation="h",
+                                   color="final_score", color_continuous_scale="GnBu")
+                st.plotly_chart(fig_rank, width="stretch")
 
     # --- STEP 2: SPLIT ---
     elif current == 2:
@@ -359,15 +371,6 @@ def render_roadmap():
     elif current == 6:
         st.header("6. Évaluation & Résultats")
         
-        with st.expander("Rappel des Métriques", expanded=False):
-            st.markdown("""
-            - **Accuracy** : % de prédictions correctes.
-            - **Précision** : Capacité à éviter les faux positifs (fiabilité).
-            - **Rappel** : Capacité à détecter tous les cas réels (exhaustivité).
-            - **F1-score** : Moyenne harmonique (équilibre) entre précision et rappel.
-            """)
-        
-        st.divider()
         st.success("**Résultats sur le Test Set**")
         
         # Données complètes (Source: machine_learning.py)
@@ -387,6 +390,55 @@ def render_roadmap():
         fig_full.update_layout(yaxis_range=[0.7, 1.0], margin=dict(t=0, b=0, l=0, r=0), 
                                legend=dict(orientation="h", y=1.1))
         st.plotly_chart(fig_full, width="stretch")
+        
+        st.divider()
+        
+        # Layout: Metrics (Left) + AutoML (Right)
+        c_metrics, c_automl = st.columns([1, 1], gap="medium")
+        
+        with c_metrics:
+            with st.expander("Rappel des Métriques", expanded=False):
+                st.markdown("""
+                - **Accuracy** : % de prédictions correctes.
+                - **Précision** : Capacité à éviter les faux positifs (fiabilité).
+                - **Rappel** : Capacité à détecter tous les cas réels (exhaustivité).
+                - **F1-score** : Moyenne harmonique (équilibre) entre précision et rappel.
+                """)
+        
+        with c_automl:
+             # Custom styled info box for AutoML
+            st.markdown("""
+            <div style="
+                background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+                border: 1px solid #cce5ff;
+                border-left: 5px solid #4b6cb7;
+                padding: 15px;
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+                text-align: center;
+            ">
+                <h5 style="
+                    margin: 0 0 10px 0; 
+                    color: #1a3b5d; 
+                    font-size: 1.15em; 
+                    font-family: 'Helvetica Neue', sans-serif;
+                    font-weight: 600;
+                    display: block;
+                ">
+                    Benchmark AutoML
+                </h5>
+                <p style="
+                    margin: 0; 
+                    color: #4a5568; 
+                    font-size: 0.95em; 
+                    line-height: 1.6;
+                    font-family: 'Helvetica Neue', sans-serif;
+                ">
+                    Nous avons brièvement testé une approche automatisée pour valider nos orientations. 
+                    Cette piste n'a pas été poussée plus loin, car les premiers résultats n'apportaient pas de gain significatif.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
         
         st.divider()
         st.subheader("Détail par classe & Matrices de Confusion")

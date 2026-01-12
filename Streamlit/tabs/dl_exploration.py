@@ -471,7 +471,7 @@ def render_exploration_roadmap():
                 # Affichage du tableau
                 # Highlight des métriques principales
                 st.dataframe(df_perf_dl.style.highlight_max(
-                    subset=["Espèce-Macro_F1", "Espèce-Accuracy", "Maladie- Accuracy"], 
+                    subset=["Espèce-Macro_F1", "Espèce-Accuracy", "Maladie- Macro_F1"], 
                     axis=0, color='#d1e7dd'
                 ), use_container_width=True)
 
@@ -486,9 +486,9 @@ def render_exploration_roadmap():
                     marker_color='lightblue'
                 ))
                 fig_comp.add_trace(go.Bar(
-                    name='Maladie Accuracy',
+                    name='Maladie Macro-F1',
                     x=df_chart['Archi_Label'],
-                    y=df_chart['Maladie- Accuracy'],
+                    y=df_chart['Maladie- Macro_F1'],
                     marker_color='lightcoral'
                 ))
                 fig_comp.update_layout(

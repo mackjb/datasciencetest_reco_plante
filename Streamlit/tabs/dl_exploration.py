@@ -5,6 +5,10 @@ import os
 import base64
 from utils import render_mermaid
 
+
+# try/except block removed
+
+
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
 
 def _render_loss_hover(loss_path: str, arch_num: str) -> None:
@@ -55,8 +59,8 @@ def render_exploration_roadmap():
 
     # STEPS: Titles from MIX Version (which are from New Version)
     steps = {
-        1: "Phase d'Exploration Individuelle",
-        2: "Démarche Structurée & Critères",
+        1: "Exploration Individuelle",
+        2: "Démarche Structurée",
         3: "Transfer Learning",
         4: "Architectures",
         5: "Performances",
@@ -107,15 +111,15 @@ def render_exploration_roadmap():
 
     # --- STEP 1 ---
     if current == 1:
-        st.header("1. Phase d'Exploration Individuelle")
+    
         st.markdown("""
-        Dans le cadre de notre formation, **chaque membre de l'équipe a d'abord exploré individuellement 
-        un modèle pré-entraîné** pour se familiariser avec les techniques de Deep Learning.
+        Chaque membre de l'équipe a d'abord exploré individuellement 
+        un modèle pré-entraîné pour se familiariser avec les techniques de Deep Learning.
         """)
         
         col_img, col_txt = st.columns([1.3, 2])
         with col_img:
-            st.image("Streamlit/assets/leviers_DL.png", use_container_width=True)
+            st.image("Streamlit/assets/leviers_DL.png", width="stretch")
         with col_txt:
             st.markdown("### Objectifs & Défis")
             st.markdown("""
@@ -124,29 +128,56 @@ def render_exploration_roadmap():
             - **Le Fine-Tuning** : Gel partiel vs total des couches.
             - **L'Augmentation de données** : Impact sur l'overfitting.
             - **Le Déséquilibre des classes** : Utilisation de class_weights.
-            
-            Cette étape était cruciale pour **harmoniser nos connaissances** avant de définir une architecture commune.
             """)
 
+        st.markdown(
+            """
+            <div style="margin: 1rem auto 0 auto; padding: 0.75rem 1rem; border-radius: 0.75rem; background-color: #ffddd2; border: 1px solid #c8e6c9; width: 75%;">
+                <span style="font-weight: 400; color: #0d47a1;">
+                    Cette étape était cruciale pour harmoniser nos connaissances avant de définir une architecture commune.
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     # --- STEP 2 ---
-    elif current == 2:
-        st.header("2. Démarche Structurée & Critères")
-        
+    elif current == 2:        
         st.markdown("""
         Pour structurer notre approche, nous avons défini **3 cas d'usage** correspondant à différents niveaux de complexité métier.
         """)
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.metric("Cas 1", "Espèce Uniquement")
-            st.caption("Identifier la plante avant de chercher la maladie.")
+            st.markdown(
+                """
+                <div style="background-color: #bde0fe; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid #d0d4e4;">
+                    <p style="margin: 0; font-size: 0.9rem; color: #0d00a4;"><span style="font-weight: 600; color: #0d00a4;">Cas 1 - </span>Identifier l'espèce uniquement</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
         with c2:
-            st.metric("Cas 2", "Diagnostic Ciblé")
-            st.caption("On connait l'espèce -> Quelle est la maladie ?")
+            st.markdown(
+                """
+                <div style="background-color: #bde0fe; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid #d0d4e4;">
+                    <p style="margin: 0; font-size: 0.9rem; color: #0d00a4;"><span style="font-weight: 600; color: #0d00a4;">Cas 2 - </span>On connait l'espèce → identifier la maladie</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
         with c3:
-            st.metric("Cas 3", "Diagnostic Complet")
-            st.caption("Image brute -> Espèce + Maladie (Inconnus).")
-            
+            st.markdown(
+                """
+                <div style="background-color: #bde0fe; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid #d0d4e4;">
+                    <p style="margin: 0; font-size: 0.9rem; color: #0d00a4;"><span style="font-weight: 600; color: #0d00a4;">Cas 3 - </span>Identifier l'espèce et la maladie</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        
+        st.divider()    
+
         st.markdown("### Critères de Sélection des Architectures")
         st.table(pd.DataFrame({
             "Catégorie": ["Métier", "Métier", "Technique", "Technique", "Autres"],
@@ -156,42 +187,12 @@ def render_exploration_roadmap():
 
     # --- STEP 3 ---
     elif current == 3:
-        st.header("3. Transfer Learning")
-        
-        st.info("Pourquoi le Transfer Learning ? Pour profiter de modèles entraînés sur des millions d'images (ImageNet).")
-
-        st.subheader("Choix du Backbone Pré-entraîné")
-        st.markdown("**Comparatif des Modèles Pré-entraînés Explorés :**")
-        
-        models_comparison = {
-            "Caractéristique": ["Année", "Auteurs/Org", "Paramètres (M)", "Taille modèle (MB)", 
-                               "GFLOPs (224×224)", "GFLOPs (256×256)", "Taille vecteur sortie",
-                               "Top-1 Acc ImageNet", "Top-5 Acc ImageNet", "Latence CPU (ms)", 
-                               "Latence GPU (ms)", "Taille entrée", "Profondeur (layers)"],
-            "EfficientNetV2-S": [2021, "Google Brain", 21.5, "~86", 8.4, "~10.8", 1280, 
-                                "83.9%", "96.7%", "60-80", "5-8", "384×384 (optim.)", "~150"],
-            "ResNet50": [2015, "Microsoft Research", 25.6, "~102", 4.1, "~5.3", 2048,
-                        "76.1%", "93.0%", "40-50", "3-5", "224×224", "50"],
-            "YOLOv8n-cls*": [2023, "Ultralytics", 2.7, "~11", 4.2, "~5.4", 1024,
-                           "69.0%", "88.3%", "25-35", "2-4", "224×224", "~100"],
-            "DenseNet-121": [2017, "Cornell/Facebook", 8.0, "~32", 2.9, "~3.7", 1024,
-                           "74.4%", "92.0%", "30-40", "3-5", "224×224", "121"]
-        }
-        df_models = pd.DataFrame(models_comparison)
-        st.dataframe(df_models.set_index("Caractéristique").T, use_container_width=True)
-        
-        st.success("""
-        **Choix retenu : EfficientNetV2S**
-        
-        - **Performance** : Meilleure Accuracy ImageNet (83.9%) parmi les modèles testés.
-        - **Efficience** : Excellent ratio performance/paramètres (21.5M).
-        - **Rapidité** : Optimisé pour une inférence rapide sur GPU.
-        """)
+        st.subheader("Pourquoi le Transfer Learning ? ")
 
         # Mindmap Théorie du Transfer Learning
         mindmap_tl = {
             "id": "root",
-            "text": "Théorie du<br/>Transfer Learning",
+            "text": "Transfer Learning",
             "children": [
                 {
                     "id": "Concept", 
@@ -227,34 +228,49 @@ def render_exploration_roadmap():
                     "text": "<b>4. Architectures de référence</b>",
                     "collapsed": True,
                     "children": [
-                        {"id": "EfficientNet", "text": "<b>EfficientNetV2-S</b> : Choisi pour son équilibre Performance/Latence (83.9% Top-1 ImageNet)"},
-                        {"id": "Classiques", "text": "ResNet50, DenseNet-121, VGG16 : Modèles standards pour l'extraction de motifs"},
-                        {"id": "ViT", "text": "Vision Transformers (ViT) : Alternative non-convolutive gérant les relations globales"}
+                        {"id": "Petits", "text": "Modèles compacts pour le coût/latence : YoloV8, MobileNet, Petits EfficientNet"},
+                        {"id": "Gros", "text": "Gros modèles pour la précision: VGGEfficientNetV2S, ResNet50, DenseNet-121, Vi"}
                     ]
                 },
-                {
-                    "id": "Limites", 
-                    "text": "<b>5. Limites & Vigilance</b>",
-                    "collapsed": True,
-                    "children": [
-                        {"id": "Biais_Contexte", "text": "Sensibilité au fond uniforme de PlantVillage (Biais de studio)"},
-                        {"id": "Generalisation", "text": "Chute de performance (-5% à -15%) face aux conditions réelles 'In-Wild'"},
-                        {"id": "Correlation", "text": "Risque d'apprendre des raccourcis Espèce <-> Maladie plutôt que les lésions"}
-                    ]
-                }
             ]
         }
         render_mermaid(mindmap_tl, height=600)
-        
-        st.divider()
-        st.divider()
-        st.info("Nous avons conçu **9 Architectures** différentes pour répondre à ces cas d'usage, que nous vous proposons de découvrir dès maintenant.")
 
-    # --- STEP 4 ---
-    elif current == 4:
-        st.header("4. Architectures")
+        st.subheader("Choix du Modèle Pré-entraîné")
+        st.markdown("**Comparatif des Modèles Pré-entraînés Explorés :**")
         
-        st.header("Protocole expérimental commun pour les 9 Architectures")
+        path_carac = os.path.join(ASSETS_DIR, "carac_mod_pre_trained.xlsx")
+        if os.path.exists(path_carac):
+             df_models = pd.read_excel(path_carac)
+             # Stylisation du header via Pandas Styler
+             st.table(
+                 df_models.set_index("Caractéristique").style.set_table_styles(
+                     [{'selector': 'th', 'props': [('background-color', '#e6f2ff'), ('color', '#0d00a4')]}]
+                 )
+             )
+        else:
+             st.error("Fichier de données 'carac_mod_pre_trained.xlsx' introuvable.")
+        
+        st.markdown(
+            """
+            <div style="margin: 1rem auto 0 auto; width: 66%; padding: 0.75rem 1rem; border-radius: 0.75rem; background-color: #ffc9b9; border: 1px solid #c8e6c9; color: #0d00a4;">
+                <p style="margin: 0 0 0.5rem 0; font-weight: 600;">
+                    Backbone pré-entrainé retenu : EfficientNetV2S
+                </p>
+                <ul style="margin: 0; padding-left: 1.2rem;">
+                    <li><b>Performance</b> : Meilleure Accuracy ImageNet (83.9%) parmi les modèles testés.</li>
+                    <li><b>Efficience</b> : Excellent ratio performance/paramètres (21.5M).</li>
+                    <li><b>Rapidité</b> : Optimisé pour une inférence rapide sur GPU.</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.divider()
+
+#------- Protocole -------
+        st.subheader("Protocole expérimental commun pour les architectures à concevoir")
         
         st.markdown("""
         - Dataset : PlantVillage/color
@@ -263,6 +279,188 @@ def render_exploration_roadmap():
         - Hyperparamètres fixés : learning rate, batch size, augmentation
         - Métriques : Loss, Accuracy, Macro-F1, matrice de confusion
         """)
+
+    # --- STEP 4 ---
+    elif current == 4:
+        #------- Carte des Architectures -------
+        st.subheader("Carte des Architectures")
+        st.markdown(
+            """
+            Nos explorations ont abouti à la conception de **9 architectures distinctes**.
+            Le graphique interactif ci-dessous les positionne dans notre *Espace de Conception*, structuré par le degré
+             d'isolation des tâches et le niveau de mutualisation du backbone.
+            """
+        )
+
+        # --- Interactive Scatter Plot for Architectures ---
+        # Data preparation
+        arch_data = [
+            # Dedicated (Top-Left region)
+            {"id": 1, "x": 1.5, "y": 5.5, "label": "Archi 1", "group": "Dédié", "desc": "3 modèles indépendants"},
+            {"id": 2, "x": 2.5, "y": 4.5, "label": "Archi 2", "group": "Dédié", "desc": "2 modèles (Espèce + Disease_Ext)"},
+            {"id": 3, "x": 1.0, "y": 4.0, "label": "Archi 3", "group": "Dédié", "desc": "Modèle unifié (35 classes)"},
+            {"id": 4, "x": 3.0, "y": 5.0, "label": "Archi 4", "group": "Dédié", "desc": "Cascade (Espèce -> Maladie)"},
+            
+            # Shared (Bottom-Right region)
+            {"id": 5, "x": 4.5, "y": 2.5, "label": "Archi 5", "group": "Partagé", "desc": "CNN + SVM"},
+            {"id": 6, "x": 5.5, "y": 1.5, "label": "Archi 6", "group": "Partagé", "desc": "Multi-tâche unifié"},
+            {"id": 7, "x": 5.0, "y": 3.0, "label": "Archi 7", "group": "Partagé", "desc": "Multi-tâche 2 têtes + signal"},
+            {"id": 8, "x": 6.0, "y": 2.0, "label": "Archi 8", "group": "Partagé", "desc": "Multi-tâche simplifié"},
+            {"id": 9, "x": 4.0, "y": 1.0, "label": "Archi 9", "group": "Partagé", "desc": "Conditionnée (Species+Health->Disease)"},
+        ]
+        
+        df_arch_plot = pd.DataFrame(arch_data)
+        
+        fig = go.Figure()
+        
+        # Colors
+        color_map = {"Dédié": "#fb5607", "Partagé": "#1565c0"}
+        
+        # Add traces
+        for group in ["Dédié", "Partagé"]:
+            subset = df_arch_plot[df_arch_plot["group"] == group]
+            fig.add_trace(go.Scatter(
+                x=subset["x"], y=subset["y"],
+                mode='markers+text',
+                text=subset["label"],
+                textposition="top center",
+                marker=dict(size=18, color=color_map[group], line=dict(width=2, color='white')),
+                name=group,
+                customdata=subset[["desc", "id"]].values,
+                hovertemplate="<b>%{text}</b><br>%{customdata[0]}<extra></extra>"
+            ))
+            
+        # Decision Boundary (Oblique)
+        # y = x is the separator approx.
+        fig.add_shape(
+            type="line",
+            x0=0, y0=0, x1=7, y1=7,
+            line=dict(color="gray", width=2, dash="dash"),
+        )
+        
+        # Annotations for regions
+        fig.add_annotation(
+            x=1.5, y=6.5,
+            text="Backbone Dédié à<br>Chaque Objectif",
+            showarrow=False,
+            font=dict(size=14, color="#fb5607", weight="bold"),
+            align="center"
+        )
+        fig.add_annotation(
+            x=5.5, y=0.5,
+            text="Backbone Partagé Entre<br>Plusieurs Objectifs",
+            showarrow=False,
+            font=dict(size=14, color="#1565c0", weight="bold"),
+            align="center"
+        )
+        
+        # Annotation for Decision Boundary
+        fig.add_annotation(
+            x=3.5, y=3.5,
+            text="Frontière de Décision",
+            textangle=-45,
+            showarrow=False,
+            font=dict(size=12, color="gray", style="italic")
+        )
+
+        fig.update_layout(
+            xaxis=dict(range=[0, 7], showgrid=False, zeroline=False, showticklabels=False, title="<b>Niveau de Mutualisation du Backbone (Synergie)</b> →"),
+            yaxis=dict(range=[0, 7], showgrid=False, zeroline=False, showticklabels=False, title="<b>Degré d'Isolation des Tâches</b> ↑"),
+            height=500,
+            margin=dict(l=20, r=20, t=20, b=20),
+            hovermode="closest",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            plot_bgcolor="rgba(240,242,246,0.5)", # Slight background
+            shapes=[
+                # Optional: Background colors for regions if desired, kept simple for now
+            ]
+        )
+        
+        # Render Plot
+        event = st.plotly_chart(fig, on_select="rerun", selection_mode="points", key="arch_plot", width="stretch")
+        
+        selected_point_info = None
+        if event and event.get("selection") and event["selection"].get("points"):
+            point = event["selection"]["points"][0]
+            # customdata should be available if passed to the trace
+            if "customdata" in point:
+                desc = point["customdata"][0]
+                arch_id = point["customdata"][1]
+                # Ensure proper ID format
+                try:
+                    arch_id = int(arch_id)
+                except (ValueError, TypeError):
+                    pass
+                selected_point_info = {"id": arch_id, "desc": desc}
+        
+        # Handle Selection
+        if selected_point_info:
+            arch_id = selected_point_info['id']
+            arch_desc = selected_point_info['desc']
+            
+            st.info(f" **Focus : Architecture {arch_id}** — {arch_desc}")
+            
+            # Display Architecture Image
+            img_filename = f"archi_{arch_id}_bk.png"
+            img_path = os.path.join(ASSETS_DIR, "architectures", img_filename)
+            loss_filename = f"loss_archi_{arch_id}.png"
+            loss_path = os.path.join(ASSETS_DIR, "architectures", loss_filename)
+            
+            # Métriques manuelles (à éditer ici selon besoins)
+            metrics_html = ""
+            
+            # Dictionnaire des performances par architecture
+            # Format : { id: {"esp": "VAL_ESP", "mal": "VAL_MAL"} }
+            arch_metrics = {
+                1: {"esp": "99,87%", "mal": "99,01%"},
+                2: {"esp": "99,90%", "mal": "99,22%"},
+                3: {"esp": "99,87%", "mal": "99,21%"},
+                4: {"esp": "99,88%", "mal": "99,11%"},
+                5: {"esp": "99,09%", "mal": "95,45%"},
+                6: {"esp": "99,88%", "mal": "98,89%"},
+                7: {"esp": "99,85%", "mal": "99,04%"},
+                8: {"esp": "99,86%", "mal": "99,08%"},
+                9: {"esp": "99,86%", "mal": "99,13%"},
+            }
+
+            if arch_id in arch_metrics:
+                vals = arch_metrics[arch_id]
+                metrics_html = f"""
+                <div style="
+                    background-color: #90e0ef; 
+                    border: 1px solid #e0e0e0; 
+                    border-radius: 8px; 
+                    padding: 10px; 
+                    margin-top: 10px; 
+                    text-align: center; 
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <p style="margin: 0; color: #0d00a4; font-size: 0.95rem;"><b>Espèce Macro-F1</b> = {vals['esp']}</p>
+                    <p style="margin: 5px 0 0 0; color: #0d00a4; font-size: 0.95rem;"><b>Maladie Macro-F1</b> = {vals['mal']}</p>
+                </div>
+                """
+
+            if os.path.exists(img_path):
+                if os.path.exists(loss_path):
+                    # Affichage côte à côte : Architecture + Loss
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.image(img_path, caption=f"Schéma de l'Architecture {arch_id}", width="stretch")
+                    with c2:
+                        st.image(loss_path, caption=f"Courbe Loss - Archi {arch_id}", width=300)
+                        if metrics_html:
+                            st.markdown(metrics_html, unsafe_allow_html=True)
+                else:
+                    # Centrage et réduction de la taille (50% environ) si pas de loss
+                    c1, c2, c3 = st.columns([1, 2, 1])
+                    with c2:
+                        st.image(img_path, caption=f"Schéma de l'Architecture {arch_id}", width="stretch")
+                        if metrics_html:
+                            st.markdown(metrics_html, unsafe_allow_html=True)
+            else:
+                st.warning(f"Image non trouvée : {img_filename}")
+            
+            # Tip to scroll down
+            st.markdown(f"👇 *Retrouvez les détails complets de l'Archi {arch_id} dans les sections ci-dessous.*")
 
         st.divider()
 
@@ -325,7 +523,7 @@ def render_exploration_roadmap():
                     # Colonne gauche : schéma
                     with left_col:
                         if os.path.exists(arch['img']):
-                            st.image(arch['img'], use_container_width=True)
+                            st.image(arch['img'], width="stretch")
 
                     # Colonne droite : survol pour la courbe de loss
                     with right_col:
@@ -348,7 +546,7 @@ def render_exploration_roadmap():
                     # Colonne gauche : schéma
                     with left_col:
                         if os.path.exists(arch['img']):
-                            st.image(arch['img'], use_container_width=True)
+                            st.image(arch['img'], width="stretch")
 
                     # Colonne droite : survol pour la courbe de loss
                     with right_col:
@@ -430,7 +628,7 @@ def render_exploration_roadmap():
                         # Colonne gauche : schéma
                         with left_col:
                             if os.path.exists(arch['img']):
-                                st.image(arch['img'], use_container_width=True)
+                                st.image(arch['img'], width="stretch")
 
                         # Colonne droite : survol pour la courbe de loss (sauf archi 5 où l'image n'existe pas)
                         with right_col:
@@ -447,25 +645,38 @@ def render_exploration_roadmap():
 
     # --- STEP 5 ---
     elif current == 5:
-        st.header("5. Performances")
+        st.subheader("Synthèse des Performances et des Coûts")
 
         # Chargement des données depuis l'Excel
         excel_path = os.path.join(ASSETS_DIR, "architectures/perfo_archi.xlsx")
         
         if os.path.exists(excel_path):
             try:
-                df_perf_dl = pd.read_excel(excel_path)
+                # Lecture avec en-tête sur 2 lignes (gestion des cellules fusionnées)
+                df_perf_dl = pd.read_excel(excel_path, header=[0, 1])
+                
+                # Aplatissement des colonnes MultiIndex
+                new_columns = []
+                for col in df_perf_dl.columns:
+                    c0, c1 = col
+                    if str(c0).startswith("Unnamed"):
+                        new_columns.append(str(c1).strip())
+                    else:
+                        new_columns.append(f"{str(c0).strip()}-{str(c1).strip()}")
+                df_perf_dl.columns = new_columns
                 
                 # Formatage de la colonne Archi pour le chart (ex: 1 -> "Archi 1")
                 df_chart = df_perf_dl.copy()
                 df_chart['Archi_Label'] = df_chart['Archi'].apply(lambda x: f"Archi {x}")
 
-                # Affichage du tableau
-                # Highlight des métriques principales
-                st.dataframe(df_perf_dl.style.highlight_max(
-                    subset=["Espèce-Macro_F1", "Espèce-Accuracy", "Maladie- Accuracy"], 
-                    axis=0, color='#d1e7dd'
-                ), use_container_width=True)
+                # Affichage du tableau avec en-tête coloré (si supporté), sans colonne d'index
+                styled_df = df_perf_dl.style.set_table_styles([
+                    {
+                        "selector": "th.col_heading",
+                        "props": "background-color: #fdf0d5;"
+                    }
+                ])
+                st.dataframe(styled_df, width="stretch", hide_index=True)
 
                 st.divider()
                 
@@ -478,23 +689,54 @@ def render_exploration_roadmap():
                     marker_color='lightblue'
                 ))
                 fig_comp.add_trace(go.Bar(
-                    name='Maladie Accuracy',
+                    name='Maladie Macro-F1',
                     x=df_chart['Archi_Label'],
-                    y=df_chart['Maladie- Accuracy'],
+                    y=df_chart['Maladie-Macro_F1'],
                     marker_color='lightcoral'
                 ))
+
+                # Ajout de la ligne horizontale à Y=0.99
+                fig_comp.add_hline(
+                    y=0.99,
+                    line_dash="dash",
+                    line_color="red",
+                    line_width=1,
+                )
+
+                # Ajout de la ligne horizontale à Y=0.9985 (bleue, plus fine)
+                fig_comp.add_hline(
+                    y=0.9985,
+                    line_dash="dash",
+                    line_color="blue",
+                    line_width=1,
+                )
+
                 fig_comp.update_layout(
                     title="Comparaison des Performances par Architecture",
-                    yaxis_range=[0.90, 1.0], # Ajusté car certaines valeurs peuvent varier
+                    yaxis_range=[0.95, 1.0], # Ajusté car certaines valeurs peuvent varier
                     barmode='group'
                 )
-                st.plotly_chart(fig_comp, use_container_width=True)
+                st.plotly_chart(fig_comp, width="stretch")
+                
+                # Card d'analyse générée
+                st.markdown(
+                    """
+                    <div style="margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; background-color: #e3f2fd; border: 1px solid #90caf9; color: #0d47a1;">
+                        <h5 style="margin-top: 0; margin-bottom: 0.5rem;"> Analyse des résultats</h5>
+                        <p style="margin-bottom: 0;">
+                            Les résultats confirment que le seuil critique de 0.99 de Macro-F1 est dépassé par la majorité des architectures fine-tunées, validant la robustesse du Transfer Learning sur ce dataset.
+                            L'Architecture 3 (Unifiée) obtient le meilleur score global sur les maladies (99,34%), illustrant l'efficacité d'un apprentissage conjoint simple des caractéristiques.
+                            Enfin, les architectures multi-tâches (notamment la 9) offrent une alternative très compétitive (99,13%) qui maximise l'interprétabilité structurelle sans sacrifier la précision.
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
                 
             except Exception as e:
                 st.error(f"Erreur lors du chargement du fichier Excel : {e}")
         else:
             st.warning("Fichier de données 'perfo_archi.xlsx' introuvable.")
-
 
         st.header("Décisions et Exclusions")
         
@@ -512,89 +754,181 @@ def render_exploration_roadmap():
 
     # --- STEP 6 ---
     elif current == 6:
-        st.header("6. Interprétabilité (Grad-CAM)")
+        st.markdown("**Interprétabilité (Grad-CAM)**")
 
-        # 1) Pertinence des prédictions en phase d'inférence
-        with st.expander("Pertinence des prédictions du modèle en phase d’inférence"):
-            st.markdown(
-                """
-                Cette section présente des exemples d’images correctement / incorrectement classées
-                avec leur carte Grad-CAM associée, afin de vérifier si le modèle se focalise bien sur
-                les lésions et zones pertinentes lors de l’inférence.
-                """
+        # Top Row: Image + Navigation
+        col_proto_img, col_proto_nav = st.columns([0.6, 0.4])
+
+        with col_proto_img:
+            # Image fixe demandée
+            img_proto = os.path.join(ASSETS_DIR, "exp_gard_cam.png")
+            if os.path.exists(img_proto):
+                st.image(img_proto, use_container_width=True)
+            else:
+                st.info("Image 'exp_gard_cam.png' introuvable.")
+
+        with col_proto_nav:
+            # Ajout d'une option par défaut pour ne rien afficher au départ
+            choice = st.radio(
+                " ",
+                [
+                    "Sélectionnez une analyse...",
+                    "1. Pertinence Prédictions",
+                    "2. Comparaison Tâches",
+                    "3. Hors Contexte Studio"
+                ],
             )
-
-            col_esp, col_malad, col_err_class = st.columns([2,2,3])
-
-            img_path_pred_ok_esp = os.path.join(ASSETS_DIR, "Interpretability/pred_ok_esp.png")
-            img_path_pred_ok_malad = os.path.join(ASSETS_DIR, "Interpretability/pred_ok_malad.png")
-            img_path_err_class = os.path.join(ASSETS_DIR, "Interpretability/err_class.png")
-
-            with col_esp:
-                if os.path.exists(img_path_pred_ok_esp):
-                    st.image(img_path_pred_ok_esp, use_container_width=True, caption="Prédiction correcte - tête espèce")
-
-            with col_malad:
-                if os.path.exists(img_path_pred_ok_malad):
-                    st.image(img_path_pred_ok_malad, use_container_width=True, caption="Prédiction correcte - tête maladie")
-
-            with col_err_class:
-                if os.path.exists(img_path_err_class):
-                    st.image(img_path_err_class, use_container_width=True, caption="Exemple d'erreur de classification")
-            
-        st.divider()
-
-        # 2) Comparaison de l’attention entre tâches
-        with st.expander("Comparaison de l’attention du réseau entre les tâches de classification"):
-            st.markdown(
-                """
-                Ici sont comparées les cartes Grad-CAM obtenues pour différentes têtes de
-                classification (espèce, santé, maladie) afin d’illustrer comment l’attention
-                du réseau varie selon la tâche optimisée.
-                """
-            )
-            img_path_err_class = os.path.join(ASSETS_DIR, "Interpretability/attention_réseau.png")
-            if os.path.exists(img_path_err_class):
-                st.image(img_path_err_class, use_container_width=True, caption="GRAD-CAM Espèce-maladie")
 
         st.divider()
 
-        # 3) Influence d'une couleur de fond différente
-        with st.expander("Analyse de l’influence d’une couleur de fond uni différente"):
-            st.markdown(
-                """
-                Des expériences de sensibilité au fond (fond noir vs fond uni coloré, etc.)
-                permettent de visualiser l’impact du background sur les activations Grad-CAM
-                et de mettre en évidence d’éventuels raccourcis pris par le modèle.
-                """
-            )
-            img_path_fond_esp = os.path.join(ASSETS_DIR, "Interpretability/pre_correct_esp_fond.png")
-            img_path_fond_mala = os.path.join(ASSETS_DIR, "Interpretability/pred_correct_mala_fond.png")
+        # Bottom Row: Dynamic Content
+        # On n'affiche rien si l'option par défaut est sélectionnée
+        if choice != "Sélectionnez une analyse...":
+            with st.container():
+                if choice == "1. Pertinence Prédictions":
+                    st.markdown('<h3 style="margin-bottom: -5rem;">Pertinence des prédictions en phase d’inférence</h3>', unsafe_allow_html=True)
+                    
+                    c1, c_sep, c2 = st.columns([0.48, 0.04, 0.48])
+                    
+                    with c1:
+                        st.markdown(
+                            '<div style="margin-top: -15px;">'
+                            "Lorsque le modèle prédit correctement l’espèce et la maladie, les cartes Grad‑CAM montrent‑elles que son attention "
+                            "se concentre bien sur la feuille et les lésions pertinentes ?"
+                            "</div>",
+                            unsafe_allow_html=True
+                        )
 
-            col_fond_esp, col_fond_mala = st.columns(2)
+                        img_path_pred_ok_esp = os.path.join(ASSETS_DIR, "Interpretability/pred_ok_esp.png")
+                        if os.path.exists(img_path_pred_ok_esp):
+                            st.image(img_path_pred_ok_esp, use_container_width=True, caption="Prédiction correcte - tête espèce")
+                            # Card associée à l'image espèce
+                            st.markdown(
+                                """
+                                <div style="margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.75rem; background-color: #e3f2fd; border: 1px solid #d0d4e4; color: #0d47a1;">
+                                    Les Grad‑CAM montrent des foyers d’attention surtout répartis sur la feuille et les nervures.
+                                </div>
+                                """,
+                                unsafe_allow_html=True,
+                            )
+                        st.markdown(" ")
+                        img_path_pred_ok_malad = os.path.join(ASSETS_DIR, "Interpretability/pred_ok_malad.png")
+                        if os.path.exists(img_path_pred_ok_malad):
+                            st.image(img_path_pred_ok_malad, use_container_width=True, caption="Prédiction correcte - tête maladie")
+                            # Card associée à l'image maladie
+                            st.markdown(
+                                """
+                                <div style="margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.75rem; background-color: #e3f2fd; border: 1px solid #d0d4e4; color: #0d47a1;">
+                                    Les zones chaudes se concentrent majoritairement sur les régions de lésions, décolorations ou bords dégradés ce qui est conforme à l’expertise visuelle attendue.
+                                </div>
+                                """,
+                                unsafe_allow_html=True,
+                            )
 
-            with col_fond_esp:
-                if os.path.exists(img_path_fond_esp):
-                    st.image(img_path_fond_esp, use_container_width=True, caption="Impact du fond uni - tête espèce")
+                    with c_sep:
+                         st.markdown('<div style="border-left: 1px solid #d0d4e4; height: 900px; margin: 0 auto;"></div>', unsafe_allow_html=True)
 
-            with col_fond_mala:
-                if os.path.exists(img_path_fond_mala):
-                    st.image(img_path_fond_mala, use_container_width=True, caption="Impact du fond uni - tête maladie")
+                    with c2:
+                        st.markdown(
+                            "Les erreurs viennent‑elles du fait que le modèle regarde ailleurs que les lésions, ou bien qu’il regarde les lésions "
+                            "mais se trompe de classe ?"
+                        )
 
-        st.divider()
+                        img_path_err_class = os.path.join(ASSETS_DIR, "Interpretability/err_class.png")
+                        if os.path.exists(img_path_err_class):
+                            st.image(img_path_err_class, use_container_width=True, caption="Exemple d'erreur de classification")
+                        
+                        # Card de synthèse spécifique à la colonne droite
+                        st.markdown(
+                            """
+                            <div style="margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.75rem; background-color: #e3f2fd; border: 1px solid #d0d4e4; color: #0d47a1;">
+                                Les activations sont diffuses sur de larges zones de la feuille (parfois au‑delà des lésions visibles),ce qui suggère que
+                                le modèle exploite des motifs globaux de texture/couleur plutôt qu’une localisation très précise des taches. 
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
-        # 4) Inférence sur des images "in the wild"
-        with st.expander("Analyse de l’inférence sur de nouvelles photos « in wild »"):
-            st.markdown(
-                """
-                Enfin, cette partie montre des résultats Grad-CAM sur des photos terrain
-                (conditions réelles, non issues de PlantVillage) pour évaluer la robustesse
-                de l’attention du modèle en dehors du dataset d’entraînement.
-                """
-            )
-            img_path_in_wild = os.path.join(ASSETS_DIR, "Interpretability/in_wild.png")
-            if os.path.exists(img_path_in_wild):
-                st.image(img_path_in_wild, use_container_width=True, caption="Exemples d'inférence sur photos in the wild")
+                elif choice == "2. Comparaison Tâches":
+                    st.subheader("Comparaison de l’attention entre tâches")
+                    st.markdown(
+                        """
+                        Lorsque l’on passe d’une tâche de classification à l’autre (espèce, maladie), les cartes Grad‑CAM 
+                        montrent‑elles un déplacement significatif de l’attention du réseau vers des régions différentes de la feuille ?
+                        """
+                    )
+                    
+                    img_path_att = os.path.join(ASSETS_DIR, "Interpretability/attention_réseau.png")
+                    if os.path.exists(img_path_att):
+                        st.image(img_path_att, use_container_width=True, caption="GRAD-CAM Espèce-maladie")
+                    
+                    # Card de synthèse sous l'image
+                    st.markdown(
+                        """
+                        <div style="margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.75rem; background-color: #e3f2fd; border: 1px solid #d0d4e4; color: #0d47a1;">
+                            Les GRAD-CAM mettent en évidence des caractéristiques liées à l’espèce plutôt que les symptômes de la maladie. 
+                            Ce résultat s’explique d’une part par l’architecture hiérarchique d’Archi9 et d’autre part par la forte corrélation espèce–maladie 
+                            propre au dataset PlantVillage. 
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+                elif choice == "3. Hors Contexte Studio":
+                    st.subheader("Hors Contexte Studio")
+                    c_bg, c_sep2, c_wild = st.columns([0.48, 0.04, 0.48])
+                    
+                    with c_bg:
+                        st.markdown("**Analyse de l’influence d’une couleur de fond uni différente**")
+                        st.markdown(
+                            """
+                            Les Grad‑CAM montrent‑elles que le modèle s’appuie sur des indices de fond ou de prise de vue caractéristiques du 
+                            dataset PlantVillage plutôt que sur des motifs pathologiques réellement liés à la maladie ?
+                            """
+                        )
+                        img_path_fond_esp = os.path.join(ASSETS_DIR, "Interpretability/pre_correct_esp_fond.png")
+                        img_path_fond_mala = os.path.join(ASSETS_DIR, "Interpretability/pred_correct_mala_fond.png")
+
+                        if os.path.exists(img_path_fond_esp):
+                            st.image(img_path_fond_esp, use_container_width=True, caption="Impact du fond uni - tête espèce")
+
+                        if os.path.exists(img_path_fond_mala):
+                            st.image(img_path_fond_mala, use_container_width=True, caption="Impact du fond uni - tête maladie")
+                        
+                        # Card de synthèse sous les colonnes
+                        st.markdown(
+                            """
+                            <div style="margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.75rem; background-color: #e3f2fd; border: 1px solid #d0d4e4; color: #0d47a1;">
+                                Ces essais avec un fond saumon suggèrent une dépendance au contexte globalement modérée et variable selon les classes.
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+
+                    with c_sep2:
+                         st.markdown('<div style="border-left: 1px solid #d0d4e4; height: 500px; margin: 0 auto;"></div>', unsafe_allow_html=True)
+
+                    with c_wild:
+                        st.markdown("**Analyse de l’inférence sur de nouvelles photos « in wild »**")
+                        st.markdown(
+                            """
+                            Quelle est la robustesse de l’attention du modèle en dehors du dataset d’entraînement sur des photos terrain
+                            (conditions réelles, non issues de PlantVillage)?
+                            """
+                        )
+                        img_path_in_wild = os.path.join(ASSETS_DIR, "Interpretability/in_wild.png")
+                        if os.path.exists(img_path_in_wild):
+                            st.image(img_path_in_wild, use_container_width=True, caption="Exemples d'inférence sur photos in the wild")
+                        
+                        # Card de synthèse sous l'image
+                        st.markdown(
+                            """
+                            <div style="margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.75rem; background-color: #e3f2fd; border: 1px solid #d0d4e4; color: #0d47a1;">
+                                Le modèle semble accorder une importance excessive au fond plutôt qu'aux caractéristiques de la feuille. 
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
 def sidebar_choice():
     st.title("Deep Learning")

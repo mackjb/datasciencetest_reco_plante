@@ -107,7 +107,7 @@ def render_exploration_roadmap():
 
     # --- STEP 1 ---
     if current == 1:
-        st.header("1. Phase d'Exploration Individuelle")
+        st.header("Phase d'Exploration Individuelle")
         st.markdown("""
         Dans le cadre de notre formation, **chaque membre de l'équipe a d'abord exploré individuellement 
         un modèle pré-entraîné** pour se familiariser avec les techniques de Deep Learning.
@@ -130,7 +130,7 @@ def render_exploration_roadmap():
 
     # --- STEP 2 ---
     elif current == 2:
-        st.header("2. Démarche Structurée & Critères")
+        st.header("Démarche Structurée & Critères")
         
         st.markdown("""
         Pour structurer notre approche, nous avons défini **3 cas d'usage** correspondant à différents niveaux de complexité métier.
@@ -156,38 +156,11 @@ def render_exploration_roadmap():
 
     # --- STEP 3 ---
     elif current == 3:
-        st.header("3. Transfer Learning")
+        st.header("Transfer Learning")
         
+
         st.info("Pourquoi le Transfer Learning ? Pour profiter de modèles entraînés sur des millions d'images (ImageNet).")
-
-        st.subheader("Choix du Backbone Pré-entraîné")
-        st.markdown("**Comparatif des Modèles Pré-entraînés Explorés :**")
         
-        models_comparison = {
-            "Caractéristique": ["Année", "Auteurs/Org", "Paramètres (M)", "Taille modèle (MB)", 
-                               "GFLOPs (224×224)", "GFLOPs (256×256)", "Taille vecteur sortie",
-                               "Top-1 Acc ImageNet", "Top-5 Acc ImageNet", "Latence CPU (ms)", 
-                               "Latence GPU (ms)", "Taille entrée", "Profondeur (layers)"],
-            "EfficientNetV2-S": [2021, "Google Brain", 21.5, "~86", 8.4, "~10.8", 1280, 
-                                "83.9%", "96.7%", "60-80", "5-8", "384×384 (optim.)", "~150"],
-            "ResNet50": [2015, "Microsoft Research", 25.6, "~102", 4.1, "~5.3", 2048,
-                        "76.1%", "93.0%", "40-50", "3-5", "224×224", "50"],
-            "YOLOv8n-cls*": [2023, "Ultralytics", 2.7, "~11", 4.2, "~5.4", 1024,
-                           "69.0%", "88.3%", "25-35", "2-4", "224×224", "~100"],
-            "DenseNet-121": [2017, "Cornell/Facebook", 8.0, "~32", 2.9, "~3.7", 1024,
-                           "74.4%", "92.0%", "30-40", "3-5", "224×224", "121"]
-        }
-        df_models = pd.DataFrame(models_comparison)
-        st.dataframe(df_models.set_index("Caractéristique").T, use_container_width=True)
-        
-        st.success("""
-        **Choix retenu : EfficientNetV2S**
-        
-        - **Performance** : Meilleure Accuracy ImageNet (83.9%) parmi les modèles testés.
-        - **Efficience** : Excellent ratio performance/paramètres (21.5M).
-        - **Rapidité** : Optimisé pour une inférence rapide sur GPU.
-        """)
-
         # Mindmap Théorie du Transfer Learning
         mindmap_tl = {
             "id": "root",
@@ -245,6 +218,39 @@ def render_exploration_roadmap():
             ]
         }
         render_mermaid(mindmap_tl, height=600)
+        st.divider()
+
+
+
+        st.subheader("Choix du Backbone Pré-entraîné")
+        st.markdown("**Comparatif des Modèles Pré-entraînés Explorés :**")
+        
+        models_comparison = {
+            "Caractéristique": ["Année", "Auteurs/Org", "Paramètres (M)", "Taille modèle (MB)", 
+                               "GFLOPs (224×224)", "GFLOPs (256×256)", "Taille vecteur sortie",
+                               "Top-1 Acc ImageNet", "Top-5 Acc ImageNet", "Latence CPU (ms)", 
+                               "Latence GPU (ms)", "Taille entrée", "Profondeur (layers)"],
+            "EfficientNetV2-S": [2021, "Google Brain", 21.5, "~86", 8.4, "~10.8", 1280, 
+                                "83.9%", "96.7%", "60-80", "5-8", "384×384 (optim.)", "~150"],
+            "ResNet50": [2015, "Microsoft Research", 25.6, "~102", 4.1, "~5.3", 2048,
+                        "76.1%", "93.0%", "40-50", "3-5", "224×224", "50"],
+            "YOLOv8n-cls*": [2023, "Ultralytics", 2.7, "~11", 4.2, "~5.4", 1024,
+                           "69.0%", "88.3%", "25-35", "2-4", "224×224", "~100"],
+            "DenseNet-121": [2017, "Cornell/Facebook", 8.0, "~32", 2.9, "~3.7", 1024,
+                           "74.4%", "92.0%", "30-40", "3-5", "224×224", "121"]
+        }
+        df_models = pd.DataFrame(models_comparison)
+        st.dataframe(df_models.set_index("Caractéristique").T, use_container_width=True)
+        
+        st.success("""
+        **Choix retenu : EfficientNetV2S**
+        
+        - **Performance** : Meilleure Accuracy ImageNet (83.9%) parmi les modèles testés.
+        - **Efficience** : Excellent ratio performance/paramètres (21.5M).
+        - **Rapidité** : Optimisé pour une inférence rapide sur GPU.
+        """)
+
+        st.divider()
         
         st.divider()
         st.divider()
@@ -252,7 +258,7 @@ def render_exploration_roadmap():
 
     # --- STEP 4 ---
     elif current == 4:
-        st.header("4. Architectures")
+        st.header("Architectures")
         
         st.header("Protocole expérimental commun pour les 9 Architectures")
         
@@ -319,22 +325,23 @@ def render_exploration_roadmap():
         # Première ligne : architectures 1 et 2
         for col, arch in zip(row1_cols, arch_info_dedicated[:2]):
             with col:
-                with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                    left_col, right_col = st.columns(2)
+                with st.expander(f"Architecture {arch['num']} : {arch['nom']}", expanded=True):
+                    # Schéma (Pleine largeur)
+                    if os.path.exists(arch['img']):
+                        st.image(arch['img'], use_container_width=True)
+                    
+                    # Phrase de description (sous l'image)
+                    st.markdown(f"**Description** : {arch['desc']}")
 
-                    # Colonne gauche : schéma
-                    with left_col:
-                        if os.path.exists(arch['img']):
-                            st.image(arch['img'], use_container_width=True)
-
-                    # Colonne droite : survol pour la courbe de loss
-                    with right_col:
+                    # Zone de détails (Workflow, Avantages, Limites + Loss)
+                    with st.expander("Plus de détails & Courbe d'apprentissage"):
+                        # Courbe de loss
                         loss_path = os.path.join(ASSETS_DIR, f"architectures/loss_archi_{arch['num']}.png")
-                        _render_loss_hover(loss_path, arch['num'])
-
-                    # Détails de l'architecture (en dessous des deux colonnes)
-                    with st.expander("Détails de l'architecture"):
-                        st.markdown(f"**Description** : {arch['desc']}")
+                        if os.path.exists(loss_path):
+                            st.caption(f"Courbe d'apprentissage - Archi {arch['num']}")
+                            _render_loss_hover(loss_path, arch['num'])
+                        
+                        st.divider()
                         st.markdown(f"**Workflow** : {arch['workflow']}")
                         st.markdown(f"**Avantages** : {arch['avantages']}")
                         st.markdown(f"**Limites** : {arch['limites']}")
@@ -342,22 +349,23 @@ def render_exploration_roadmap():
         # Deuxième ligne : architectures 3 et 4
         for col, arch in zip(row2_cols, arch_info_dedicated[2:]):
             with col:
-                with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                    left_col, right_col = st.columns(2)
+                with st.expander(f"Architecture {arch['num']} : {arch['nom']}", expanded=True):
+                    # Schéma (Pleine largeur)
+                    if os.path.exists(arch['img']):
+                        st.image(arch['img'], use_container_width=True)
+                    
+                    # Phrase de description (sous l'image)
+                    st.markdown(f"**Description** : {arch['desc']}")
 
-                    # Colonne gauche : schéma
-                    with left_col:
-                        if os.path.exists(arch['img']):
-                            st.image(arch['img'], use_container_width=True)
-
-                    # Colonne droite : survol pour la courbe de loss
-                    with right_col:
+                    # Zone de détails (Workflow, Avantages, Limites + Loss)
+                    with st.expander("Plus de détails & Courbe d'apprentissage"):
+                        # Courbe de loss
                         loss_path = os.path.join(ASSETS_DIR, f"architectures/loss_archi_{arch['num']}.png")
-                        _render_loss_hover(loss_path, arch['num'])
-
-                    # Détails de l'architecture (en dessous des deux colonnes)
-                    with st.expander("Détails de l'architecture"):
-                        st.markdown(f"**Description** : {arch['desc']}")
+                        if os.path.exists(loss_path):
+                            st.caption(f"Courbe d'apprentissage - Archi {arch['num']}")
+                            _render_loss_hover(loss_path, arch['num'])
+                        
+                        st.divider()
                         st.markdown(f"**Workflow** : {arch['workflow']}")
                         st.markdown(f"**Avantages** : {arch['avantages']}")
                         st.markdown(f"**Limites** : {arch['limites']}")
@@ -424,30 +432,30 @@ def render_exploration_roadmap():
             row_cols = st.columns(2)
             for col, arch in zip(row_cols, shared_archs[i:i+2]):
                 with col:
-                    with st.expander(f"Architecture {arch['num']} : {arch['nom']}"):
-                        left_col, right_col = st.columns(2)
+                    with st.expander(f"Architecture {arch['num']} : {arch['nom']}", expanded=True):
+                        # Schéma (Pleine largeur)
+                        if os.path.exists(arch['img']):
+                            st.image(arch['img'], use_container_width=True)
+                        
+                        # Phrase de description
+                        st.markdown(f"**Description** : {arch['desc']}")
 
-                        # Colonne gauche : schéma
-                        with left_col:
-                            if os.path.exists(arch['img']):
-                                st.image(arch['img'], use_container_width=True)
-
-                        # Colonne droite : survol pour la courbe de loss (sauf archi 5 où l'image n'existe pas)
-                        with right_col:
+                        # Zone de détails
+                        with st.expander("Plus de détails & Courbe d'apprentissage"):
+                            # Courbe de loss (sauf Archi 5)
                             loss_path = os.path.join(ASSETS_DIR, f"architectures/loss_archi_{arch['num']}.png")
-                            if arch['num'] != "5":
+                            if arch['num'] != "5" and os.path.exists(loss_path):
+                                st.caption(f"Courbe d'apprentissage - Archi {arch['num']}")
                                 _render_loss_hover(loss_path, arch['num'])
-
-                        # Détails de l'architecture (en dessous des deux colonnes)
-                        with st.expander("Détails de l'architecture"):
-                            st.markdown(f"**Description** : {arch['desc']}")
+                                st.divider()
+                            
                             st.markdown(f"**Workflow** : {arch['workflow']}")
                             st.markdown(f"**Avantages** : {arch['avantages']}")
                             st.markdown(f"**Limites** : {arch['limites']}")
 
     # --- STEP 5 ---
     elif current == 5:
-        st.header("5. Performances")
+        st.header("Performances")
 
         # Chargement des données depuis l'Excel
         excel_path = os.path.join(ASSETS_DIR, "architectures/perfo_archi.xlsx")
@@ -512,7 +520,7 @@ def render_exploration_roadmap():
 
     # --- STEP 6 ---
     elif current == 6:
-        st.header("6. Interprétabilité (Grad-CAM)")
+        st.header("Interprétabilité (Grad-CAM)")
 
         # 1) Pertinence des prédictions en phase d'inférence
         with st.expander("Pertinence des prédictions du modèle en phase d’inférence"):

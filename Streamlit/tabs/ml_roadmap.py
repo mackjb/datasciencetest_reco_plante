@@ -123,7 +123,7 @@ def render_roadmap():
 
     # --- STEP 1: EXTRACTION ---
     if current == 1:
-        st.header("1. Extraction de Features (Handcrafted)")
+        st.header("Extraction de Features (Handcrafted)")
         c_text, c_img = st.columns([1, 2])
         with c_text:
             st.markdown("""
@@ -257,7 +257,7 @@ def render_roadmap():
 
     # --- STEP 2: SPLIT ---
     elif current == 2:
-        st.header("2. Division du Dataset (Split)")
+        st.header("Division du Dataset (Split)")
         st.info("Stratégie : Créer une base solide et représentative pour l'entraînement.")
         
         st.markdown("""
@@ -282,7 +282,7 @@ def render_roadmap():
 
     # --- STEP 3: RÉÉCHANTILLONNAGE ---
     elif current == 3:
-        st.header("3. Rééchantillonnage (Train uniquement)")
+        st.header("Rééchantillonnage (Train uniquement)")
         
         st.warning("Problème initial : Certaines classes étaient sous-représentées par rapport à d'autres.")
         
@@ -297,11 +297,12 @@ def render_roadmap():
 
     # --- STEP 4: PRÉ-TRAITEMENTS ---
     # --- STEP 4: PRÉ-TRAITEMENTS ---
+    # --- STEP 4: PRÉ-TRAITEMENTS ---
     elif current == 4:
-        st.header("4. Pré-traitements (Train)")
+        st.header("Pré-traitements (Train)")
         
         # 4.1 Data Augmentation (Top Row)
-        st.subheader("4.1. Data Augmentation")
+        st.subheader("Data Augmentation")
         c_aug_text, c_aug_stat = st.columns([2, 1])
         with c_aug_text:
             st.markdown("""
@@ -315,7 +316,7 @@ def render_roadmap():
         st.divider()
 
         # 4.2 Scaling
-        st.subheader("4.2. Scaling")
+        st.subheader("Scaling")
         st.info("**RobustScaler**")
         st.markdown("""
         **Justification :**
@@ -326,7 +327,7 @@ def render_roadmap():
         st.divider()
 
         # 4.3 Selection
-        st.subheader("4.3. Sélection")
+        st.subheader("Sélection")
         st.info("**SHAP Analysis**")
         st.write("Sélection des descripteurs les plus pertinents pour le modèle.")
         
@@ -334,10 +335,14 @@ def render_roadmap():
         if os.path.exists(shap_global_path):
              st.image(shap_global_path, caption="Top Features (SHAP)", width="stretch")
 
+        shap_class_path = "figures/shap_analysis/3_top_features_by_class.png"
+        if os.path.exists(shap_class_path):
+             st.image(shap_class_path, caption="Top Features par Classe (SHAP)", width="stretch")
+
 
     # --- STEP 5: MODÉLISATION ---
     elif current == 5:
-        st.header("5. Modélisation")
+        st.header("Modélisation")
         
         st.markdown("""
         Notre approche a consisté à tester plusieurs familles d'algorithmes pour trouver le meilleur compromis performance/complexité.
@@ -357,7 +362,7 @@ def render_roadmap():
 
     # --- STEP 6: ÉVALUATION ---
     elif current == 6:
-        st.header("6. Évaluation & Résultats")
+        st.header("Évaluation & Résultats")
         
         with st.expander("Rappel des Métriques", expanded=False):
             st.markdown("""

@@ -6,10 +6,63 @@ import streamlit.components.v1 as components
 
 def sidebar_choice():
     st.title("Analyse Exploratoire & Preprocessing")
-    
-    tab1, tab2, tab3 = st.tabs(["Les Datasets", "PlantVillage", "Visualisation et nettoyage"])
-    
-    with tab1:
+
+    if 'eda_step' not in st.session_state:
+        st.session_state['eda_step'] = 1
+
+    steps = {
+        1: "Les Datasets",
+        2: "PlantVillage",
+        3: "Visualisation et nettoyage"
+    }
+
+    # Custom CSS for buttons (consistent with ml_roadmap)
+    st.markdown("""
+    <style>
+    div[data-testid="stHorizontalBlock"] {
+        align-items: center;
+    }
+    div.stButton > button[kind="primary"] {
+        background-image: linear-gradient(#2e7d32, #1b5e20) !important;
+        color: white !important;
+        border: none !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+    div.stButton > button[kind="secondary"] {
+        background-color: #f0f2f6 !important;
+        color: #31333F !important;
+        border: 1px solid #d6d6d6 !important;
+    }
+    div.stButton > button:hover {
+        transform: scale(1.05);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Navigation Buttons
+    # 3 steps + 2 arrows = 5 columns. Ratio: Buttons (2), Arrows (0.5)
+    cols = st.columns([2, 0.5, 2, 0.5, 2])
+
+    for idx, (step_id, step_label) in enumerate(steps.items()):
+        col_idx = idx * 2
+        with cols[col_idx]:
+            is_active = (st.session_state['eda_step'] == step_id)
+            if st.button(step_label, key=f"eda_btn_{step_id}", type="primary" if is_active else "secondary", use_container_width=True):
+                st.session_state['eda_step'] = step_id
+                st.rerun()
+        
+        # Arrow
+        if idx < len(steps) - 1:
+            with cols[col_idx + 1]:
+                st.markdown("<h3 style='text-align: center; margin: 0; color: #b0b2b6;'>➜</h3>", unsafe_allow_html=True)
+
+    st.divider()
+
+    current = st.session_state['eda_step']
+
+    # --- STEP 1: LES DATASETS ---
+    if current == 1:
         st.header("Les Datasets")
         st.markdown("""
         À partir des **6 datasets** proposés par DataScientest, nous avons effectué plusieurs
@@ -112,7 +165,8 @@ def sidebar_choice():
         st.warning("Notre choix se porte donc sur **PlantVillage**, qui cadre bien avec notre scénario.")
         st.caption("Sa structure est détaillée dans l'onglet *PlantVillage*.")
 
-    with tab2:
+    # --- STEP 2: PLANTVILLAGE ---
+    elif current == 2:
         st.header("Le Dataset PlantVillage")
         
         c1, c2 = st.columns([8, 1])
@@ -137,24 +191,24 @@ def sidebar_choice():
 
         col_seg, col_color = st.columns(2)
 
-    with col_seg:
-        st.markdown("### Variante Segmented")
-        st.image(
-            "Streamlit/assets/dataset_overview_segmented_select.png",
-            caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage/segmented (fond noir)",
-            width=650,
-        )
+        with col_seg:
+            st.markdown("### Variante Segmented")
+            st.image(
+                "Streamlit/assets/dataset_overview_segmented_select.png",
+                caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage/segmented (fond noir)",
+                width=650,
+            )
 
-    with col_color:
-        st.markdown("### Variante Color")
-        st.image(
-            "Streamlit/assets/dataset_overview_color_select.png",
-            caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage / color (fond original)",
-            width=650,
-        )
+        with col_color:
+            st.markdown("### Variante Color")
+            st.image(
+                "Streamlit/assets/dataset_overview_color_select.png",
+                caption="Aperçu de la diversité des espèces et Maladies dans le dataset PlantVillage / color (fond original)",
+                width=650,
+            )
 
-            
-    with tab3:
+    # --- STEP 3: VISUALISATION ET NETTOYAGE ---
+    elif current == 3:
         st.header(" Exploration de la distribution des classes")
   
 

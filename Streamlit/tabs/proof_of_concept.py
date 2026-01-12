@@ -69,16 +69,66 @@ def render_dl_page():
     </style>
     """, unsafe_allow_html=True)
 
+    if 'poc_step' not in st.session_state:
+        st.session_state['poc_step'] = 1
+
+    poc_steps = {
+        1: "Archi 3 : Solution Edge/Mobile",
+        2: "Archi 9 : Solution Production Cloud"
+    }
+
+    # Custom CSS for buttons
+    st.markdown("""
+    <style>
+    div.stButton > button[kind="primary"] {
+        background-image: linear-gradient(#2e7d32, #1b5e20) !important;
+        color: white !important;
+        border: none !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+    div.stButton > button[kind="secondary"] {
+        background-color: #f0f2f6 !important;
+        color: #31333F !important;
+        border: 1px solid #d6d6d6 !important;
+    }
+    div.stButton > button:hover {
+        transform: scale(1.05);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.subheader("Architectures Sélectionnées")
-    tab_archi3, tab_archi9 = st.tabs([
-        "Archi 3 : Solution Edge/Mobile",
-        "Archi 9 : Solution Production Cloud"
-    ])
+
+    # Navigation Buttons (2 steps, 1 arrow)
+    cols = st.columns([2, 0.5, 2])
+    
+    # Step 1
+    with cols[0]:
+        active_1 = (st.session_state['poc_step'] == 1)
+        if st.button(poc_steps[1], key="poc_btn_1", type="primary" if active_1 else "secondary", use_container_width=True):
+            st.session_state['poc_step'] = 1
+            st.rerun()
+            
+    # Arrow
+    with cols[1]:
+        st.markdown("<h3 style='text-align: center; margin: 0; color: #b0b2b6;'>➜</h3>", unsafe_allow_html=True)
+        
+    # Step 2
+    with cols[2]:
+        active_2 = (st.session_state['poc_step'] == 2)
+        if st.button(poc_steps[2], key="poc_btn_2", type="primary" if active_2 else "secondary", use_container_width=True):
+            st.session_state['poc_step'] = 2
+            st.rerun()
+
+    st.divider()
+    
+    current = st.session_state['poc_step']
 
     # =========================
     # ARCHI 3
     # =========================
-    with tab_archi3:
+    if current == 1:
         col_arch3_text, col_arch3_img = st.columns([1, 1])
 
         with col_arch3_text:
@@ -86,14 +136,21 @@ def render_dl_page():
             '''
             <div class="card card--info" style="background-color:#FFE4C4;">
               <div class="card__title">Scénario pour un déploiement sur Applications mobiles / Edge computing :</div>
-              <div class="card__body" style="color:#0131B4;">Cas 1 : Identification d'espèce uniquement</div>
+              <div class="card__body" style="color:#0131B4;">Cas 1 : Identification d'espèce et maladies</div>
             </div>
             ''',
             unsafe_allow_html=True,
             )
 
+            st.markdown("<br>", unsafe_allow_html=True)
+            kpi1, kpi2, kpi3 = st.columns(3)
+            kpi1.metric("Accuracy Global", "99.9%")
+            kpi2.metric("Macro F1-Score", "99.9%")
+            kpi3.metric("Accuracy Maladie", "99.5%")
+
             st.markdown(
                 '''
+
                 <div class="card card--info" style="margin-top:5rem;background-color:#a2d2ff;">
                   <div class="card__body" style="color:#0b090a; font-weight:bold; text-align:center;">
                     Démo Interactive ↓<br>
@@ -271,7 +328,7 @@ def render_dl_page():
     # =========================
     # ARCHI 9 
     # =========================
-    with tab_archi9:
+    elif current == 2:
         col_arch9_text, col_arch9_img = st.columns([1, 1])
 
         with col_arch9_text:
@@ -285,8 +342,15 @@ def render_dl_page():
                 unsafe_allow_html=True,
             )
 
+            st.markdown("<br>", unsafe_allow_html=True)
+            kpi1, kpi2, kpi3 = st.columns(3)
+            kpi1.metric("Accuracy Global", "99.9%")
+            kpi2.metric("Macro F1-Score", "99.9%")
+            kpi3.metric("Accuracy Maladie", "99.5%")
+
             st.markdown(
                 '''
+
                 <div class="card card--info" style="margin-top:5rem;background-color:#a2d2ff;">
                   <div class="card__body" style="color:#0b090a; font-weight:bold; text-align:center;">
                     Démo Interactive ↓<br>

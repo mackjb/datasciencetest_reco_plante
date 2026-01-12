@@ -62,6 +62,12 @@ st.markdown("""
         margin-bottom: 1rem;
         border-top: 1px solid #e0e0e0;
     }
+    
+    /* Reduce top padding for main container */
+    .block-container {
+        padding-top: 2rem !important;
+        margin-top: -1rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -76,9 +82,8 @@ def main():
         "Le projet": home,
         "Les jeux de données": eda,
         "Méthodologie ML- DL": modeling,
-        "Machine Learning (Roadmap)": ml_roadmap,
+        "Machine Learning": ml_roadmap,
         "Deep Learning": dl_exploration,
-
         "PoCs": proof_of_concept,
         "Conclusion & Perspectives": conclusion,
     }

@@ -111,7 +111,6 @@ def render_exploration_roadmap():
 
     # --- STEP 1 ---
     if current == 1:
-    
         st.markdown("""
         Chaque membre de l'équipe a d'abord exploré individuellement 
         un modèle pré-entraîné pour se familiariser avec les techniques de Deep Learning.
@@ -188,7 +187,6 @@ def render_exploration_roadmap():
     # --- STEP 3 ---
     elif current == 3:
         st.subheader("Pourquoi le Transfer Learning ? ")
-
         # Mindmap Théorie du Transfer Learning
         mindmap_tl = {
             "id": "root",
@@ -528,11 +526,11 @@ def render_exploration_roadmap():
                     # Colonne droite : survol pour la courbe de loss
                     with right_col:
                         loss_path = os.path.join(ASSETS_DIR, f"architectures/loss_archi_{arch['num']}.png")
-                        _render_loss_hover(loss_path, arch['num'])
-
-                    # Détails de l'architecture (en dessous des deux colonnes)
-                    with st.expander("Détails de l'architecture"):
-                        st.markdown(f"**Description** : {arch['desc']}")
+                        if os.path.exists(loss_path):
+                            st.caption(f"Courbe d'apprentissage - Archi {arch['num']}")
+                            _render_loss_hover(loss_path, arch['num'])
+                        
+                        st.divider()
                         st.markdown(f"**Workflow** : {arch['workflow']}")
                         st.markdown(f"**Avantages** : {arch['avantages']}")
                         st.markdown(f"**Limites** : {arch['limites']}")
@@ -551,11 +549,11 @@ def render_exploration_roadmap():
                     # Colonne droite : survol pour la courbe de loss
                     with right_col:
                         loss_path = os.path.join(ASSETS_DIR, f"architectures/loss_archi_{arch['num']}.png")
-                        _render_loss_hover(loss_path, arch['num'])
-
-                    # Détails de l'architecture (en dessous des deux colonnes)
-                    with st.expander("Détails de l'architecture"):
-                        st.markdown(f"**Description** : {arch['desc']}")
+                        if os.path.exists(loss_path):
+                            st.caption(f"Courbe d'apprentissage - Archi {arch['num']}")
+                            _render_loss_hover(loss_path, arch['num'])
+                        
+                        st.divider()
                         st.markdown(f"**Workflow** : {arch['workflow']}")
                         st.markdown(f"**Avantages** : {arch['avantages']}")
                         st.markdown(f"**Limites** : {arch['limites']}")
@@ -630,15 +628,15 @@ def render_exploration_roadmap():
                             if os.path.exists(arch['img']):
                                 st.image(arch['img'], width="stretch")
 
-                        # Colonne droite : survol pour la courbe de loss (sauf archi 5 où l'image n'existe pas)
-                        with right_col:
+                        # Zone de détails
+                        with st.expander("Plus de détails & Courbe d'apprentissage"):
+                            # Courbe de loss (sauf Archi 5)
                             loss_path = os.path.join(ASSETS_DIR, f"architectures/loss_archi_{arch['num']}.png")
-                            if arch['num'] != "5":
+                            if arch['num'] != "5" and os.path.exists(loss_path):
+                                st.caption(f"Courbe d'apprentissage - Archi {arch['num']}")
                                 _render_loss_hover(loss_path, arch['num'])
-
-                        # Détails de l'architecture (en dessous des deux colonnes)
-                        with st.expander("Détails de l'architecture"):
-                            st.markdown(f"**Description** : {arch['desc']}")
+                                st.divider()
+                            
                             st.markdown(f"**Workflow** : {arch['workflow']}")
                             st.markdown(f"**Avantages** : {arch['avantages']}")
                             st.markdown(f"**Limites** : {arch['limites']}")

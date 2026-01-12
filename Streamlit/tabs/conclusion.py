@@ -89,11 +89,10 @@ def sidebar_choice():
                     ]
                 },
                 {
-                    "id": "classes_difficiles",
-                    "text": "Classes maladies difficiles",
+                    "id": "backbone",
+                    "text": "Un seul backbone",
                     "children": [
-                        {"id": "faux_neg", "text": "Faux négatifs : maladie rare non détectée → propagation."},
-                        {"id": "faux_pos", "text": "Faux positifs : sur-traitement inutile (coût + écologie)."}
+                        {"id": "EfficientNetV2S", "text": "Voir pour permettre de tester plusieurs backbones"}
                     ]
                 }
             ]
@@ -188,3 +187,31 @@ def sidebar_choice():
 
                 st.write("**Entrainement**")
                 st.write("Valider la robustesse : Runs multiples avec statistiques pour vérifier la stabilité.")
+
+    st.divider()
+
+    # --- Slide Questions ---
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div style="
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
+            background-color: #e3f2fd; 
+            padding: 40px; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        ">
+            <h1 style="color: #1565c0; margin-bottom: 20px;">Questions / Réponses</h1>
+            <div style="font-size: 80px;">❓</div>
+            <p style="font-size: 1.5rem; color: #5c6bc0; margin-top: 20px; font-weight: bold;">
+                Merci de votre attention !
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )

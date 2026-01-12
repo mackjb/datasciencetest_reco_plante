@@ -136,7 +136,7 @@ def render_dl_page():
             '''
             <div class="card card--info" style="background-color:#FFE4C4;">
               <div class="card__title">Scénario pour un déploiement sur Applications mobiles / Edge computing :</div>
-              <div class="card__body" style="color:#0131B4;">Cas 1 : Identification d'espèce et maladies</div>
+              <div class="card__body" style="color:#0131B4;">Cas 3 : Identification d'espèce et maladies</div>
             </div>
             ''',
             unsafe_allow_html=True,

@@ -248,13 +248,7 @@ def render_roadmap():
 
         # --- Graphs Integration (Side-by-Side) ---
         st.divider()
-        # --- Top Features by Class (Image) ---
-        img_path = "figures/shap_analysis/3_top_features_by_class.png"
-        if os.path.exists(img_path):
-            st.markdown("### Top Features par Classe")
-            col1, col2, col3 = st.columns([1, 4, 1])
-            with col2:
-                st.image(img_path, width=850)
+
 
     # --- STEP 2: SPLIT ---
     elif current == 2:

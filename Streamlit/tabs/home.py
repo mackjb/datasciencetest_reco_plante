@@ -91,7 +91,9 @@ def sidebar_choice():
 
     # --- L'ÉQUIPE PROJET ---
     st.markdown("## L'Équipe Projet")
-    st.image("Streamlit/assets/equipe.png", use_container_width=True)
+    c_left, c_center, c_right = st.columns([15, 70, 15])
+    with c_center:
+        st.image("Streamlit/assets/equipe.png", use_container_width=True)
 
     st.divider()
 

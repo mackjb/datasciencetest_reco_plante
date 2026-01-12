@@ -135,7 +135,7 @@ def sidebar_choice():
         ''', unsafe_allow_html=True)
 
         # --- Acquis & Perspectives ---
-        col_acquis, col_persp = st.columns(2)
+        col_persp, col_acquis = st.columns(2)
 
         with col_acquis:
             with st.expander("Acquis", expanded=True):

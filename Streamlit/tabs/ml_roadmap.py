@@ -248,24 +248,13 @@ def render_roadmap():
 
         # --- Graphs Integration (Side-by-Side) ---
         st.divider()
-        col_img, col_rank = st.columns([0.9, 1.1], gap="small")
-
-        # Left Column: Top Features by Class (Image)
-        with col_img:
-            img_path = "figures/shap_analysis/3_top_features_by_class.png"
-            if os.path.exists(img_path):
-                st.markdown("### Top Features par Classe")
-                st.image(img_path, width="stretch")
-
-        # Right Column: Feature Importance (Global)
-        with col_rank:
-            ranking_path = "results/feature_ranking.csv"
-            if os.path.exists(ranking_path):
-                st.markdown("### Importance des Features")
-                df_rank = pd.read_csv(ranking_path).head(15).sort_values(by="final_score", ascending=True)
-                fig_rank = px.bar(df_rank, x="final_score", y="feature", orientation="h",
-                                   color="final_score", color_continuous_scale="GnBu")
-                st.plotly_chart(fig_rank, width="stretch")
+        # --- Top Features by Class (Image) ---
+        img_path = "figures/shap_analysis/3_top_features_by_class.png"
+        if os.path.exists(img_path):
+            st.markdown("### Top Features par Classe")
+            col1, col2, col3 = st.columns([1, 4, 1])
+            with col2:
+                st.image(img_path, width=850)
 
     # --- STEP 2: SPLIT ---
     elif current == 2:

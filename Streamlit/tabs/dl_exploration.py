@@ -415,6 +415,8 @@ def render_exploration_roadmap():
                 text=subset["label"],
                 textposition="top center",
                 marker=dict(size=18, color=color_map[group], line=dict(width=2, color='white')),
+                unselected=dict(marker=dict(opacity=0.5), textfont=dict(color='rgba(0,0,0,1)')),
+                selected=dict(marker=dict(opacity=1, size=25)),
                 name=group,
                 customdata=subset[["desc", "id"]].values,
                 hovertemplate="<b>%{text}</b><br>%{customdata[0]}<extra></extra>"

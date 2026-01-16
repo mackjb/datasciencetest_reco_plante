@@ -571,18 +571,8 @@ def render_exploration_roadmap():
         
         if os.path.exists(excel_path):
             try:
-                # Lecture avec en-tête sur 2 lignes (gestion des cellules fusionnées)
-                df_perf_dl = pd.read_excel(excel_path, header=[0, 1])
-                
-                # Aplatissement des colonnes MultiIndex
-                new_columns = []
-                for col in df_perf_dl.columns:
-                    c0, c1 = col
-                    if str(c0).startswith("Unnamed"):
-                        new_columns.append(str(c1).strip())
-                    else:
-                        new_columns.append(f"{str(c0).strip()}-{str(c1).strip()}")
-                df_perf_dl.columns = new_columns
+                # Lecture avec en-tête sur 1 ligne
+                df_perf_dl = pd.read_excel(excel_path, header=0)
                 
                 # Formatage de la colonne Archi pour le chart (ex: 1 -> "Archi 1")
                 df_chart = df_perf_dl.copy()

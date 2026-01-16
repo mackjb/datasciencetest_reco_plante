@@ -551,7 +551,7 @@ def render_exploration_roadmap():
             
             if str(arch_id) in all_arch_details:
                 details = all_arch_details[str(arch_id)]
-                with st.expander("Détails de l'architecture", expanded=True):
+                with st.expander("Détails de l'architecture", expanded=False):
                     st.markdown(f"**Description** : {details['desc']}")
                     st.markdown(f"**Workflow** : {details['workflow']}")
                     st.markdown(f"**Avantages** : {details['avantages']}")

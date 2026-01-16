@@ -578,11 +578,21 @@ def render_exploration_roadmap():
                 df_chart = df_perf_dl.copy()
                 df_chart['Archi_Label'] = df_chart['Archi'].apply(lambda x: f"Archi {x}")
 
-                # Affichage du tableau avec en-tête coloré (si supporté), sans colonne d'index
-                styled_df = df_perf_dl.style.set_table_styles([
+                # Affichage du tableau via st.table avec Archi en index
+                df_table = df_perf_dl.set_index('Archi')
+                
+                styled_df = df_table.style.set_table_styles([
+                    # Style des en-têtes de colonnes
                     {'selector': 'th.col_heading', 'props': [('background-color', '#e6f2ff'), ('color', '#0d00a4')]}
-                ]).set_properties(subset=df_perf_dl.columns[:2], **{'background-color': '#e6f2ff', 'color': '#0d00a4'})
-                st.dataframe(styled_df, width="stretch", hide_index=True)
+                ])
+                
+                # Masquer l'index (colonne Archi/Numéros de ligne)
+                styled_df.hide(axis="index")
+                
+                # Colorer la colonne 'Nom'
+                styled_df.set_properties(subset=['Nom'], **{'background-color': '#e6f2ff', 'color': '#0d00a4'})
+                
+                st.table(styled_df)
 
                 st.divider()
                 

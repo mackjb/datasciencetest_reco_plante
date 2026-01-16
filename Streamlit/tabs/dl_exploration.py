@@ -580,11 +580,8 @@ def render_exploration_roadmap():
 
                 # Affichage du tableau avec en-tête coloré (si supporté), sans colonne d'index
                 styled_df = df_perf_dl.style.set_table_styles([
-                    {
-                        "selector": "th.col_heading",
-                        "props": "background-color: #fdf0d5;"
-                    }
-                ])
+                    {'selector': 'th.col_heading', 'props': [('background-color', '#e6f2ff'), ('color', '#0d00a4')]}
+                ]).set_properties(subset=df_perf_dl.columns[:2], **{'background-color': '#e6f2ff', 'color': '#0d00a4'})
                 st.dataframe(styled_df, width="stretch", hide_index=True)
 
                 st.divider()

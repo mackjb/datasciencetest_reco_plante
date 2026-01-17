@@ -177,7 +177,8 @@ def sidebar_choice():
 
                 # Textes en dessous
                 st.write("**Datasets**")
-                st.write("Diversifier, casser corrélation espèce–maladie, dataset conditions 'Wild'.")
+                st.write("Diversifier, résoudre le Biais d'association, dataset conditions 'Wild'.")
+                st.write("Une segmentation avec SAM et un Grad-CAM regularization")
 
                 st.write("**Modèles Pré-entrainés**")
                 st.write("Effectuer une sélection plus poussée (ex. ResNet, ConvNeXt, Swin Transformer…). Expérimenter avec **Vision Transformer (ViT)**.")
